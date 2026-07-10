@@ -16,29 +16,21 @@ public sealed class DataSource
 
     public SourceReliability Reliability { get; private set; } = null!;
 
+    private DataSource()
+    {
+    }
 
-    public DataSource(){}
-    public DataSource(
-        string name,
-        string url,
-        SourceReliability reliability,
-        bool attributionRequired,
-        string? licenseNotes = null)
+    public DataSource( string name, string url,SourceReliability reliability,  bool attributionRequired, string? licenseNotes = null)
     {
         if (string.IsNullOrWhiteSpace(name))
-        {
-            throw new ArgumentException(
-                "O nome da fonte é obrigatório.",
-                nameof(name));
-        }
+            throw new ArgumentException( "O nome da fonte é obrigatório.", nameof(name));
+        
 
         if (string.IsNullOrWhiteSpace(url))
-            throw new ArgumentException("A URL da fonte é obrigatória.",nameof(url));
+            throw new ArgumentException( "A URL da fonte é obrigatória.",nameof(url));
         
 
-        if (!Uri.TryCreate( url,UriKind.Absolute, out var parsedUrl))
-            throw new ArgumentException( "A URL da fonte deve ser uma URL absoluta válida.", nameof(url));
-        
+        var parsedUrl = ValidateAndParseUrl(url);
 
         ArgumentNullException.ThrowIfNull(reliability);
 
@@ -52,8 +44,23 @@ public sealed class DataSource
 
         AttributionRequired = attributionRequired;
 
-        LicenseNotes = string.IsNullOrWhiteSpace(licenseNotes)
-            ? null
-            : licenseNotes.Trim();
+        LicenseNotes = string.IsNullOrWhiteSpace(licenseNotes) ? null : licenseNotes.Trim();
+    }
+
+    private static Uri ValidateAndParseUrl(string url)
+    {
+        var isValidAbsoluteUrl = Uri.TryCreate( url,UriKind.Absolute, out var parsedUrl);
+
+        if (!isValidAbsoluteUrl || parsedUrl is null)
+            throw new ArgumentException(  "A URL da fonte deve ser uma URL absoluta válida.", nameof(url));
+        
+
+        var isHttpOrHttps = parsedUrl.Scheme == Uri.UriSchemeHttp|| parsedUrl.Scheme == Uri.UriSchemeHttps;
+
+        if (!isHttpOrHttps)
+            throw new ArgumentException("A URL da fonte deve usar HTTP ou HTTPS.", nameof(url));
+        
+
+        return parsedUrl;
     }
 }
