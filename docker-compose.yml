@@ -1,0 +1,19 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: gamemarketintel-postgres
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: gamemarketintel
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - gamemarketintel-postgres-data:/var/lib/postgresql/data
+
+volumes:
+  gamemarketintel-postgres-data:

@@ -1,0 +1,66 @@
+# Build
+bin/
+obj/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# JetBrains Rider
+.idea/
+*.sln.iml
+
+# Visual Studio Code
+.vscode/
+
+# Testes
+TestResults/
+coverage/
+coverage-results/
+*.coverage
+*.coveragexml
+coverage.cobertura.xml
+
+# Logs
+logs/
+*.log
+
+# Arquivos temporários
+*.tmp
+*.temp
+*.bak
+*.swp
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+
+# Variáveis de ambiente
+.env
+.env.*
+!.env.example
+
+# Secrets e configurações locais
+appsettings.Local.json
+appsettings.*.Local.json
+
+# Publicação local
+publish/
+artifacts/
+
+# Docker local
+docker-compose.override.yml
+
+# Certificados
+*.pfx
+*.p12
+*.pem
+*.key
+
+# Banco local
+*.db
+*.sqlite
+*.sqlite3
