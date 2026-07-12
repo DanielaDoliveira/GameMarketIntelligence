@@ -8,12 +8,15 @@
 
   <ItemGroup>
     <ProjectReference Include="..\GameMarketIntel.Domain\GameMarketIntel.Domain.csproj" />
+    <ProjectReference Include="..\GameMarketIntel.Shared\GameMarketIntel.Shared.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <Folder Include="Abstractions\ExternalServices\" />
-    <Folder Include="Abstractions\Services\" />
-    <Folder Include="Abstractions\Persistence\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.9" />
   </ItemGroup>
 
 </Project>

@@ -1,13 +1,11 @@
 ﻿using GameMarketIntel.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using System;
-using System.Collections.Generic;
-using System.Text;
+
 
 namespace GameMarketIntel.Infrastructure.Persistence.Configurations;
 
-public sealed class DataSourceConfiguration
+public sealed class DataSourceConfiguration: IEntityTypeConfiguration<DataSource>
 {
     public void Configure(EntityTypeBuilder<DataSource> builder)
     {

@@ -1,10 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿namespace GameMarketIntel.Shared.Contracts.Sources;
 
-namespace GameMarketIntel.Shared.Contracts.Sources
-{
-    internal class DataSourceDetails
-    {
-    }
-}
+public sealed record DataSourceDetails(
+    Guid Id,
+    string Name,
+    string Url,
+    string? LicenseNotes,
+    bool AttributionRequired,
+    SourceReliabilityDetails Reliability);

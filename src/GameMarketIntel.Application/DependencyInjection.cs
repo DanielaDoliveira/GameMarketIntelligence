@@ -1,10 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using GameMarketIntel.Application.Abstractions.Services;
+using GameMarketIntel.Application.Services;
+using Microsoft.Extensions.DependencyInjection;
 
-namespace GameMarketIntel.Application
+namespace GameMarketIntel.Application;
+
+public static class DependencyInjection
 {
-    internal class DependencyInjection
+    public static IServiceCollection AddApplication(
+        this IServiceCollection services)
     {
+        services.AddScoped<IDataSourceService, DataSourceService>();
+
+        return services;
     }
 }
