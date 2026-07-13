@@ -1,0 +1,6 @@
+resource_group_name   = "rg-gamemarketintel-sql-poc"
+location              = "East US"
+sql_location = "Central US"
+sql_server_name_prefix = "gamemarketintel-sql-poc"
+database_name         = "gamemarketintel"
+administrator_login   = "gamemarketinteladmin"

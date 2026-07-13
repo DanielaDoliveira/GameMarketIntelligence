@@ -158,14 +158,29 @@ A provider should not be accepted for the zero-cost phase when unexpected paid u
 | Neon | Monitoring and usage visibility | Compute, storage, history, and network usage should be visible | The Neon dashboard displayed 0.02 of 100 CU-hours, 0.03 of 0.5 GB storage, 0.01 GB of history, and network-transfer usage | Not recorded | Passed | Free-plan quotas and current consumption were visible directly in the project dashboard |
 | Neon | Portable backup export | The database should be exportable using standard PostgreSQL tooling | A custom-format backup was generated successfully with `pg_dump` executed from a temporary PostgreSQL 17 Docker container | Not recorded | Passed | Backup created without installing PostgreSQL locally; output stored outside version control |
 | Neon | Portable backup restoration | The exported backup should restore successfully into an isolated PostgreSQL database | The Neon dump was restored into a local PostgreSQL 17 database, and the persisted `Newzoo` record was retrieved successfully | Not recorded | Passed | Restoration validated with `pg_restore` and direct SQL verification |
-
+| Azure SQL Database | Infrastructure provisioning | Resource group and Azure SQL logical server should be provisioned successfully | The resource group and Azure SQL logical server were created successfully through Terraform after changing the SQL region from East US to Central US | Not recorded | Passed | East US returned `ProvisioningDisabled`; Central US succeeded after generating a new globally unique server name |
+| Azure SQL Database | Free-offer and billing-safety configuration | The database should use the Free limit and pause instead of generating overage charges | The database was created as General Purpose Serverless with `useFreeLimit = true` and `freeLimitExhaustionBehavior = AutoPause` | Not recorded | Passed | Validated after provisioning through Azure CLI; SKU `GP_S_Gen5_1`, 1 vCore maximum, 0.5 vCore minimum, 60-minute inactivity pause, and 32 GiB maximum storage |
 
 ## Provider-Specific Change Record
 
 | Provider | Application Changes | Migration Changes | Infrastructure Changes | Operational Changes |
 |---|---|---|---|---|
 | Neon | No application architecture changes required; existing Npgsql and EF Core integration were preserved | Existing PostgreSQL migrations were applied successfully without modification | Community Terraform provider used to create the project, branch, database, role, and endpoint | Direct connection used for migrations; pooled connection validated for runtime; monitoring and backup workflows documented |
-| Azure SQL Database | Pending | Pending | Pending | Pending |
+| Azure SQL Database | Pending application integration validation | Pending SQL Server migration generation and execution | Terraform used for the resource group and Azure SQL logical server; Azure CLI required for explicit Free-limit and `AutoPause` database configuration | Region availability must be validated before provisioning; post-provisioning verification of `FreeLimit = True` and `ExhaustionBehavior = AutoPause` is mandatory |
+
+
+### Azure SQL Free Database Provisioning Template
+
+The Azure SQL logical server is provisioned through Terraform. The database is created separately through Azure CLI because the AzureRM resource does not expose the free-offer configuration with the same explicit controls used by the Azure CLI.
+
+The database creation command must explicitly enable the free limit and configure automatic suspension when the monthly allowance is exhausted.
+
+```powershell
+$ResourceGroupName = "rg-gamemarketintel-sql-poc"
+$SqlServerName = terraform output -raw sql_server_name
+$DatabaseName = "gamemarketintel"
+
+az sql db create --resource-group $ResourceGroupName --server $SqlServerName --name $DatabaseName --edition GeneralPurpose --family Gen5 --capacity 1 --compute-model Serverless --min-capacity 0.5 --auto-pause-delay 60 --max-size 32GB --use-free-limit true --free-limit-exhaustion-behavior AutoPause
 
 ## Final PoC Result
 
