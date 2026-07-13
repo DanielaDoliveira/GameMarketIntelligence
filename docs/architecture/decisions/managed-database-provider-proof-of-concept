@@ -1,0 +1,197 @@
+# Managed Database Provider Proof of Concept
+
+## Objective
+
+Validate the shortlisted managed database providers using the current GameMarketIntel application and infrastructure requirements.
+
+The PoC should produce practical evidence for the final provider decision.
+
+The evaluation should focus on application compatibility, infrastructure automation, security, operational behavior, cost predictability, and long-term sustainability.
+
+## Candidates
+
+- Neon PostgreSQL;
+- Supabase PostgreSQL;
+- Aiven PostgreSQL;
+- Azure SQL Database.
+
+## Validation Scope
+
+Each provider should be evaluated using the same core tests.
+
+Provider-specific adaptations may be required when the database engine differs.
+
+These adaptations should be recorded as part of the migration-effort evaluation rather than treated automatically as a failure.
+
+### 1. Infrastructure Provisioning
+
+Validate:
+
+- Terraform provider installation;
+- provider authentication;
+- database provisioning;
+- secure secret handling;
+- successful `terraform init`;
+- successful `terraform validate`;
+- successful `terraform plan`;
+- successful `terraform apply`;
+- stable second `terraform plan`;
+- absence of unintended infrastructure changes;
+- visibility of Free-offer configuration;
+- billing-safety configuration.
+
+### 2. Application Integration
+
+Validate:
+
+- database connection;
+- Entity Framework Core provider compatibility;
+- required provider-package configuration;
+- migration compatibility;
+- migration execution;
+- schema creation;
+- insertion of a `DataSource`;
+- persistence of `SourceReliability`;
+- retrieval of persisted data;
+- successful execution of `GET /api/data-sources`;
+- preservation of current architectural boundaries.
+
+Record any required changes to:
+
+- Entity Framework Core provider packages;
+- `DbContext` configuration;
+- migrations;
+- database type mappings;
+- connection strings;
+- provider-specific infrastructure code.
+
+### 3. Deployment Integration
+
+Validate:
+
+- API deployment on Render;
+- environment-variable configuration;
+- secure connection;
+- TLS behavior;
+- read operations;
+- write operations;
+- migration behavior in the deployed environment;
+- absence of credentials in application logs;
+- network compatibility;
+- regional latency.
+
+### 4. Performance and Availability
+
+Measure:
+
+- first database connection after inactivity;
+- first API request after inactivity;
+- warm-request latency;
+- database wake-up or restoration behavior;
+- connection recovery;
+- latency between Render and the database provider;
+- behavior when both the API and database are inactive;
+- operational impact of automatic pause or suspension.
+
+### 5. Operational Validation
+
+Validate:
+
+- metrics and monitoring;
+- storage visibility;
+- compute-usage visibility;
+- connection visibility;
+- backup or export process;
+- recovery or restoration process;
+- credential rotation;
+- operational complexity;
+- Terraform provider ownership;
+- Terraform provider maintenance;
+- dependency maturity;
+- release history;
+- documentation quality;
+- availability of manual fallback procedures.
+
+### 6. Security Validation
+
+Validate:
+
+- encrypted database connectivity;
+- credential separation;
+- use of protected environment variables;
+- absence of secrets in the repository;
+- absence of secrets in logs;
+- Terraform-state exposure risk;
+- least-privilege access;
+- network-access configuration;
+- credential-rotation process.
+
+### 7. Cost and Free-Offer Validation
+
+Validate:
+
+- Free-offer eligibility;
+- requirement for a payment method;
+- Free-offer expiration behavior;
+- storage allowance;
+- compute allowance;
+- network-transfer limits;
+- billing-overage behavior;
+- available cost controls;
+- ability to prevent unexpected paid usage;
+- behavior when a Free limit is reached.
+
+A provider should not be accepted for the zero-cost phase when unexpected paid usage cannot be prevented or controlled adequately.
+
+## Evidence Record
+
+| Provider | Test | Expected Result | Observed Result | Duration | Status | Notes |
+|---|---|---|---|---:|---|---|
+| Neon | Infrastructure provisioning | Project created successfully through Terraform | Project, branch, database, role, and endpoint were created successfully | Not recorded | Passed | Second `terraform plan` returned no changes |
+
+## Provider-Specific Change Record
+
+| Provider | Application Changes | Migration Changes | Infrastructure Changes | Operational Changes |
+|---|---|---|---|---|
+| Neon | Pending | Pending | Pending | Pending |
+| Supabase | Pending | Pending | Pending | Pending |
+| Aiven | Pending | Pending | Pending | Pending |
+| Azure SQL Database | Pending | Pending | Pending | Pending |
+
+## Final PoC Result
+
+| Provider | Result | Main Strength | Main Risk |
+|---|---|---|---|
+| Neon | Pending | | |
+| Supabase | Pending | | |
+| Aiven | Pending | | |
+| Azure SQL Database | Pending | | |
+
+## Decision Rule
+
+A provider may be rejected even with a high benchmark score when a critical requirement fails.
+
+Critical failures may include:
+
+- inability to connect securely;
+- inability to support the application model;
+- failed Entity Framework Core integration;
+- unacceptable migration complexity;
+- inability to provision reliably;
+- uncontrolled billing risk;
+- unacceptable availability behavior;
+- unacceptable dependency-maintenance risk;
+- insufficient operational sustainability.
+
+The final decision should consider:
+
+- benchmark score;
+- PoC evidence;
+- application compatibility;
+- migration effort;
+- operational risk;
+- billing predictability;
+- security;
+- Terraform reliability;
+- dependency trust;
+- long-term sustainability.
