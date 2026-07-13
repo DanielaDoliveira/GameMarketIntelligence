@@ -155,23 +155,25 @@ A provider should not be accepted for the zero-cost phase when unexpected paid u
 | Neon | Inactivity and warm-request latency | The database should resume automatically after inactivity, with subsequent requests completing faster | First request completed in 1826.01 ms; subsequent requests completed in 163.96 ms, 140.98 ms, and 140.51 ms | Cold: 1826.01 ms; Warm average: 148.49 ms | Passed | Automatic wake-up succeeded without manual intervention; cold request was approximately 12.3× slower than the warm average |
 | Neon | Pooled runtime connection | The API should access Neon successfully through the pooled endpoint | The API connected through the Neon PgBouncer endpoint and returned the persisted `DataSource` successfully | Not recorded | Passed | Runtime access validated with Npgsql, Entity Framework Core, repository, service, and Minimal API endpoint |
 | Neon | Secret and repository protection | Database and infrastructure credentials should remain outside the repository and application logs | Terraform variables and state remained ignored, the database connection stayed in .NET User Secrets, and no credential was observed in application logs | Not recorded | Passed | Validated with Git ignore checks, tracked-file inspection, repository search, and runtime-log review |
+| Neon | Monitoring and usage visibility | Compute, storage, history, and network usage should be visible | The Neon dashboard displayed 0.02 of 100 CU-hours, 0.03 of 0.5 GB storage, 0.01 GB of history, and network-transfer usage | Not recorded | Passed | Free-plan quotas and current consumption were visible directly in the project dashboard |
+| Neon | Portable backup export | The database should be exportable using standard PostgreSQL tooling | A custom-format backup was generated successfully with `pg_dump` executed from a temporary PostgreSQL 17 Docker container | Not recorded | Passed | Backup created without installing PostgreSQL locally; output stored outside version control |
+| Neon | Portable backup restoration | The exported backup should restore successfully into an isolated PostgreSQL database | The Neon dump was restored into a local PostgreSQL 17 database, and the persisted `Newzoo` record was retrieved successfully | Not recorded | Passed | Restoration validated with `pg_restore` and direct SQL verification |
+
 
 ## Provider-Specific Change Record
 
 | Provider | Application Changes | Migration Changes | Infrastructure Changes | Operational Changes |
 |---|---|---|---|---|
-| Neon | Pending | Pending | Pending | Pending |
-| Supabase | Pending | Pending | Pending | Pending |
-| Aiven | Pending | Pending | Pending | Pending |
+| Neon | No application architecture changes required; existing Npgsql and EF Core integration were preserved | Existing PostgreSQL migrations were applied successfully without modification | Community Terraform provider used to create the project, branch, database, role, and endpoint | Direct connection used for migrations; pooled connection validated for runtime; monitoring and backup workflows documented |
+
 | Azure SQL Database | Pending | Pending | Pending | Pending |
 
 ## Final PoC Result
 
 | Provider | Result | Main Strength | Main Risk |
 |---|---|---|---|
-| Neon | Pending | | |
-| Supabase | Pending | | |
-| Aiven | Pending | | |
+| Neon | Passed | Low migration effort, automatic wake-up, standard PostgreSQL compatibility, pooled runtime connectivity, and successful portable backup and restore | Limited Free storage and reliance on a community-maintained Terraform provider |
+
 | Azure SQL Database | Pending | | |
 
 ## Decision Rule
