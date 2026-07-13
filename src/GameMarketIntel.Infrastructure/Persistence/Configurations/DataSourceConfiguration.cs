@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace GameMarketIntel.Infrastructure.Persistence.Configurations;
 
-public sealed class DataSourceConfiguration: IEntityTypeConfiguration<DataSource>
+public sealed class DataSourceConfiguration : IEntityTypeConfiguration<DataSource>
 {
     public void Configure(EntityTypeBuilder<DataSource> builder)
     {

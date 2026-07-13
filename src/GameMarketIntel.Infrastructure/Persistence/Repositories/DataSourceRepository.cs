@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GameMarketIntel.Infrastructure.Persistence.Repositories;
 
-public sealed class DataSourceRepository(GameMarketIntelDbContext dbContext): IDataSourceRepository
+public sealed class DataSourceRepository(GameMarketIntelDbContext dbContext) : IDataSourceRepository
 {
     public async Task<IReadOnlyList<DataSource>> GetAllAsync(CancellationToken cancellationToken = default)
     {

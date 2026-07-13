@@ -13,7 +13,7 @@ public sealed class DataSourceServiceTests
     public async Task GetAllAsync_ShouldMapDataSourcesToDetails()
     {
         // Arrange
-        var reliability = new SourceReliability(ReliabilityLevel.Official,  "Dados fornecidos pela fonte oficial.", "Pode haver limites de requisições.");
+        var reliability = new SourceReliability(ReliabilityLevel.Official, "Dados fornecidos pela fonte oficial.", "Pode haver limites de requisições.");
 
         var dataSource = new DataSource(
                 "Steam Web API",

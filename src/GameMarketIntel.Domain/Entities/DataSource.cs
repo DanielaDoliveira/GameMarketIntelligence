@@ -20,15 +20,15 @@ public sealed class DataSource
     {
     }
 
-    public DataSource( string name, string url,SourceReliability reliability,  bool attributionRequired, string? licenseNotes = null)
+    public DataSource(string name, string url, SourceReliability reliability, bool attributionRequired, string? licenseNotes = null)
     {
         if (string.IsNullOrWhiteSpace(name))
-            throw new ArgumentException( "O nome da fonte é obrigatório.", nameof(name));
-        
+            throw new ArgumentException("O nome da fonte é obrigatório.", nameof(name));
+
 
         if (string.IsNullOrWhiteSpace(url))
-            throw new ArgumentException( "A URL da fonte é obrigatória.",nameof(url));
-        
+            throw new ArgumentException("A URL da fonte é obrigatória.", nameof(url));
+
 
         var parsedUrl = ValidateAndParseUrl(url);
 
@@ -49,17 +49,17 @@ public sealed class DataSource
 
     private static Uri ValidateAndParseUrl(string url)
     {
-        var isValidAbsoluteUrl = Uri.TryCreate( url,UriKind.Absolute, out var parsedUrl);
+        var isValidAbsoluteUrl = Uri.TryCreate(url, UriKind.Absolute, out var parsedUrl);
 
         if (!isValidAbsoluteUrl || parsedUrl is null)
-            throw new ArgumentException(  "A URL da fonte deve ser uma URL absoluta válida.", nameof(url));
-        
+            throw new ArgumentException("A URL da fonte deve ser uma URL absoluta válida.", nameof(url));
 
-        var isHttpOrHttps = parsedUrl.Scheme == Uri.UriSchemeHttp|| parsedUrl.Scheme == Uri.UriSchemeHttps;
+
+        var isHttpOrHttps = parsedUrl.Scheme == Uri.UriSchemeHttp || parsedUrl.Scheme == Uri.UriSchemeHttps;
 
         if (!isHttpOrHttps)
             throw new ArgumentException("A URL da fonte deve usar HTTP ou HTTPS.", nameof(url));
-        
+
 
         return parsedUrl;
     }

@@ -17,7 +17,7 @@ public sealed class SourceReliabilityTests
         const string limitations = "Os dados não representam vendas.";
 
         // Act
-        var reliability = new SourceReliability( level, reason, limitations);
+        var reliability = new SourceReliability(level, reason, limitations);
 
         // Assert
         reliability.Level.ShouldBe(level);
@@ -32,7 +32,7 @@ public sealed class SourceReliabilityTests
     string invalidReason)
     {
         // Act
-        var exception = Should.Throw<ArgumentException>(() =>new SourceReliability(ReliabilityLevel.PublicDirect,invalidReason));
+        var exception = Should.Throw<ArgumentException>(() => new SourceReliability(ReliabilityLevel.PublicDirect, invalidReason));
 
         // Assert
         exception.ParamName.ShouldBe("reason");

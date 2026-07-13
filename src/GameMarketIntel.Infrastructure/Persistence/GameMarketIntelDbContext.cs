@@ -3,11 +3,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GameMarketIntel.Infrastructure.Persistence;
 
-public sealed class GameMarketIntelDbContext(DbContextOptions<GameMarketIntelDbContext> options): DbContext(options)
+public sealed class GameMarketIntelDbContext(DbContextOptions<GameMarketIntelDbContext> options) : DbContext(options)
 {
     public DbSet<DataSource> DataSources => Set<DataSource>();
 
-    protected override void OnModelCreating( ModelBuilder modelBuilder)
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly
             (
