@@ -1,0 +1,4 @@
+project_name    = "gamemarketintel-poc"
+organization_id = "your-neon-organization-id"
+region_id       = "aws-us-east-1"
+postgres_version = 17
