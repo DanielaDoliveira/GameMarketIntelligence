@@ -165,7 +165,6 @@ A provider should not be accepted for the zero-cost phase when unexpected paid u
 | Provider | Application Changes | Migration Changes | Infrastructure Changes | Operational Changes |
 |---|---|---|---|---|
 | Neon | No application architecture changes required; existing Npgsql and EF Core integration were preserved | Existing PostgreSQL migrations were applied successfully without modification | Community Terraform provider used to create the project, branch, database, role, and endpoint | Direct connection used for migrations; pooled connection validated for runtime; monitoring and backup workflows documented |
-
 | Azure SQL Database | Pending | Pending | Pending | Pending |
 
 ## Final PoC Result
