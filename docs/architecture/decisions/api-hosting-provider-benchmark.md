@@ -8,25 +8,26 @@ Proposed
 
 GameMarketIntel requires a managed platform for hosting its ASP.NET Core API.
 
-The selected platform must support the project's zero-cost phase while preserving application compatibility, deployment reliability, security, infrastructure reproducibility, and acceptable user experience.
+The selected platform must support the project's zero-cost phase while preserving application compatibility, deployment reliability, infrastructure reproducibility, security, operational simplicity, and acceptable user experience.
 
 The current architecture includes:
 
 - ASP.NET Core;
 - .NET 10;
-- Neon PostgreSQL;
 - Entity Framework Core with Npgsql;
+- Neon PostgreSQL;
 - GitHub Actions for continuous integration;
 - Azure Static Web Apps for the frontend;
-- Terraform for infrastructure automation.
+- Terraform for infrastructure automation;
+- GitHub as the source-code repository.
 
-The hosting platform should avoid unnecessary application changes and should provide predictable zero-cost operation.
+The selected hosting platform should preserve the current application architecture and avoid unnecessary provider-specific changes.
 
 ## Decision Drivers
 
 The main decision drivers are:
 
-- permanent or sustainable zero-cost availability;
+- sustainable zero-cost availability;
 - no uncontrolled automatic paid usage;
 - ASP.NET Core compatibility;
 - Docker support;
@@ -39,7 +40,7 @@ The main decision drivers are:
 - Terraform compatibility;
 - provider maturity;
 - operational simplicity;
-- logs and monitoring.
+- logs, metrics, and usage visibility.
 
 ## Considered Options
 
@@ -47,22 +48,23 @@ The main decision drivers are:
 
 Strengths:
 
-- zero-cost Web Service;
+- Free Web Service;
 - GitHub integration;
 - automatic deployment;
 - Docker compatibility;
 - managed HTTPS;
-- environment variables;
+- protected environment variables;
 - low operational complexity;
-- suitable integration model for Neon PostgreSQL.
+- suitable integration model for Neon PostgreSQL;
+- Terraform provider availability.
 
 Risks:
 
 - Free services may suspend after inactivity;
 - cold-start behavior must be validated;
 - first-request success must be proven;
-- Terraform provider maturity must be evaluated;
-- Free-plan resource limits may affect long-term operation.
+- Free-plan resource limits require monitoring;
+- Terraform provider maturity and resource coverage must be evaluated.
 
 ### Azure App Service F1
 
@@ -70,7 +72,7 @@ Strengths:
 
 - native .NET support;
 - mature Azure integration;
-- official Terraform provider;
+- strong Terraform support;
 - managed HTTPS;
 - existing project experience.
 
@@ -78,7 +80,7 @@ Risks:
 
 - previous quota friction;
 - limited Free-tier compute;
-- additional operational dependency on Azure;
+- additional dependency on Azure;
 - no clear advantage over Render for the current phase.
 
 ### Google Cloud Run
@@ -86,16 +88,16 @@ Risks:
 Strengths:
 
 - strong container support;
-- official Terraform provider;
 - mature cloud platform;
+- official Terraform provider;
 - scalable serverless architecture.
 
 Reason for screening out:
 
-- Free usage is based on a pay-as-you-go billing model;
+- Free usage depends on a pay-as-you-go billing model;
 - no simple native hard spending cap was identified;
 - billing-protection automation would add unnecessary complexity;
-- financial risk conflicts with the project's zero-cost requirement.
+- potential financial risk conflicts with the project's zero-cost requirement.
 
 ### AWS
 
@@ -108,8 +110,8 @@ Strengths:
 Reason for screening out:
 
 - no sufficiently simple and predictable permanent zero-cost managed API-hosting option was identified;
-- previous experience demonstrated risk of unexpected infrastructure costs;
-- available alternatives would add unnecessary operational complexity.
+- available alternatives would introduce additional operational complexity;
+- previous experience demonstrated the importance of avoiding unexpected infrastructure costs.
 
 ### Koyeb
 
@@ -118,7 +120,7 @@ Strengths:
 - Docker support;
 - GitHub deployment;
 - Free instance;
-- managed platform.
+- managed hosting platform.
 
 Reason for not shortlisting:
 
@@ -129,17 +131,18 @@ Reason for not shortlisting:
 
 ## Decision
 
-Render Free is selected as the primary candidate for the API hosting proof of concept.
+Render Free is selected as the primary candidate for the API-hosting proof of concept.
 
 Final acceptance depends on successful validation of:
 
 - ASP.NET Core deployment;
-- secure Neon connectivity;
+- Docker-based deployment;
+- secure Neon PostgreSQL connectivity;
 - GitHub continuous deployment;
 - managed HTTPS;
 - protected environment variables;
 - first-request success after inactivity;
-- acceptable warm and cold latency;
+- acceptable cold-start and warm-request latency;
 - absence of credential exposure;
 - predictable zero-cost operation;
 - Terraform provisioning and destruction.
@@ -148,36 +151,40 @@ Azure App Service F1 remains a documented fallback.
 
 ## Consequences
 
-Positive consequences:
+### Positive
 
 - reduced operational complexity;
 - straightforward GitHub-based deployment;
 - compatibility with the current ASP.NET Core architecture;
 - no required migration away from Neon PostgreSQL;
-- faster proof-of-concept execution.
+- faster proof-of-concept execution;
+- opportunity to validate continuous deployment separately from continuous integration.
 
-Negative consequences:
+### Negative
 
 - idle suspension may introduce cold-start latency;
 - Free-plan limits require monitoring;
 - final provider acceptance remains dependent on PoC evidence;
-- Terraform support must be validated before infrastructure automation is accepted.
+- Terraform support must be validated before infrastructure automation is accepted;
+- user-facing loading feedback will be required when cold starts occur.
 
 ## Validation
 
-The decision will be finalized after completion of the API hosting provider benchmark and Render proof of concept.
+The decision will be finalized after completion of the API Hosting Provider Benchmark and Render proof of concept.
 
 The PoC must validate:
 
 - service provisioning;
-- application deployment;
+- Docker deployment;
+- ASP.NET Core startup;
 - Neon connectivity;
 - read and write operations;
-- continuous deployment;
+- GitHub continuous deployment;
 - first request after inactivity;
+- behavior when both Render and Neon are inactive;
 - warm-request latency;
 - security;
-- logs and metrics;
+- logs and usage visibility;
 - Free-plan limitations;
 - Terraform provider reliability;
 - successful resource destruction.
