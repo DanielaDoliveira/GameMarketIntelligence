@@ -1,0 +1,3 @@
+render_api_key = "replace-with-render-api-key"
+render_owner_id = "replace-with-render-owner-id"
+neon_connection_string = "replace-with-neon-connection-string"

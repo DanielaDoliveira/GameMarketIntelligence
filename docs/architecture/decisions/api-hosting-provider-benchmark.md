@@ -1,190 +1,238 @@
-# ADR-0002: Deployment Platform Selection
+# API Hosting Provider Benchmark
 
-## Status
+## Objective
 
-Proposed
-
-## Context
-
-GameMarketIntel requires a managed platform for hosting its ASP.NET Core API.
+Select a managed hosting platform for the GameMarketIntel ASP.NET Core API.
 
 The selected platform must support the project's zero-cost phase while preserving application compatibility, deployment reliability, infrastructure reproducibility, security, operational simplicity, and acceptable user experience.
 
-The current architecture includes:
+The evaluation should prioritize practical evidence over feature availability alone.
+
+## Current Architecture
+
+GameMarketIntel currently uses:
 
 - ASP.NET Core;
 - .NET 10;
-- Entity Framework Core with Npgsql;
+- Entity Framework Core;
+- Npgsql;
 - Neon PostgreSQL;
 - GitHub Actions for continuous integration;
 - Azure Static Web Apps for the frontend;
 - Terraform for infrastructure automation;
 - GitHub as the source-code repository.
 
-The selected hosting platform should preserve the current application architecture and avoid unnecessary provider-specific changes.
+The selected API-hosting platform should preserve the current application architecture and avoid unnecessary provider-specific changes.
 
-## Decision Drivers
+## Critical Requirements
 
-The main decision drivers are:
-
-- sustainable zero-cost availability;
-- no uncontrolled automatic paid usage;
-- ASP.NET Core compatibility;
-- Docker support;
-- GitHub-based continuous deployment;
-- secure environment-variable management;
-- secure connectivity to Neon PostgreSQL;
-- managed HTTPS;
-- successful first request after inactivity;
-- no manual retry requirement;
-- Terraform compatibility;
-- provider maturity;
-- operational simplicity;
-- logs, metrics, and usage visibility.
-
-## Considered Options
-
-### Render Free
-
-Strengths:
-
-- Free Web Service;
-- GitHub integration;
-- automatic deployment;
-- Docker compatibility;
-- managed HTTPS;
-- protected environment variables;
-- low operational complexity;
-- suitable integration model for Neon PostgreSQL;
-- Terraform provider availability.
-
-Risks:
-
-- Free services may suspend after inactivity;
-- cold-start behavior must be validated;
-- first-request success must be proven;
-- Free-plan resource limits require monitoring;
-- Terraform provider maturity and resource coverage must be evaluated.
-
-### Azure App Service F1
-
-Strengths:
-
-- native .NET support;
-- mature Azure integration;
-- strong Terraform support;
-- managed HTTPS;
-- existing project experience.
-
-Risks:
-
-- previous quota friction;
-- limited Free-tier compute;
-- additional dependency on Azure;
-- no clear advantage over Render for the current phase.
-
-### Google Cloud Run
-
-Strengths:
-
-- strong container support;
-- mature cloud platform;
-- official Terraform provider;
-- scalable serverless architecture.
-
-Reason for screening out:
-
-- Free usage depends on a pay-as-you-go billing model;
-- no simple native hard spending cap was identified;
-- billing-protection automation would add unnecessary complexity;
-- potential financial risk conflicts with the project's zero-cost requirement.
-
-### AWS
-
-Strengths:
-
-- mature cloud ecosystem;
-- strong Terraform support;
-- broad .NET compatibility.
-
-Reason for screening out:
-
-- no sufficiently simple and predictable permanent zero-cost managed API-hosting option was identified;
-- available alternatives would introduce additional operational complexity;
-- previous experience demonstrated the importance of avoiding unexpected infrastructure costs.
-
-### Koyeb
-
-Strengths:
-
-- Docker support;
-- GitHub deployment;
-- Free instance;
-- managed hosting platform.
-
-Reason for not shortlisting:
-
-- no clear project advantage over Render;
-- lower familiarity;
-- smaller operational track record;
-- additional evaluation effort without a demonstrated benefit.
-
-## Decision
-
-Render Free is selected as the primary candidate for the API-hosting proof of concept.
-
-Final acceptance depends on successful validation of:
+The selected provider must support:
 
 - ASP.NET Core deployment;
 - Docker-based deployment;
-- secure Neon PostgreSQL connectivity;
-- GitHub continuous deployment;
-- managed HTTPS;
+- secure HTTPS connectivity;
 - protected environment variables;
-- first-request success after inactivity;
-- acceptable cold-start and warm-request latency;
-- absence of credential exposure;
+- secure connectivity to Neon PostgreSQL;
+- GitHub-based continuous deployment;
 - predictable zero-cost operation;
-- Terraform provisioning and destruction.
+- no automatic paid overage without explicit user action;
+- successful completion of the first request after inactivity;
+- no manual retry requirement after idle startup;
+- application logs without credential exposure;
+- infrastructure automation through Terraform or another documented reproducible mechanism.
 
-Azure App Service F1 remains a documented fallback.
+A provider may be rejected without completing all tests when a critical requirement fails.
 
-## Consequences
+## Candidates
 
-### Positive
+| Provider | Initial Status | Reason |
+|---|---|---|
+| Render Free | Selected for PoC | Free Web Service, GitHub integration, Docker compatibility, managed HTTPS, environment variables, low operational complexity, and Terraform provider availability |
+| Azure App Service F1 | Documented fallback | Strong .NET and Terraform support, but previous quota friction and no clear advantage over Render for the current project |
+| Google Cloud Run | Screened out | Free usage depends on a pay-as-you-go billing model without a simple native hard spending cap |
+| AWS | Screened out | No sufficiently simple and predictable permanent zero-cost managed API-hosting option was identified |
+| Koyeb | Not shortlisted | No clear project advantage over Render and additional evaluation effort without a demonstrated benefit |
 
-- reduced operational complexity;
-- straightforward GitHub-based deployment;
-- compatibility with the current ASP.NET Core architecture;
-- no required migration away from Neon PostgreSQL;
-- faster proof-of-concept execution;
-- opportunity to validate continuous deployment separately from continuous integration.
+## Evaluation Criteria
 
-### Negative
+| Category | Criterion | Priority |
+|---|---|---|
+| Cost | Sustainable zero-cost option | Critical |
+| Cost | No automatic paid overage | Critical |
+| Application | ASP.NET Core compatibility | Critical |
+| Application | Docker compatibility | High |
+| Database | Secure Neon PostgreSQL connectivity | Critical |
+| Deployment | GitHub continuous deployment | Critical |
+| Deployment | Deployment-status visibility | High |
+| Availability | First request after inactivity succeeds | Critical |
+| Availability | No manual user retry is required | Critical |
+| Performance | Acceptable cold-start behavior | High |
+| Performance | Acceptable warm-request latency | High |
+| Security | Protected environment variables | Critical |
+| Security | No credentials in application or deployment logs | Critical |
+| Infrastructure | Terraform compatibility | High |
+| Infrastructure | Provider ownership and maintenance | High |
+| Operations | Runtime and deployment logs | High |
+| Operations | Metrics and usage visibility | High |
+| Operations | Simple rollback or redeployment | Medium |
+| Networking | Managed HTTPS | Critical |
+| Networking | Custom-domain support | Medium |
 
-- idle suspension may introduce cold-start latency;
-- Free-plan limits require monitoring;
-- final provider acceptance remains dependent on PoC evidence;
-- Terraform support must be validated before infrastructure automation is accepted;
-- user-facing loading feedback will be required when cold starts occur.
+## Preliminary Assessment
 
-## Validation
+| Criterion | Render Free |
+|---|---|
+| Zero-cost Web Service | Available |
+| Payment required for initial deployment | Not required |
+| ASP.NET Core compatibility | Supported through Docker |
+| GitHub integration | Supported |
+| Automatic deployment | Supported |
+| Environment variables | Supported |
+| Managed HTTPS | Supported |
+| Neon PostgreSQL connectivity | Passed in local Docker validation; remote validation pending |
+| Terraform provider | Available; PoC validation pending |
+| Idle suspension | Present |
+| First-request behavior after inactivity | Pending PoC |
+| Cold-start latency | Pending measurement |
+| Warm-request latency | Pending measurement |
+| Runtime logs | Pending validation |
+| Usage visibility | Pending validation |
+| Credential protection | Pending validation |
+| Unexpected-cost protection | Pending validation |
+| Resource destruction | Pending validation |
+| Final result | Pending |
 
-The decision will be finalized after completion of the API Hosting Provider Benchmark and Render proof of concept.
+## Proof-of-Concept Scope
 
-The PoC must validate:
+### 1. Infrastructure Provisioning
 
-- service provisioning;
-- Docker deployment;
+Validate:
+
+- Render account and workspace access;
+- Terraform provider installation;
+- provider authentication;
+- API-key protection;
+- Web Service provisioning;
+- successful `terraform init`;
+- successful `terraform validate`;
+- successful `terraform plan`;
+- successful `terraform apply`;
+- stable second `terraform plan`;
+- absence of unintended infrastructure changes;
+- successful resource destruction.
+
+### 2. Application Deployment
+
+Validate:
+
+- Docker image build;
 - ASP.NET Core startup;
-- Neon connectivity;
-- read and write operations;
-- GitHub continuous deployment;
-- first request after inactivity;
+- public API availability;
+- managed HTTPS;
+- environment-variable configuration;
+- secure Neon PostgreSQL connectivity;
+- successful execution of `GET /api/data-sources`;
+- successful read operation;
+- successful write operation;
+- preservation of the current architectural boundaries.
+
+### 3. Continuous Deployment
+
+Validate:
+
+- GitHub repository integration;
+- deployment from the selected branch;
+- automatic deployment after a new commit;
+- deployment-status visibility;
+- build-log visibility;
+- failed-build behavior;
+- redeployment behavior.
+
+### 4. Performance and Availability
+
+Measure:
+
+- first API request after Render inactivity;
+- first database request after Neon inactivity;
 - behavior when both Render and Neon are inactive;
 - warm-request latency;
-- security;
-- logs and usage visibility;
-- Free-plan limitations;
-- Terraform provider reliability;
-- successful resource destruction.
+- API-to-database latency;
+- first-request success;
+- manual retry requirement;
+- application recovery behavior.
+
+Cold-start latency is acceptable when the original request completes successfully and the frontend can communicate the loading state appropriately.
+
+A cold start becomes a critical failure when the user receives an error or must manually repeat the request.
+
+### 5. Security Validation
+
+Validate:
+
+- encrypted public connectivity;
+- protected environment variables;
+- absence of credentials in the repository;
+- absence of credentials in deployment logs;
+- absence of credentials in runtime logs;
+- Terraform-state exposure risk;
+- Render API-key protection;
+- database credential separation.
+
+### 6. Operational Validation
+
+Validate:
+
+- deployment logs;
+- runtime logs;
+- service metrics;
+- usage visibility;
+- redeployment process;
+- rollback availability;
+- provider documentation;
+- Terraform provider ownership;
+- Terraform provider maintenance;
+- resource deletion;
+- manual fallback procedure.
+
+### 7. Cost Validation
+
+Validate:
+
+- Free-instance eligibility;
+- payment-method requirement;
+- monthly usage limitations;
+- bandwidth limitations;
+- build limitations;
+- behavior when Free limits are reached;
+- possibility of automatic paid usage;
+- upgrade behavior;
+- available usage monitoring.
+
+## Evidence Record
+
+| Provider | Test | Expected Result | Observed Result | Duration | Status | Notes |
+|---|---|---|---|---:|---|---|
+| Render | Local Docker deployment validation | The production Docker image should build successfully, start on Linux, receive the Neon connection string through an environment variable, and execute `GET /api/data-sources` | The Linux image built successfully, the ASP.NET Core API started in the Production environment on port 10000, connected securely to Neon, executed the EF Core query, and returned the persisted data successfully | Database command: 148 ms | Passed | Local validation completed before Render provisioning; non-blocking container warnings were identified for port configuration, local HTTPS redirection, and optional GSSAPI library availability |
+
+## Decision Rule
+
+Render will be accepted when:
+
+- the ASP.NET Core API deploys successfully;
+- secure Neon connectivity works;
+- GitHub continuous deployment works;
+- the first request after inactivity succeeds without manual retry;
+- no critical credential exposure is identified;
+- zero-cost operation remains predictable;
+- infrastructure provisioning is reproducible;
+- resource destruction is validated.
+
+Render will be rejected when any critical requirement fails, including:
+
+- repeated first-request failure after inactivity;
+- requirement for manual user retry;
+- uncontrolled billing risk;
+- failed Neon integration;
+- unreliable deployment behavior;
+- unacceptable infrastructure-automation dependency risk;
+- credential exposure.
