@@ -6,7 +6,7 @@ resource "render_web_service" "api" {
   runtime_source = {
     docker = {
       repo_url        = "https://github.com/DanielaDoliveira/GameMarketIntelligence"
-      branch          = "develop"
+      branch          = "main"
       auto_deploy     = true
       dockerfile_path = "./Dockerfile"
       context         = "."
