@@ -23,10 +23,7 @@ builder.Services.AddApplication();
 builder.Services.AddInfrastructure();
 
 builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
-
-var app = builder.Build();
 
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
@@ -34,59 +31,58 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
         ForwardedHeaders.XForwardedFor |
         ForwardedHeaders.XForwardedProto;
 
-    options.KnownNetworks.Clear();
+    options.KnownIPNetworks.Clear();
     options.KnownProxies.Clear();
 });
 
-app.MapOpenApi();
-    app.MapScalarApiReference();
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-
-
-    app.MapPost(
-    "/development/data-sources/seed",
-    async (
-        GameMarketIntelDbContext dbContext,
-        CancellationToken cancellationToken) =>
-    {
-        var reliability = new SourceReliability(
-            ReliabilityLevel.PublicDirect,
-            "Dados obtidos diretamente de uma fonte pública.",
-            "Os dados não representam vendas ou receita.");
-
-        var dataSource = new DataSource(
-            "Steam Web API",
-            "https://partner.steamgames.com/",
-            reliability,
-            attributionRequired: false,
-            licenseNotes: "Uso sujeito aos termos oficiais da Steam.");
-
-        await dbContext.DataSources.AddAsync(
-            dataSource,
-            cancellationToken);
-
-        await dbContext.SaveChangesAsync(
-            cancellationToken);
-
-        return Results.Created(
-            $"/api/data-sources/{dataSource.Id}",
-            new
-            {
-                dataSource.Id,
-                dataSource.Name
-            });
-    });
-}
+var app = builder.Build();
 
 app.UseForwardedHeaders();
+
+app.MapOpenApi();
+app.MapScalarApiReference();
+
+if (app.Environment.IsDevelopment())
+{
+    app.MapPost(
+        "/development/data-sources/seed",
+        async (
+            GameMarketIntelDbContext dbContext,
+            CancellationToken cancellationToken) =>
+        {
+            var reliability = new SourceReliability(
+                ReliabilityLevel.PublicDirect,
+                "Dados obtidos diretamente de uma fonte pública.",
+                "Os dados não representam vendas ou receita.");
+
+            var dataSource = new DataSource(
+                "Steam Web API",
+                "https://partner.steamgames.com/",
+                reliability,
+                attributionRequired: false,
+                licenseNotes: "Uso sujeito aos termos oficiais da Steam.");
+
+            await dbContext.DataSources.AddAsync(
+                dataSource,
+                cancellationToken);
+
+            await dbContext.SaveChangesAsync(
+                cancellationToken);
+
+            return Results.Created(
+                $"/api/data-sources/{dataSource.Id}",
+                new
+                {
+                    dataSource.Id,
+                    dataSource.Name
+                });
+        });
+}
 
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
+
 app.MapDataSourceEndpoints();
-
-
 
 app.Run();
