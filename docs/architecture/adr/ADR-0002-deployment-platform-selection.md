@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed
+Accepted
 
 ## Context
 
@@ -129,39 +129,59 @@ Reason for not shortlisting:
 
 ## Decision
 
-Render Free is selected as the primary candidate for the API hosting proof of concept.
+## Decision
 
-Final acceptance depends on successful validation of:
+Render Free is selected as the API hosting platform for the GameMarketIntel zero-cost phase.
 
-- ASP.NET Core deployment;
-- secure Neon connectivity;
-- GitHub continuous deployment;
+The proof of concept validated:
+
+- ASP.NET Core deployment through Docker;
+- secure connectivity to Neon PostgreSQL;
 - managed HTTPS;
 - protected environment variables;
-- first-request success after inactivity;
-- acceptable warm and cold latency;
-- absence of credential exposure;
-- predictable zero-cost operation;
-- Terraform provisioning and destruction.
+- GitHub-based continuous deployment from the `main` branch;
+- successful first-request recovery after inactivity;
+- acceptable warm-request latency;
+- deployment and runtime observability;
+- visible network usage;
+- explicit Free-instance configuration;
+- Terraform-based initial provisioning.
+
+The first request after more than 15 minutes of inactivity completed successfully in approximately 23.64 seconds without requiring a manual retry.
+
+Three measured warm requests completed in:
+
+- 770.66 ms;
+- 857.45 ms;
+- 355.96 ms.
+
+The measured warm-request average was 661.36 ms.
+
+The cold-start delay is accepted because the original request remained successful and can be communicated through appropriate loading feedback in the frontend.
 
 Azure App Service F1 remains a documented fallback.
+
+Terraform support is accepted with a known limitation: initial provisioning succeeded, but a later Free-plan service update triggered unsupported maintenance-mode behavior in the provider. Manual configuration and Terraform state refresh remain documented fallback procedures.
 
 ## Consequences
 
 Positive consequences:
 
-- reduced operational complexity;
-- straightforward GitHub-based deployment;
-- compatibility with the current ASP.NET Core architecture;
-- no required migration away from Neon PostgreSQL;
-- faster proof-of-concept execution.
+- the first request after inactivity remained successful;
+- infrastructure recovery did not require manual user retry;
+- public API documentation can remain available through Scalar;
+- deployment events and usage metrics are visible in the Render dashboard.
 
 Negative consequences:
 
-- idle suspension may introduce cold-start latency;
+### Negative
+
+- idle suspension introduces noticeable cold-start latency;
+- user-facing loading feedback is required during service startup;
 - Free-plan limits require monitoring;
-- final provider acceptance remains dependent on PoC evidence;
-- Terraform support must be validated before infrastructure automation is accepted.
+- Terraform updates may require a documented manual fallback for unsupported Free-plan properties;
+- long-term availability depends on the continued suitability of the Render Free plan;
+- API availability also depends on Neon PostgreSQL availability.
 
 ## Validation
 
