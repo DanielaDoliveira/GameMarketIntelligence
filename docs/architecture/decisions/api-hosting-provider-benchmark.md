@@ -77,7 +77,8 @@ A provider may be rejected without completing all tests when a critical requirem
 | Operations | Simple rollback or redeployment | Medium |
 | Networking | Managed HTTPS | Critical |
 | Networking | Custom-domain support | Medium |
-
+| Render | Infrastructure provisioning | The Free Web Service should be created successfully through Terraform with Docker deployment, GitHub integration, and protected environment variables | The Render Web Service was created successfully through Terraform in approximately 5 seconds | Provisioning: 5 s | Passed | Service created on the Free plan and linked to the `develop` branch; deployment completion and application availability remained under validation |
+| Render | Public API deployment and Neon integration | The ASP.NET Core API should deploy successfully, start in Production, connect securely to Neon PostgreSQL, and return persisted data through `GET /api/data-sources` | The Docker deployment completed successfully, the API became publicly available through managed HTTPS, connected to Neon, and returned the persisted data correctly | Not recorded | Passed | Deployment validated through the public Render URL; no provider-specific application architecture changes were required |
 ## Preliminary Assessment
 
 | Criterion | Render Free |
