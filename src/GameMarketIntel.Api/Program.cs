@@ -7,7 +7,7 @@ using Scalar.AspNetCore;
 using GameMarketIntel.Infrastructure;
 using GameMarketIntel.Application;
 using GameMarketIntel.Api.Endpoints;
-
+using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,7 +28,17 @@ builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-    app.MapOpenApi();
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders =
+        ForwardedHeaders.XForwardedFor |
+        ForwardedHeaders.XForwardedProto;
+
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
+app.MapOpenApi();
     app.MapScalarApiReference();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -69,6 +79,8 @@ if (app.Environment.IsDevelopment())
             });
     });
 }
+
+app.UseForwardedHeaders();
 
 app.UseHttpsRedirection();
 
