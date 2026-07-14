@@ -215,7 +215,9 @@ Validate:
 |---|---|---|---|---:|---|---|
 | Render | Local Docker deployment validation | The production Docker image should build successfully, start on Linux, receive the Neon connection string through an environment variable, and execute `GET /api/data-sources` | The Linux image built successfully, the ASP.NET Core API started in the Production environment on port 10000, connected securely to Neon, executed the EF Core query, and returned the persisted data successfully | Database command: 148 ms | Passed | Local validation completed before Render provisioning; non-blocking container warnings were identified for port configuration, local HTTPS redirection, and optional GSSAPI library availability |
 | Render | Terraform service update | The existing Free Web Service should accept configuration updates without unintended provider-side changes | Changing the deployment branch from `develop` to `main` through Terraform failed because the provider attempted to configure maintenance mode, which is unsupported on Free services. The branch was updated manually in the Render dashboard and the Terraform state was refreshed afterward | Not recorded | Partially passed | Initial provisioning succeeded, but provider behavior introduced an unsupported maintenance-mode update during a later change. Manual fallback was available |
-
+| Render | Idle startup and first-request recovery | After more than 15 minutes without traffic, the suspended Free Web Service should resume automatically and complete the original API request without requiring a manual retry | After more than 15 minutes of inactivity, the first request completed successfully in 23,637.75 ms and returned the persisted Neon data without an error or manual retry. The following requests completed in 1,221.81 ms and 794.84 ms | Cold: 23,637.75 ms; subsequent average: 1,008.33 ms | Passed | Idle startup introduced noticeable latency but preserved the original request. The cold request was approximately 23.4× slower than the average of the next two requests. User-facing loading feedback is required to communicate progress during startup |
+| Render | Warm-request latency | Requests made after the Free Web Service resumed should complete consistently and substantially faster than the idle-start request | Three warm requests completed successfully in 770.66 ms, 857.45 ms, and 355.96 ms | Warm average: 661.36 ms | Passed | Warm responses remained below one second on average. The idle-start request was approximately 35.7× slower than the measured warm average |
+| Render | Secret and repository protection | Database credentials, Render credentials, Terraform variables, and Terraform state should remain outside the repository and should not be exposed in deployment or runtime logs | The Neon connection string and ASP.NET Core environment were configured as protected Render environment variables, sensitive values were masked in the dashboard, Terraform variables and state remained ignored, and no credential was observed in deployment or runtime logs | Not recorded | Passed | Validated through the Render Environment page, Git ignore checks, tracked-file inspection, deployment logs, and runtime logs |
 ## Decision Rule
 
 Render will be accepted when:
@@ -238,3 +240,38 @@ Render will be rejected when any critical requirement fails, including:
 - unreliable deployment behavior;
 - unacceptable infrastructure-automation dependency risk;
 - credential exposure.
+
+## Final PoC Result
+
+| Provider | Result | Main Strength | Main Risk |
+|---|---|---|---|
+| Render Free | Passed | Simple Docker-based deployment, GitHub continuous deployment, secure Neon integration, managed HTTPS, successful first-request recovery after inactivity, and low operational complexity | Noticeable cold-start latency after inactivity and partial Terraform update compatibility on the Free plan |
+
+## Final Decision
+
+Render Free is accepted as the API hosting platform for the GameMarketIntel zero-cost phase.
+
+The provider met the critical requirements:
+
+- the ASP.NET Core API was deployed successfully through Docker;
+- the API connected securely to Neon PostgreSQL;
+- public HTTPS connectivity worked correctly;
+- GitHub-based continuous deployment was validated;
+- the first request after inactivity completed successfully without requiring a manual retry;
+- warm-request latency remained acceptable;
+- sensitive configuration remained protected;
+- deployment events, logs, network usage, and service status were visible;
+- the Free instance type remained explicitly configured;
+- initial Terraform provisioning completed successfully.
+
+The observed cold-start latency is accepted because the original request completed successfully and can be supported through appropriate user-facing loading feedback.
+
+Terraform compatibility is accepted with a documented limitation. Initial service provisioning succeeded, but a later Free-plan update attempted to apply unsupported maintenance-mode configuration. A manual dashboard update and Terraform state refresh were available as a fallback.
+
+Render should be reevaluated when:
+
+- cold-start behavior becomes unacceptable for production usage;
+- Free-plan limits are approached;
+- traffic growth requires higher availability;
+- Terraform update limitations affect routine infrastructure management;
+- operational requirements exceed the Free service capabilities.

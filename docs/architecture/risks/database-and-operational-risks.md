@@ -28,3 +28,12 @@ The register should be reviewed when storage or compute usage grows materially, 
 - Raw source artifacts and backups must remain outside version control and outside the operational database.
 - A direct database connection should be used for migration and backup operations; the pooled connection should be used for normal runtime access.
 - A provider migration or paid-plan decision should happen before capacity becomes an incident.
+## API Hosting Risks
+
+| Risk | Impact | Mitigation | Trigger | Contingency |
+|---|---|---|---|---|
+| Render Free cold start | The first request after inactivity may take more than 20 seconds | Provide persistent loading feedback, communicate startup progress, and avoid presenting the delay as an application failure | Repeated startup latency affects user experience or abandonment | Evaluate paid always-on hosting or another provider |
+| Render Free usage limits | Service availability may be affected when Free-plan allowances are exhausted | Monitor instance usage, outbound bandwidth, build usage, and workspace limits | Sustained growth approaches the available Free allowance | Reduce unnecessary traffic, optimize responses, or evaluate a paid hosting plan |
+| Terraform Free-plan update limitation | Some infrastructure updates may fail because unsupported properties are sent by the provider | Review every Terraform plan, document manual fallback procedures, and refresh state after approved manual changes | Routine infrastructure changes repeatedly require manual intervention | Reevaluate Render Blueprints, provider versions, or another hosting platform |
+| External provider dependency | API availability depends on both Render and Neon | Monitor both services, preserve portable deployment and database configurations, and document recovery procedures | Repeated provider outages or service degradation | Redeploy the Dockerized API to another compatible provider and restore PostgreSQL data from portable backups |
+| Public image URL availability | External images may become unavailable or change | Store source URLs and attribution metadata, validate links during collection, and use fallback images in the frontend | Broken image rates become operationally relevant | Replace unavailable sources or introduce controlled image hosting |
