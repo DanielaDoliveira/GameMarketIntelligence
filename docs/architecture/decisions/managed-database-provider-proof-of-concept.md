@@ -170,6 +170,12 @@ A provider should not be accepted for the zero-cost phase when unexpected paid u
 | Azure SQL Database | Existing domain entities, repositories, services, DTO mapping, and endpoint behavior were preserved; runtime configuration changed from Npgsql to the EF Core SQL Server provider | Existing PostgreSQL migrations were not reusable directly; a clean SQL Server-specific migration was generated because provider-specific types differed | Terraform used for the resource group and Azure SQL logical server; Azure CLI was required for explicit Free-limit and `AutoPause` database configuration | Region availability must be validated before provisioning; post-provisioning verification of `FreeLimit = True` and `ExhaustionBehavior = AutoPause` is mandatory; repeated first-request failures after serverless pause made the Free Serverless configuration unsuitable for the zero-cost phase |
 
 
+| Provider | Test | Expected Result | Observed Result | Duration | Status | Notes |
+|---|---|---|---|---:|---|---|
+| Neon | ... | ... | ... | ... | ... | ... |
+| Azure SQL Database | Serverless resume behavior | ... | ... | ... | Failed | ... |
+| Azure SQL Database | Infrastructure destruction | All PoC resources should be removed reproducibly and no Azure SQL infrastructure should remain active | `terraform destroy` removed all Terraform-managed resources. The Terraform state became empty, the resource group returned `ResourceGroupNotFound`, and the SQL logical server was no longer listed by Azure CLI | Not recorded | Passed | The database created through Azure CLI was removed together with the SQL logical server and resource group |
+
 ### Azure SQL Free Database Provisioning Template
 
 The Azure SQL logical server is provisioned through Terraform. The database is created separately through Azure CLI because the AzureRM resource does not expose the free-offer configuration with the same explicit controls used by the Azure CLI.
