@@ -214,6 +214,7 @@ Validate:
 | Provider | Test | Expected Result | Observed Result | Duration | Status | Notes |
 |---|---|---|---|---:|---|---|
 | Render | Local Docker deployment validation | The production Docker image should build successfully, start on Linux, receive the Neon connection string through an environment variable, and execute `GET /api/data-sources` | The Linux image built successfully, the ASP.NET Core API started in the Production environment on port 10000, connected securely to Neon, executed the EF Core query, and returned the persisted data successfully | Database command: 148 ms | Passed | Local validation completed before Render provisioning; non-blocking container warnings were identified for port configuration, local HTTPS redirection, and optional GSSAPI library availability |
+| Render | Terraform service update | The existing Free Web Service should accept configuration updates without unintended provider-side changes | Changing the deployment branch from `develop` to `main` through Terraform failed because the provider attempted to configure maintenance mode, which is unsupported on Free services. The branch was updated manually in the Render dashboard and the Terraform state was refreshed afterward | Not recorded | Partially passed | Initial provisioning succeeded, but provider behavior introduced an unsupported maintenance-mode update during a later change. Manual fallback was available |
 
 ## Decision Rule
 
