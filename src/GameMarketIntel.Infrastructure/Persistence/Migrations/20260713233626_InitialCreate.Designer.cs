@@ -3,16 +3,16 @@ using System;
 using GameMarketIntel.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
 namespace GameMarketIntel.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(GameMarketIntelDbContext))]
-    [Migration("20260710185813_InitialCreate")]
+    [Migration("20260713233626_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -21,36 +21,36 @@ namespace GameMarketIntel.Infrastructure.Persistence.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasAnnotation("ProductVersion", "10.0.9")
-                .HasAnnotation("Relational:MaxIdentifierLength", 63);
+                .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
-            NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+            SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
             modelBuilder.Entity("GameMarketIntel.Domain.Entities.DataSource", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
+                        .HasColumnType("uniqueidentifier")
                         .HasColumnName("id");
 
                     b.Property<bool>("AttributionRequired")
-                        .HasColumnType("boolean")
+                        .HasColumnType("bit")
                         .HasColumnName("attribution_required");
 
                     b.Property<string>("LicenseNotes")
                         .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)")
+                        .HasColumnType("nvarchar(2000)")
                         .HasColumnName("license_notes");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(150)
-                        .HasColumnType("character varying(150)")
+                        .HasColumnType("nvarchar(150)")
                         .HasColumnName("name");
 
                     b.Property<string>("Url")
                         .IsRequired()
                         .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
+                        .HasColumnType("nvarchar(500)")
                         .HasColumnName("url");
 
                     b.HasKey("Id");
@@ -63,23 +63,23 @@ namespace GameMarketIntel.Infrastructure.Persistence.Migrations
                     b.OwnsOne("GameMarketIntel.Domain.ValueObjects.SourceReliability", "Reliability", b1 =>
                         {
                             b1.Property<Guid>("DataSourceId")
-                                .HasColumnType("uuid");
+                                .HasColumnType("uniqueidentifier");
 
                             b1.Property<string>("Level")
                                 .IsRequired()
                                 .HasMaxLength(50)
-                                .HasColumnType("character varying(50)")
+                                .HasColumnType("nvarchar(50)")
                                 .HasColumnName("reliability_level");
 
                             b1.Property<string>("Limitations")
                                 .HasMaxLength(2000)
-                                .HasColumnType("character varying(2000)")
+                                .HasColumnType("nvarchar(2000)")
                                 .HasColumnName("reliability_limitations");
 
                             b1.Property<string>("Reason")
                                 .IsRequired()
                                 .HasMaxLength(500)
-                                .HasColumnType("character varying(500)")
+                                .HasColumnType("nvarchar(500)")
                                 .HasColumnName("reliability_reason");
 
                             b1.HasKey("DataSourceId");

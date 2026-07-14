@@ -12,13 +12,14 @@ using GameMarketIntel.Api.Endpoints;
 var builder = WebApplication.CreateBuilder(args);
 
 var connectionString =
-    builder.Configuration.GetConnectionString("DefaultConnection")
+    builder.Configuration.GetConnectionString("AzureSqlConnection")
     ?? throw new InvalidOperationException(
-        "A connection string 'DefaultConnection' não foi configurada.");
-
+        "A connection string 'AzureSqlConnection' não foi configurada.");
 builder.Services.AddDbContext<GameMarketIntelDbContext>(options =>
-    options.UseNpgsql(connectionString));
-
+    options.UseSqlServer(
+        connectionString,
+        sqlServerOptions =>
+            sqlServerOptions.EnableRetryOnFailure()));
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure();
 

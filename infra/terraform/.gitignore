@@ -28,3 +28,10 @@ crash.*.log
 
 # Planos gerados localmente
 *.tfplan
+
+# Arquivos temporários de CLI
+terraform.rc
+.terraformrc
+
+# Arquivos de log da CLI
+terraform.log
