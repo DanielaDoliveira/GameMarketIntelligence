@@ -2,184 +2,212 @@
 
 ## Status
 
-Proposed
+Accepted
+
+## Date
+
+2026-07-14
 
 ## Context
 
-GameMarketIntel requires a managed relational database for its production environment.
+GameMarketIntel requires a managed relational database for its public portfolio environment.
 
-The database will support:
+The database must support:
 
-- persistence of collected market data;
-- storage of data source metadata;
-- historical snapshots;
-- API queries;
-- scheduled data collection jobs;
+- collected market data;
+- data-source metadata and reliability information;
+- historical metric snapshots;
+- derived market signals;
+- API read and write operations;
+- scheduled collection jobs;
 - future analytical workloads.
 
-The project is intended to remain publicly available with no mandatory operating cost during its initial portfolio phase.
+The initial phase has a strict zero-mandatory-cost objective. The selected solution must therefore balance application reliability, billing predictability, Entity Framework Core compatibility, infrastructure automation, operational sustainability, and long-term portability.
 
-The initial architecture proposed Neon PostgreSQL as the managed database provider.
+The initial architecture used PostgreSQL with Npgsql and Entity Framework Core. Neon PostgreSQL, Supabase PostgreSQL, Aiven PostgreSQL, and Azure SQL Database were considered. The evaluation included provider research, benchmark criteria, and practical proof-of-concept evidence.
 
-However, this choice has not yet been validated through a structured comparison or technical proof of concept.
-
-The evaluation was initially limited to managed PostgreSQL providers.
-
-During the research phase, Azure SQL Database was added as a candidate because it provides:
-
-- a relational database model;
-- official Entity Framework Core support;
-- official Terraform support;
-- substantially larger Free-offer storage capacity;
-- strong compatibility with the .NET ecosystem.
-
-The final decision should therefore evaluate managed relational database solutions rather than requiring a specific database engine in advance.
-
-Before provisioning the production database, the candidate providers will be evaluated against the project requirements, operational constraints, cost objectives, security requirements, and expected long-term data growth.
+Azure SQL Database was included because of its official .NET and Terraform support, explicit Free-offer controls, and larger storage allowance. A dedicated proof of concept validated provisioning, Free-limit configuration, SQL Server-specific migrations, and application persistence.
 
 ## Decision Drivers
 
-The selected provider should be evaluated according to the following criteria:
+The selected provider should provide:
 
-- sustainable Free offering;
-- low risk of unexpected billing;
-- compatibility with the GameMarketIntel relational model;
-- Entity Framework Core compatibility;
-- migration effort from the current persistence implementation;
-- storage capacity;
-- compute capacity;
-- connection limits and pooling behavior;
-- behavior after periods of inactivity;
-- backup and recovery capabilities;
-- Terraform support;
-- maturity of the Terraform provider;
-- provider ownership and dependency trust;
-- integration with Render;
-- secure connection and credential management;
-- operational complexity;
-- support for scheduled data collection jobs;
-- support for historical market-data growth;
-- vendor lock-in;
-- application portability;
-- suitability for a public portfolio application.
+- no mandatory operating cost during the initial portfolio phase;
+- controlled billing risk;
+- reliable first-request behavior for a public application;
+- compatibility with the current domain and persistence model;
+- strong Entity Framework Core support;
+- low migration and maintenance effort;
+- secure credential handling;
+- infrastructure automation support;
+- operational visibility;
+- backup and recovery capability;
+- reasonable support for historical data growth;
+- limited vendor lock-in;
+- a practical migration path if project requirements outgrow the Free plan.
 
 ## Considered Options
 
-The evaluation will consider:
+### Neon PostgreSQL
 
-- Neon PostgreSQL;
-- Supabase PostgreSQL;
-- Aiven PostgreSQL;
-- Azure SQL Database;
-- other managed relational database solutions only if they satisfy the project constraints.
+Strengths:
 
-## Evaluation
+- preserved the current PostgreSQL, Npgsql, and Entity Framework Core implementation;
+- existing migrations executed without modification;
+- automatic wake-up completed without requiring a manual second request;
+- pooled runtime connectivity was validated;
+- monitoring and usage data were visible;
+- standard PostgreSQL backup and restore were validated with `pg_dump` and `pg_restore`;
+- database portability remained high.
 
-The providers will be compared through:
+Trade-offs:
 
-1. documented provider research;
-2. a weighted benchmark;
-3. a limited technical proof of concept;
-4. documented operational and security analysis.
+- limited Free-plan storage;
+- Free-plan compute and transfer limits;
+- Terraform integration depends on a community-maintained provider;
+- capacity must be monitored as historical data grows.
 
-The proof of concept should validate:
+### Azure SQL Database Free Serverless
 
-1. database provisioning;
-2. secure authentication and secret handling;
-3. connection from the ASP.NET Core API;
-4. Entity Framework Core provider compatibility;
-5. migration execution;
-6. schema creation;
-7. persistence and retrieval of application data;
-8. execution of `GET /api/data-sources`;
-9. compatibility with the planned Render deployment;
-10. Terraform provisioning experience;
-11. Terraform provider behavior;
-12. Free-offer limitations;
-13. inactivity and wake-up or restoration behavior;
-14. connection recovery;
-15. backup or export capability;
-16. operational risks;
-17. billing safeguards.
+Strengths:
 
-The central question is:
+- strong .NET and Azure ecosystem integration;
+- official Entity Framework Core SQL Server provider;
+- official tooling for core infrastructure;
+- explicit Free-limit and automatic-pause controls;
+- larger storage allowance than Neon Free.
 
-> Can this managed database solution support GameMarketIntel reliably, securely, and sustainably, with no mandatory operating cost and without introducing unacceptable technical or operational risk?
+Trade-offs and failure:
+
+- required a different Entity Framework Core provider and SQL Server-specific migrations;
+- required provider-specific database mappings;
+- database creation required Azure CLI to expose the intended Free-limit controls explicitly;
+- regional provisioning availability required adjustment;
+- repeated resume tests caused the first valid API request to fail with an internal server error while the database resumed;
+- a second manual request was required before the API returned data.
+
+The repeated first-request failure was classified as a critical availability and user-experience failure for the public zero-cost phase.
+
+### Supabase PostgreSQL and Aiven PostgreSQL
+
+These providers remained part of the research and benchmark scope but were not taken through the same full application proof of concept after Neon passed the required technical validations and Azure SQL exposed a decisive critical failure.
+
+They remain fallback candidates if Neon becomes operationally unsuitable or its plan conditions materially change.
 
 ## Decision
 
-Not decided yet.
+Use **Neon PostgreSQL** as the managed database provider for the GameMarketIntel zero-cost portfolio phase.
 
-The final provider will be selected after the benchmark and proof of concept are completed.
+Continue using:
+
+- PostgreSQL;
+- Npgsql;
+- Entity Framework Core PostgreSQL provider;
+- existing PostgreSQL migrations;
+- a direct Neon connection for migrations and backup operations;
+- a pooled Neon connection for normal application runtime;
+- protected environment variables or .NET User Secrets for credentials;
+- Terraform for supported infrastructure automation;
+- portable PostgreSQL backup and restore procedures.
+
+Do not use Azure SQL Database Free Serverless for this phase.
+
+This decision rejects the tested Free Serverless configuration for the current product constraints; it does not reject Azure SQL Database as a technology or paid compute configurations that remain continuously available.
 
 ## Consequences
 
-To be completed after the decision.
+### Positive
 
-The final decision may affect:
+- no database-engine migration is required;
+- current domain, repository, service, DTO, and endpoint boundaries are preserved;
+- existing migrations remain valid;
+- application and operational complexity remain lower;
+- cold access may be slower than warm access but does not require a second manual user request in the validated scenario;
+- standard PostgreSQL tooling provides a tested backup, restoration, and migration path;
+- provider replacement remains feasible because the application avoids unnecessary Neon-specific persistence features.
 
-- the Entity Framework Core database provider;
-- migration strategy;
-- local development infrastructure;
-- Terraform resources;
-- deployment configuration;
-- connection management;
-- backup procedures;
-- operational monitoring;
-- long-term database portability.
+### Negative
 
-## Risks
+- Free-plan storage is limited and must be actively monitored;
+- historical market data may eventually require aggregation, archival, a paid plan, or migration;
+- Free-plan compute and network-transfer limits may affect availability as usage grows;
+- the Terraform provider is community-maintained and must be pinned and periodically reviewed;
+- the Free plan is suitable for the current portfolio phase but should not be assumed to satisfy future production service-level requirements.
 
-Current risks under evaluation include:
+## Storage and Data-Growth Strategy
 
-- provider inactivity or automatic suspension;
-- cold-start or resume latency;
-- manual restoration requirements;
-- connection exhaustion;
-- Free-offer limitations;
-- provider policy changes;
-- insufficient Terraform support;
-- dependency on a community-maintained Terraform provider;
-- interruption of provider maintenance;
-- operational dependency on provider-specific features;
-- database-engine migration effort;
-- provider-specific migrations;
-- increased vendor lock-in;
-- exposure of credentials through Terraform state;
-- unexpected billing;
-- insufficient storage for long-term historical data;
-- monthly compute exhaustion;
-- public application unavailability.
+The operational database will store structured, normalized, application-ready data.
 
-## Mitigations
+The following data should remain in Neon:
 
-Current planned mitigations include:
+- domain entities;
+- metric snapshots required by product features;
+- source metadata;
+- source reliability information;
+- derived market signals;
+- references to external assets.
 
-- keeping credentials outside the repository;
-- treating Terraform state as sensitive;
-- using protected environment variables for runtime credentials;
-- pinning Terraform provider versions;
-- committing `.terraform.lock.hcl`;
-- reviewing provider ownership, releases, and maintenance activity;
-- validating provider limits before production use;
-- documenting operational constraints;
-- avoiding unnecessary provider-specific application features;
-- keeping database-specific implementation details inside the Infrastructure layer;
-- avoiding provider-specific SQL when practical;
-- preserving repository abstractions;
-- keeping business rules outside the persistence layer;
-- defining a historical-data retention and aggregation strategy;
-- validating backup and export procedures;
-- configuring billing safeguards before provisioning;
-- reviewing every `terraform plan` before `terraform apply`.
+The following data should not be stored as database binary content:
 
-## References
+- images; store image URLs instead;
+- raw CSV files;
+- raw API JSON payloads after validation and transformation;
+- HTML captures;
+- PDFs;
+- database dump files.
 
-Supporting evidence will be maintained in:
+Storage growth will be reviewed using the Neon dashboard and PostgreSQL size queries. Internal review thresholds are:
 
-- `managed-database-provider-benchmark.md`;
-- `managed-database-poc.md`;
-- provider research documents;
-- PoC evidence records.
+- 50% utilization: begin growth review;
+- 70% utilization: prepare and prioritize retention, aggregation, archival, migration, or plan-upgrade actions;
+- 80% utilization: execute the selected capacity action before importing additional large datasets.
 
-This ADR will be updated before its status changes from `Proposed` to `Accepted`.
+These are project governance thresholds, not provider guarantees.
+
+## Risks and Mitigations
+
+| Risk | Mitigation |
+|---|---|
+| Free-plan storage exhaustion | Store only structured application data, use image URLs, exclude raw artifacts, monitor table and index growth, define retention rules, and act before the 80% threshold |
+| Historical-data growth | Aggregate data only when product requirements allow it, archive exportable history outside the operational database, and preserve a provider migration path |
+| Compute or transfer limit exhaustion | Monitor provider usage, keep queries efficient, cache static content where appropriate, and reassess the hosting plan before limits become operational failures |
+| Community Terraform provider dependency | Pin provider versions, commit the lock file, review releases and maintenance, and document manual provisioning fallback procedures |
+| Provider policy or pricing changes | Revalidate limits periodically and maintain portable PostgreSQL backups and provider-neutral application boundaries |
+| Credential or Terraform-state exposure | Keep secrets outside the repository, use protected environment variables, treat state as sensitive, and rotate credentials when required |
+| Backup or recovery failure | Run `pg_dump` through a direct connection, keep backups outside version control, and validate `pg_restore` periodically |
+| External image URL failure | Store source and attribution metadata, use stable HTTPS URLs, validate URLs during collection, and define a replacement or archival policy when sources disappear |
+
+Detailed operational risks are maintained in `../risks/database-and-data-operational-risks.md`.
+
+## Validation Evidence
+
+The decision is supported by:
+
+- Terraform provisioning evidence;
+- Entity Framework Core migration evidence;
+- application read and write evidence;
+- cold and warm latency measurements;
+- pooled runtime connectivity;
+- secret and repository checks;
+- monitoring and usage visibility;
+- portable backup export;
+- isolated backup restoration;
+- repeated Azure SQL Free Serverless resume tests.
+
+See:
+
+- `../decisions/managed-database-provider-proof-of-concept.md`;
+- `../risks/database-and-data-operational-risks.md`;
+- the managed database benchmark and provider research documents.
+
+## Review Conditions
+
+Review this ADR when any of the following occurs:
+
+- Neon storage reaches 70% of the current Free-plan allowance;
+- compute or network limits affect application availability;
+- the provider materially changes Free-plan limits, billing behavior, or service availability;
+- the application becomes a production service with stronger availability requirements;
+- historical-data requirements make the current retention model unsuitable;
+- the community Terraform provider becomes unmaintained or unreliable;
+- a paid database budget is approved.
