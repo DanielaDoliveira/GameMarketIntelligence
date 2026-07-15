@@ -111,5 +111,13 @@ public class PlatformTests
 
         action.ShouldThrow<ArgumentException>();
     }
+    [Fact]
+    public void Constructor_ShouldCreateNormalizedName()
+    {
+        var platform = new Platform("  pLaYsTaTiOn 5  ");
+
+        platform.Name.ShouldBe("pLaYsTaTiOn 5");
+        platform.NormalizedName.ShouldBe("PLAYSTATION 5");
+    }
 
 }

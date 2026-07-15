@@ -1,5 +1,6 @@
 ﻿namespace GameMarketIntel.Domain.Entities;
 
+using GameMarketIntel.Domain.Common;
 public sealed class Platform
 {
     public Guid Id { get; private set; }
@@ -11,6 +12,7 @@ public sealed class Platform
     public string? Manufacturer { get; private set; }
 
     public string? ImageUrl { get; private set; }
+    public string NormalizedName { get; private set; } = string.Empty;
 
     private Platform()
     {
@@ -31,6 +33,7 @@ public sealed class Platform
 
         Id = Guid.NewGuid();
         Name = name.Trim();
+        NormalizedName = NameNormalizer.Normalize(name);
         Family = NormalizeOptionalText(family);
         Manufacturer = NormalizeOptionalText(manufacturer);
         ImageUrl = ValidateAndNormalizeOptionalUrl(imageUrl);

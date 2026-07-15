@@ -48,4 +48,12 @@ public class GenreTests
         // Assert
         genre.Name.ShouldBe("Action");
     }
+    [Fact]
+    public void Constructor_ShouldCreateNormalizedName()
+    {
+        var genre = new Genre("  AcTion  ");
+
+        genre.Name.ShouldBe("AcTion");
+        genre.NormalizedName.ShouldBe("ACTION");
+    }
 }

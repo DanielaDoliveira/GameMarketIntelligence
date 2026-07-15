@@ -1,10 +1,12 @@
 ﻿
 namespace GameMarketIntel.Domain.Entities;
 
+using GameMarketIntel.Domain.Common;
 public sealed class Genre
 {
     public Guid Id { get; private set; }
     public string Name { get; private set; } = string.Empty;
+    public string NormalizedName { get; private set; } = string.Empty;
 
     public Genre(string name)
     {
@@ -12,5 +14,6 @@ public sealed class Genre
 
         Id = Guid.NewGuid();
         Name = name.Trim();
+        NormalizedName = NameNormalizer.Normalize(name);
     }
 }
