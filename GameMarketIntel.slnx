@@ -12,6 +12,7 @@
     <Project Path="tests/GameMarketIntel.Api.Tests/GameMarketIntel.Api.Tests.csproj" Id="876c5173-2474-4698-a19a-f96851c203cf" />
     <Project Path="tests/GameMarketIntel.Application.Tests/GameMarketIntel.Application.Tests.csproj" Id="2f8edb89-8004-4921-a8b2-8ef7d428752e" />
     <Project Path="tests/GameMarketIntel.Domain.Tests/GameMarketIntel.Domain.Tests.csproj" Id="ba553e7e-e44d-4a90-9918-489ade6b0f42" />
+    <Project Path="tests/GameMarketIntel.Infrastructure.IntegrationTests/GameMarketIntel.Infrastructure.IntegrationTests.csproj" Id="8678cc27-165f-4ae6-b5d1-dcc282307238" />
   </Folder>
   <Folder Name="/tests/Fixtures/">
     <File Path="ApiFactory.cs" />
