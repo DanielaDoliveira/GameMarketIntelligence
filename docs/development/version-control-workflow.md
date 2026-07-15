@@ -195,17 +195,19 @@ The `main` branch should already represent a validated and deployable state befo
 
 ## Branch Protection
 
-The `main` branch should require:
+The `main` branch is protected by a GitHub repository ruleset.
 
-- Pull Requests before merging;
-- successful required status checks;
-- successful unit tests;
-- successful critical integration tests;
-- resolved review discussions when applicable.
+The current protection requires:
 
-Direct pushes to `main` should remain disabled.
+- changes to enter through a Pull Request;
+- the `Build and Test` status check to complete successfully;
+- unit tests to pass;
+- critical infrastructure integration tests to pass;
+- direct pushes to remain disabled.
 
----
+The required `Build and Test` check is produced by the `Main Pull Request Validation` workflow.
+
+Any failure during restore, build, unit testing, database migration, or infrastructure integration testing blocks the merge.
 
 ## Current Strategy
 
@@ -220,3 +222,77 @@ The current GameMarketIntel strategy is:
 This strategy may be revised if the integration test suite grows significantly or begins to affect delivery time.
 
 Any future optimization should preserve the rule that critical integration validation occurs before code enters `main`.
+
+## Current Implementation
+
+The current implementation uses two GitHub Actions workflows.
+
+### `ci.yml`
+
+Trigger:
+
+```text
+Push to develop
+```
+
+Validation:
+
+- restore dependencies;
+- build the complete solution in Release mode;
+- execute unit tests;
+- exclude infrastructure integration tests.
+
+This workflow provides fast feedback during active development.
+
+### `main-pr-validation.yml`
+
+Trigger:
+
+```text
+Pull Request targeting main
+```
+
+Validation:
+
+- restore dependencies;
+- build the complete solution in Release mode;
+- execute unit tests;
+- create a temporary PostgreSQL container;
+- apply the EF Core migrations;
+- execute the critical infrastructure integration tests;
+- remove the temporary PostgreSQL container.
+
+The workflow reports the required status check:
+
+```text
+Build and Test
+```
+
+The `main` branch ruleset requires this check to complete successfully before merge.
+
+## Implemented Delivery Flow
+
+```text
+Push to develop
+        ↓
+CI
+├── Restore
+├── Build
+└── Unit Tests
+        ↓
+Completed delivery scope
+        ↓
+Pull Request: develop → main
+        ↓
+Main Pull Request Validation
+├── Restore
+├── Build
+├── Unit Tests
+└── Infrastructure Integration Tests
+        ↓
+Required Build and Test check succeeds
+        ↓
+Merge into main
+        ↓
+Continuous Deployment
+```

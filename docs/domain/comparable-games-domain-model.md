@@ -6,22 +6,57 @@ Define the initial domain model required to support the Comparable Games feature
 
 The model should provide enough information to support early production and market-analysis questions without introducing unnecessary complexity before real data sources and usage patterns are validated.
 
-The initial model is intentionally pragmatic and may evolve as data-source limitations, storage constraints, and product requirements become clearer.
+The model is intentionally pragmatic and may evolve as data-source limitations, storage constraints, and product requirements become clearer.
+
+## Current Status
+
+The first domain and persistence increment has been implemented.
+
+Implemented:
+
+- `Game`;
+- `Genre`;
+- `Platform`;
+- `Game` to `Genre` many-to-many relationship;
+- `Game` to `Platform` many-to-many relationship;
+- normalized-name uniqueness for genres;
+- normalized-name uniqueness for platforms;
+- EF Core configurations;
+- PostgreSQL migration;
+- domain unit tests;
+- PostgreSQL infrastructure integration tests.
+
+Not yet implemented:
+
+- game-to-source association;
+- external provider identifiers;
+- publisher modeling;
+- collection timestamps;
+- application use cases;
+- read contracts;
+- repositories;
+- API endpoints;
+- ingestion from a real external data source.
 
 ## Product Questions
 
-The first domain vertical should help answer:
+The current model starts supporting:
 
 - Which games may be considered comparable?
 - Which genres are associated with each game?
 - Which platforms are associated with each game?
-- When was each game initially released?
+- When was each game released?
+- What descriptive information is available for each game?
+
+Future increments should support:
+
 - Which publisher is associated with the game?
 - Which source provided the information?
 - When was the information collected?
 - Which limitations affect the interpretation of the data?
+- How does classification differ between external sources?
 
-The model should later support:
+The model should later enable:
 
 - comparable-game filtering;
 - genre-saturation analysis;
@@ -29,18 +64,24 @@ The model should later support:
 - platform comparison;
 - historical market indicators.
 
-## Domain Scope
+## Current Domain Scope
 
-The initial domain scope includes:
+The implemented scope includes:
 
 - `Game`;
 - `Genre`;
-- `Platform`;
-- `DataSource`;
-- future external identifiers;
-- future metric snapshots.
+- `Platform`.
 
-`DataSource` and `SourceReliability` already exist and provide traceability, licensing information, attribution requirements, and reliability context.
+The planned scope also includes:
+
+- `DataSource`;
+- source-specific external references;
+- future metric snapshots;
+- future market signals.
+
+`DataSource` and `SourceReliability` already exist elsewhere in the domain, but they are not yet associated with `Game`, `Genre`, or `Platform`.
+
+That association will be designed after the first production data source is selected.
 
 ## Game
 
@@ -48,29 +89,53 @@ The initial domain scope includes:
 
 Represents a game used in market comparison and analysis.
 
-### Initial Properties
+### Implemented Properties
 
 | Property | Required | Purpose |
 |---|---:|---|
 | `Id` | Yes | Internal identity |
-| `Title` | Yes | Public game title |
-| `Slug` | Yes | Normalized identifier used for URLs, lookup, and comparison |
-| `PrimaryReleaseDate` | No | Initial known release date used by the MVP |
-| `Publisher` | No | Main publisher associated with the game |
-| `PrimaryDataSourceId` | Yes | Main source used to create or maintain the record |
-| `CollectedAt` | Yes | Date and time when the record was collected or last refreshed |
+| `Name` | Yes | Display name of the game |
+| `Description` | No | Optional descriptive information |
+| `ReleaseDate` | No | Initial known release date |
+| `ImageUrl` | No | Optional external image reference |
+| `Genres` | No | Genres associated with the game |
+| `Platforms` | No | Platforms associated with the game |
+
+### Invariants and Normalization
+
+`Name`:
+
+- cannot be `null`;
+- cannot be empty;
+- cannot contain only whitespace;
+- is trimmed before storage.
+
+`Description`:
+
+- is optional;
+- empty or whitespace-only values become `null`;
+- surrounding whitespace is removed.
+
+`ImageUrl`:
+
+- is optional;
+- empty or whitespace-only values become `null`;
+- must be an absolute URL;
+- must use HTTP or HTTPS.
 
 ### Relationships
 
 - A game may have multiple genres.
 - A game may be available on multiple platforms.
-- A game has one primary data source in the MVP.
+- Duplicate associations are prevented by entity identity.
+- Relationship collections are exposed as read-only collections.
+- Removal and full synchronization behavior are deferred until the external-data strategy is defined.
 
-### MVP Assumptions
+### Release-Date Assumption
 
-`PrimaryReleaseDate` represents a simplified initial release date.
+`ReleaseDate` currently represents a simplified known release date.
 
-It does not attempt to represent:
+It does not yet represent:
 
 - regional release dates;
 - platform-specific release dates;
@@ -78,8 +143,6 @@ It does not attempt to represent:
 - ports;
 - remasters;
 - relaunches.
-
-The property name should make the simplification explicit.
 
 ### Future Evolution
 
@@ -95,34 +158,78 @@ GameRelease
 
 This should only be added when platform-specific or regional launch analysis becomes necessary.
 
+The following game properties also remain under evaluation:
+
+- publisher;
+- developer;
+- canonical slug;
+- source association;
+- collection timestamp;
+- source-specific external identifiers.
+
 ## Genre
 
 ### Purpose
 
 Represents a game genre used for filtering, comparison, aggregation, and saturation analysis.
 
-### Initial Properties
+### Implemented Properties
 
 | Property | Required | Purpose |
 |---|---:|---|
 | `Id` | Yes | Internal identity |
 | `Name` | Yes | Display name |
-| `NormalizedName` | Yes | Normalized value used for uniqueness, search, and comparison |
+| `NormalizedName` | Yes | Technical value used for lookup and uniqueness |
 
 ### Example
 
 ```text
+Received value:
+"  AcTion RPG  "
+
 Name:
-Action RPG
+AcTion RPG
 
 NormalizedName:
-action-rpg
+ACTION RPG
 ```
+
+`Name` preserves the display value, except for surrounding whitespace.
+
+`NormalizedName` is generated by:
+
+- trimming surrounding whitespace;
+- applying Unicode canonical normalization;
+- converting the value with invariant uppercase casing.
+
+It is used only for lookup, comparison, and database uniqueness.
 
 ### Relationships
 
 - A genre may be associated with multiple games.
 - A game may be associated with multiple genres.
+
+### Persistence Rule
+
+A unique PostgreSQL index exists on:
+
+```text
+Genre.NormalizedName
+```
+
+Therefore, values such as:
+
+```text
+Action
+action
+AcTiOn
+```
+
+cannot be persisted as separate genre records.
+
+The application layer will later check for an existing normalized name before attempting insertion.
+
+The database constraint remains the final protection against concurrency and duplicate persistence.
 
 ### Domain Considerations
 
@@ -130,7 +237,16 @@ Genre classification may differ between data sources.
 
 The MVP should preserve the selected internal classification while documenting the source and known limitations.
 
-Genre normalization should avoid creating duplicate concepts caused only by formatting or casing differences.
+Case and whitespace normalization solves formatting differences, but it does not solve semantic aliases.
+
+For example:
+
+```text
+Role-Playing Game
+RPG
+```
+
+may require a future source-specific mapping strategy.
 
 ### Future Evolution
 
@@ -149,12 +265,13 @@ These features should not be introduced before real source differences demonstra
 
 Represents a game platform used for filtering, market comparison, and platform-level analysis.
 
-### Initial Properties
+### Implemented Properties
 
 | Property | Required | Purpose |
 |---|---:|---|
 | `Id` | Yes | Internal identity |
 | `Name` | Yes | Platform display name |
+| `NormalizedName` | Yes | Technical value used for lookup and uniqueness |
 | `Family` | No | Product family or ecosystem |
 | `Manufacturer` | No | Platform manufacturer |
 | `ImageUrl` | No | External image reference |
@@ -164,6 +281,9 @@ Represents a game platform used for filtering, market comparison, and platform-l
 ```text
 Name:
 PlayStation 5
+
+NormalizedName:
+PLAYSTATION 5
 
 Family:
 PlayStation
@@ -175,14 +295,58 @@ ImageUrl:
 https://example.com/playstation-5.png
 ```
 
+### Invariants and Normalization
+
+`Name`:
+
+- is required;
+- is trimmed before storage.
+
+`NormalizedName`:
+
+- uses the same normalization strategy as `Genre.NormalizedName`;
+- is used for comparison and uniqueness;
+- is protected by a unique PostgreSQL index.
+
+`Family` and `Manufacturer`:
+
+- are optional;
+- empty or whitespace-only values become `null`;
+- surrounding whitespace is removed.
+
+`ImageUrl`:
+
+- is optional;
+- must be an absolute HTTP or HTTPS URL.
+
 ### Relationships
 
 - A platform may be associated with multiple games.
 - A game may be associated with multiple platforms.
 
+### Canonical Platform Decision
+
+`Platform` represents the internal canonical platform identity used by GameMarketIntel.
+
+External provider names must not automatically define new canonical platforms.
+
+For example:
+
+```text
+PlayStation 5
+PS5
+Sony PlayStation 5
+```
+
+may represent the same internal platform even though name normalization alone cannot determine that equivalence.
+
+Case-only differences are handled by `NormalizedName`.
+
+Semantic aliases require future source-specific mappings.
+
 ### Storage Decision
 
-Platform images should be stored as URLs rather than binary content.
+Platform images are stored as URLs rather than binary content.
 
 This reduces:
 
@@ -197,29 +361,70 @@ The frontend should provide a fallback image when an external URL becomes unavai
 
 The model may later support:
 
+- source-specific platform references;
+- platform aliases;
 - platform generation;
 - release date;
 - lifecycle status;
 - platform type;
 - official platform identifiers.
 
-These properties should be added only when required by market-analysis use cases.
+These properties should be added only when required by market-analysis use cases or by the selected data sources.
+
+## External Source Mapping
+
+External provider identifiers and names must not directly become the canonical identity of internal entities.
+
+The intended future mapping model is:
+
+```text
+ExternalPlatformReference
+├── Id
+├── PlatformId
+├── DataSourceId
+├── ExternalId
+└── ExternalName
+```
+
+A similar structure may later be used for games and genres.
+
+The expected resolution flow is:
+
+```text
+External provider record
+          ↓
+Source identifier lookup
+          ↓
+Existing internal mapping?
+├── Yes → reuse the internal entity
+└── No  → create or review a new mapping
+```
+
+The combination below should eventually be unique:
+
+```text
+DataSourceId + ExternalId
+```
+
+The exact model remains deferred until the first production data source is selected and its identifiers, aliases, and stability are evaluated.
 
 ## Data Source Association
 
-The MVP uses one primary data source for each game record.
+`DataSource` and `SourceReliability` already exist, but their association with Comparable Games entities has not yet been implemented.
 
-This simplifies provenance while preserving traceability.
+The initial proposal considered one primary source per game.
 
-The primary source represents the main origin of the record but does not guarantee that every individual field was obtained from the same source.
+This decision remains under review because external ingestion may require:
 
-This limitation must remain documented.
+- source-specific identifiers;
+- multiple sources for one entity;
+- different sources for different fields;
+- collection history;
+- conflict resolution.
 
-### Future Evolution
+The first implementation should avoid field-level provenance until real data demonstrates that the additional complexity is justified.
 
-When multiple sources are combined, the model may introduce field-level or observation-level provenance.
-
-Possible future structure:
+A future structure may include:
 
 ```text
 DataObservation
@@ -232,77 +437,102 @@ DataObservation
 └── Reliability
 ```
 
-Field-level provenance should not be implemented until the value justifies the additional storage and complexity.
+## Current Relationship Model
 
-## External Identifiers
-
-Games may have identifiers from different providers.
-
-Examples:
-
-- Steam App ID;
-- IGDB ID;
-- RAWG ID;
-- official publisher identifier.
-
-The domain should avoid permanent provider-specific properties such as:
-
-```text
-SteamId
-IgdbId
-RawgId
-```
-
-A future extensible model may use:
-
-```text
-GameExternalIdentifier
-├── Provider
-└── Value
-```
-
-External identifiers should be implemented when the first production data source is selected.
-
-## Relationships
-
-The initial relationship model is:
+The implemented relationship model is:
 
 ```text
 Game
-  ├── many-to-many → Genre
-  ├── many-to-many → Platform
-  └── many-to-one  → DataSource
+├── many-to-many → Genre
+└── many-to-many → Platform
 ```
 
-These relationships support the first product filters:
+The future model may add:
+
+```text
+Game
+└── source-specific association → DataSource
+```
+
+The current relationships support filters by:
 
 - genre;
 - platform;
-- release period;
-- title.
+- release date;
+- game name.
+
+## Persistence Model
+
+The current PostgreSQL model includes:
+
+```text
+Games
+Genres
+Platforms
+GameGenres
+GamePlatforms
+```
+
+The associative tables use composite primary keys:
+
+```text
+GameGenres
+├── GameId
+└── GenreId
+```
+
+```text
+GamePlatforms
+├── GameId
+└── PlatformId
+```
+
+Unique indexes protect:
+
+```text
+Genres.NormalizedName
+Platforms.NormalizedName
+```
+
+## Persistence Validation
+
+Infrastructure integration tests use a temporary PostgreSQL container managed by Testcontainers.
+
+The implemented tests validate:
+
+- saving a game with a genre and platform;
+- loading relationships through a new EF Core context;
+- materializing the private domain collections;
+- the `GameGenres` relationship;
+- the `GamePlatforms` relationship;
+- rejection of duplicate genre normalized names;
+- rejection of duplicate platform normalized names.
 
 ## Initial Comparable Games Response
 
-The first comparable-games response may include:
+The first read contract is expected to include:
 
 ```text
-Game title
-Primary release date
-Publisher
+Game identifier
+Game name
+Description
+Release date
+Image URL
 Genres
 Platforms
-Primary source
-Source reliability
-Collection date
 ```
 
-The response should expose enough context for interpretation without returning domain entities directly.
+Source and reliability information will be included after the data-source association is modeled.
+
+Domain entities must not be returned directly by API endpoints.
+
+The Application layer will map entities to Shared response contracts.
 
 ## Storage Constraints
 
 The Neon Free storage limit may affect future data-model decisions.
 
-The initial model should prioritize:
+The initial model prioritizes:
 
 - normalized structured data;
 - source references;
@@ -316,7 +546,7 @@ The operational database should avoid storing:
 - HTML pages;
 - image binaries;
 - large files;
-- duplicated source data.
+- unnecessarily duplicated source data.
 
 Storage growth may require:
 
@@ -326,31 +556,46 @@ Storage growth may require:
 - selective dataset inclusion;
 - postponement of storage-intensive features.
 
-Infrastructure constraints may therefore influence product scope when necessary.
+Infrastructure constraints may influence product scope when necessary.
 
-## Initial Implementation Order
+## Implementation Progress
 
-The recommended implementation sequence is:
+Completed:
 
-1. `Platform`;
-2. `Genre`;
+1. `Genre`;
+2. `Platform`;
 3. `Game`;
 4. many-to-many relationships;
-5. primary data-source association;
-6. contracts and mapping;
-7. repositories;
-8. application services;
-9. API endpoints;
-10. tests;
-11. first real dataset;
-12. Comparable Games filters.
+5. normalized-name strategy;
+6. EF Core mappings;
+7. PostgreSQL migration;
+8. domain unit tests;
+9. infrastructure integration tests;
+10. Pull Request integration validation.
+
+Next:
+
+1. Shared read contracts;
+2. Application repository interfaces;
+3. Application query use cases;
+4. Infrastructure repository implementations;
+5. API query endpoints;
+6. Application and API tests;
+7. first real data source evaluation;
+8. source-specific external-reference design;
+9. first Comparable Games dataset;
+10. Comparable Games filters.
 
 ## Deferred Concepts
 
 The following concepts are intentionally deferred:
 
+- source-specific external references;
+- source association for Comparable Games entities;
 - release dates by platform;
 - regional release dates;
+- publisher modeling;
+- developer modeling;
 - genre hierarchy;
 - genre aliases;
 - field-level data provenance;
