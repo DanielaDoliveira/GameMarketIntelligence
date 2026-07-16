@@ -1,10 +1,54 @@
-## Navigation Pattern
+# Comparable Games Frontend Design Brief
+
+## Status
+
+**Approved for Milestone 2 implementation**
+
+## Purpose
+
+Define the visual, responsive, interaction, accessibility, and feedback-state direction for Milestone 2 — Comparable Games Read Experience.
+
+This document describes the first frontend increment only. Future Research Hub capabilities, commercial evidence, market metrics, analytical dashboards, and decision-support experiences remain outside its scope.
+
+The broader product direction is documented in:
+
+```text
+docs/product/product-vision.md
+```
+
+## Maintenance Note
+
+This document is temporarily maintained as a single file.
+
+Its content is grouped by responsibility so that each major section can later be extracted into a smaller document without redesigning the information architecture.
+
+Commercial metrics are intentionally deferred to the future Market Metrics Foundation milestone. Their future inclusion must not alter the contracts, scope, or Definition of Done of Milestone 2.
+
+## Document Map
+
+1. **Application Structure and Navigation** — shell, header, sidebar, drawer, search placement, footer, and navigation decisions.
+2. **Visual System and Styling** — palette, tokens, CSS strategy, responsive behavior, and motion.
+3. **Comparable Games Query and Results** — filters, combination rules, result layouts, and game-card content.
+4. **Feedback States and Accessibility** — loading, empty, error, not-found, accessibility, and reduced-motion behavior.
+
+## Table of Contents
+
+- [1. Application Structure and Navigation](#1-application-structure-and-navigation)
+- [2. Visual System and Styling](#2-visual-system-and-styling)
+- [3. Comparable Games Query and Results](#3-comparable-games-query-and-results)
+- [4. Feedback States and Accessibility](#4-feedback-states-and-accessibility)
+- [Future Document Split](#future-document-split)
+
+## 1. Application Structure and Navigation
+
+### Navigation Pattern
+
 
 GameMarketIntel will use an adaptive lateral-navigation pattern inspired by modern productivity applications.
 
 The navigation structure remains consistent across devices, while its presentation changes according to the available viewport width.
 
-### Desktop Behavior
+#### Desktop Behavior
 
 On desktop layouts:
 
@@ -40,7 +84,7 @@ The sidebar should be expanded by default on sufficiently wide screens.
 
 The user should be able to collapse it when more horizontal space is required for research or comparison content.
 
-### Mobile Behavior
+#### Mobile Behavior
 
 On mobile layouts:
 
@@ -73,7 +117,7 @@ The drawer must close when:
 - the user clicks or taps outside the drawer;
 - the user presses the Escape key when a keyboard is available.
 
-### Gesture Support
+#### Gesture Support
 
 Swipe gestures may be added later as progressive enhancement.
 
@@ -86,7 +130,7 @@ They must not be the only way to open or close the navigation because gesture-on
 
 The visible menu button remains the primary navigation control.
 
-### Responsive Navigation Principle
+#### Responsive Navigation Principle
 
 The navigation should follow this progression:
 
@@ -105,7 +149,8 @@ The application must preserve the same navigation hierarchy and routes across al
 
 Only the presentation and interaction model should adapt.
 
-## Application Shell
+### Application Shell
+
 
 The GameMarketIntel application shell will use four primary regions:
 
@@ -136,7 +181,8 @@ The application shell must remain visually consistent across:
 - error states;
 - route-not-found pages.
 
-## Header Pattern
+### Header Pattern
+
 
 The application header should remain visible, lightweight, and visually consistent across pages.
 
@@ -149,7 +195,7 @@ Its responsibilities are:
 
 The header must not duplicate the navigation options already available in the sidebar.
 
-### Desktop Header
+#### Desktop Header
 
 On desktop, the header should use a three-region composition:
 
@@ -186,7 +232,7 @@ It may later support:
 
 No placeholder avatar or unnecessary action should be introduced before a real product need exists.
 
-### Mobile Header
+#### Mobile Header
 
 On mobile, the header should use a compact search-centered composition inspired by modern productivity applications.
 
@@ -210,7 +256,8 @@ The mobile header should preserve:
 - clear focus and active states;
 - support for touch and keyboard interaction.
 
-## Search Placement
+### Search Placement
+
 
 For the first frontend increment, the Comparable Games search should appear in the center of the application header.
 
@@ -240,7 +287,8 @@ Comparable Games page
 
 This prevents duplicate search controls and gives the application a clear visual focus.
 
-## Search Scope
+### Search Scope
+
 
 During the first increment, the header search is contextual.
 
@@ -258,7 +306,8 @@ Future versions may expand the same header search position to include:
 
 Any future expansion to global search must clearly communicate the type and scope of the returned results.
 
-## Footer Pattern
+### Footer Pattern
+
 
 The application should include a lightweight footer below the main content.
 
@@ -287,7 +336,8 @@ GitHub
 
 The footer must remain visually secondary and must not compete with the research workflow.
 
-## Application Shell Decision
+### Application Shell Decision
+
 
 The initial application-shell decision is:
 
@@ -302,7 +352,26 @@ This pattern was selected because it:
 - preserves space for future analytical content;
 - maintains a consistent visual structure across pages.
 
-## Initial Color Direction
+### Navigation Design Decision
+
+
+The initial navigation decision is:
+
+> Use a persistent and collapsible lateral sidebar on desktop, and a temporary lateral drawer opened from the header on mobile.
+
+This pattern was selected because it:
+
+- preserves screen space on smaller devices;
+- supports a growing number of product modules;
+- maintains consistent navigation across viewport sizes;
+- keeps the main research content visible when navigation is not required;
+- supports mouse, keyboard, touch, and assistive-technology interaction;
+- can evolve without redesigning the application shell.
+
+## 2. Visual System and Styling
+
+### Initial Color Direction
+
 
 The first visual direction will use a light interface.
 
@@ -315,7 +384,7 @@ The color system should communicate:
 - practicality;
 - fluidity.
 
-### Base Surfaces
+#### Base Surfaces
 
 Recommended direction:
 
@@ -337,7 +406,7 @@ The interface should avoid using pure white for every layer.
 
 A subtle distinction between the page background, cards, navigation, and supporting surfaces should help organize content without creating visual weight.
 
-### Primary Color
+#### Primary Color
 
 The primary color should come from a stable blue family.
 
@@ -352,7 +421,7 @@ It may be used for:
 
 The blue should feel trustworthy and clear without becoming highly saturated or resembling a financial trading interface.
 
-### Secondary Color
+#### Secondary Color
 
 A restrained blue-green or cyan family may support the sense of:
 
@@ -363,7 +432,7 @@ A restrained blue-green or cyan family may support the sense of:
 
 It should be used for secondary emphasis rather than competing with the primary blue.
 
-### Accent Color
+#### Accent Color
 
 A soft violet or lilac may be used selectively for product identity.
 
@@ -377,7 +446,7 @@ Appropriate uses include:
 
 The accent must remain restrained so that the interface does not become visually dominated by purple.
 
-### Text Colors
+#### Text Colors
 
 Recommended hierarchy:
 
@@ -399,7 +468,7 @@ Pure black should not be required for the main interface.
 
 A dark navy tone may preserve readability while remaining aligned with the product identity.
 
-### Semantic Colors
+#### Semantic Colors
 
 The design system should define distinct colors for:
 
@@ -412,7 +481,7 @@ Semantic meaning must never depend on color alone.
 
 Icons, labels, and explanatory text should support each state.
 
-### Initial Palette
+#### Initial Palette
 
 The initial GameMarketIntel palette is:
 
@@ -441,7 +510,7 @@ These values are an initial design direction and must be validated for accessibi
 
 The implementation should reference semantic tokens rather than choosing arbitrary framework colors directly.
 
-### Dark Theme
+#### Dark Theme
 
 A dark theme is not part of the first frontend delivery.
 
@@ -449,7 +518,8 @@ The initial system should nevertheless avoid decisions that make future dark-the
 
 Color values must be represented through reusable semantic design tokens rather than scattered literal values.
 
-## Initial Design Tokens
+### Initial Design Tokens
+
 
 The frontend should use semantic design tokens so that components reference the purpose of a color rather than repeating literal values.
 
@@ -506,7 +576,8 @@ Example:
 
 This preserves the product identity if the underlying palette changes later.
 
-## Styling Strategy
+### Styling Strategy
+
 
 The initial GameMarketIntel frontend will use standard CSS and Blazor CSS isolation.
 
@@ -546,7 +617,7 @@ CSS Grid and Flexbox should provide the primary layout mechanisms.
 
 Media queries should progressively adapt the mobile-first layout for tablet and desktop viewports.
 
-### Global CSS Responsibilities
+#### Global CSS Responsibilities
 
 Global CSS should contain styles that intentionally apply across the application, including:
 
@@ -561,7 +632,7 @@ Global CSS should contain styles that intentionally apply across the application
 
 Global CSS should avoid component-specific selectors unless a style is intentionally shared.
 
-### CSS Isolation Responsibilities
+#### CSS Isolation Responsibilities
 
 Blazor CSS isolation should be used when styles belong to a specific component or layout.
 
@@ -586,7 +657,7 @@ ErrorState.razor.css
 
 This keeps component behavior close to its Razor markup and reduces accidental style collisions.
 
-### Responsive Strategy
+#### Responsive Strategy
 
 The frontend must remain mobile-first.
 
@@ -618,7 +689,7 @@ Example direction:
 
 Breakpoints should be chosen according to content behavior rather than specific device models.
 
-### Interaction and Motion
+#### Interaction and Motion
 
 CSS transitions and animations should remain subtle and purposeful.
 
@@ -647,7 +718,7 @@ Example:
 }
 ```
 
-### Styling Decision
+#### Styling Decision
 
 The initial styling decision is:
 
@@ -655,8 +726,10 @@ The initial styling decision is:
 
 This approach may be reviewed later if the frontend grows enough to justify an additional styling framework.
 
+## 3. Comparable Games Query and Results
 
-## Comparable Games Query Experience
+### Comparable Games Query Experience
+
 
 The first functional frontend case will allow users to search and filter comparable games.
 
@@ -670,7 +743,7 @@ The query must support:
 - result-count feedback;
 - loading, no-results, error, and unavailable-data states.
 
-### Query Combination Rules
+#### Query Combination Rules
 
 Different filter categories must use AND semantics.
 
@@ -722,7 +795,8 @@ Genre matching
 
 This control is not part of the first frontend delivery.
 
-## Search and Filter Layout
+### Search and Filter Layout
+
 
 The primary Comparable Games search field must appear in the center of the application header.
 
@@ -763,11 +837,12 @@ On desktop:
 
 The exact filter-panel presentation will be validated in the wireframes.
 
-## Results Layout
+### Results Layout
+
 
 The result presentation must adapt to the available width.
 
-### Mobile Results
+#### Mobile Results
 
 Mobile results must use one card per row.
 
@@ -791,7 +866,7 @@ This approach prioritizes:
 
 A multi-column result grid should not be used on narrow mobile screens.
 
-### Desktop Results
+#### Desktop Results
 
 Desktop layouts may use a responsive multi-column composition.
 
@@ -821,7 +896,8 @@ CSS Grid may organize the result collection, while Flexbox may organize content 
 
 The final desktop arrangement should be validated according to card width, metadata density, and image proportions rather than maximizing the number of columns.
 
-## Initial Game Card Content
+### Initial Game Card Content
+
 
 The first game card should prioritize concise research information.
 
@@ -851,7 +927,10 @@ A future details page or expanded view may contain:
 
 The initial card may use badges or compact text groups for genres and platforms.
 
-## Experience States
+## 4. Feedback States and Accessibility
+
+### Experience States
+
 
 The Comparable Games experience must distinguish between different application and query states.
 
@@ -869,7 +948,8 @@ Route not found
 
 These states must share the same visual language while differing in prominence and purpose.
 
-## Initial Application Loading
+### Initial Application Loading
+
 
 The initial Blazor WebAssembly loading experience is a product-level state.
 
@@ -905,7 +985,8 @@ Soft animated product symbol
 Preparing your market research workspace...
 ```
 
-## In-Application Query Loading
+### In-Application Query Loading
+
 
 Query loading must use a smaller and more discreet version of the initial loading identity.
 
@@ -938,7 +1019,8 @@ Query loading
 → compact functional version of the same visual identity
 ```
 
-## No Results State
+### No Results State
+
 
 The no-results state appears when data exists, but no game matches the current search and filters.
 
@@ -977,7 +1059,7 @@ For the first Comparable Games case, the preferred action is:
 
 The action should use the primary color and remain visually clear without dominating the page.
 
-### No Results Visual Direction
+#### No Results Visual Direction
 
 The no-results state should follow the lighter visual references:
 
@@ -992,7 +1074,7 @@ The illustration may use a search, empty document, or empty-container metaphor.
 
 It should not appear humorous or alarming enough to undermine the reliability of the research product.
 
-### Mobile No Results
+#### Mobile No Results
 
 On mobile, the state should be vertically centered within the available result region when practical.
 
@@ -1007,13 +1089,14 @@ Primary recovery action
 
 The illustration should remain compact enough that the action is visible without excessive scrolling.
 
-### Desktop No Results
+#### Desktop No Results
 
 On desktop, the same centered state may occupy the main result region while search and filters remain accessible.
 
 The larger viewport may allow a slightly more detailed illustration, but the state should remain visually restrained.
 
-## No Data Available State
+### No Data Available State
+
 
 The no-data state is different from no results.
 
@@ -1035,7 +1118,8 @@ This state should not instruct users to clear filters when filters are not the c
 
 The message may be refined later according to the actual collection and data-import process.
 
-## Error State
+### Error State
+
 
 A request error occurs when the query cannot be completed because of a network, API, or unexpected application failure.
 
@@ -1057,7 +1141,8 @@ Error messaging should avoid technical details in the primary interface.
 
 Diagnostic information may be logged separately.
 
-## Route Not Found Page
+### Route Not Found Page
+
 
 The application must provide a dedicated not-found page for invalid or unavailable routes.
 
@@ -1091,7 +1176,7 @@ The preferred primary action is:
 
 > Return to overview
 
-### Route Not Found Visual Direction
+#### Route Not Found Visual Direction
 
 The page may take structural inspiration from the provided 404 reference:
 
@@ -1134,7 +1219,8 @@ The not-found page should not require the main application sidebar to remain ope
 
 A lightweight header with product identity may be retained so the page still feels part of the application.
 
-## Empty-State Accessibility
+### Empty-State Accessibility
+
 
 All empty, loading, error, and not-found states must:
 
@@ -1150,18 +1236,25 @@ Decorative illustrations should be hidden from assistive technologies when they 
 
 Loading messages should be exposed through an appropriate live region when the implementation changes state dynamically.
 
+## Future Document Split
 
-## Navigation Design Decision
+When the Milestone 2 frontend implementation stabilizes, this file can be divided without changing its conceptual structure:
 
-The initial navigation decision is:
+```text
+docs/design/frontend/
+├── comparable-games-frontend-design-overview.md
+├── application-shell-and-navigation.md
+├── visual-system-and-styling.md
+├── comparable-games-query-experience.md
+└── feedback-states-and-accessibility.md
+```
 
-> Use a persistent and collapsible lateral sidebar on desktop, and a temporary lateral drawer opened from the header on mobile.
+Suggested extraction:
 
-This pattern was selected because it:
+- Section 1 → `application-shell-and-navigation.md`;
+- Section 2 → `visual-system-and-styling.md`;
+- Section 3 → `comparable-games-query-experience.md`;
+- Section 4 → `feedback-states-and-accessibility.md`;
+- document metadata, scope, map, decisions, and links → `comparable-games-frontend-design-overview.md`.
 
-- preserves screen space on smaller devices;
-- supports a growing number of product modules;
-- maintains consistent navigation across viewport sizes;
-- keeps the main research content visible when navigation is not required;
-- supports mouse, keyboard, touch, and assistive-technology interaction;
-- can evolve without redesigning the application shell.
+The split should occur after implementation validates the final component names, breakpoints, layouts, interaction behavior, and accessibility decisions.

@@ -8,6 +8,40 @@ It records completed increments, the current delivery focus, and the expected ev
 
 The roadmap may change as real data sources, infrastructure constraints, product validation, and frontend implementation provide new information.
 
+## Product Direction
+
+GameMarketIntel is a decision-support platform for Game Producers and small studios.
+
+The product organizes comparable games, research references, commercial evidence, and future analytical context into a workflow that helps reduce uncertainty during early product planning.
+
+```text
+Game idea
+    ↓
+Comparable games discovery
+    ↓
+Research references
+    ↓
+Commercial evidence
+    ↓
+Market analysis
+    ↓
+Stakeholder decision support
+```
+
+The platform does not replace official websites, storefronts, review platforms, videos, news, or market reports.
+
+It should help the producer identify what deserves deeper investigation, locate relevant sources more efficiently, and organize enough initial evidence to support the next decision.
+
+Sales are the highest-priority future commercial indicator.
+
+Downloads, estimated owners, active players, concurrent players, reviews, wishlists, and similar observations may complement sales when they are relevant or when direct sales data is unavailable.
+
+The detailed product vision is maintained in:
+
+```text
+docs/product/product-vision.md
+```
+
 ## Delivery Principles
 
 GameMarketIntel is developed through small, complete vertical increments.
@@ -228,7 +262,9 @@ The first details destination should expose:
 - platforms;
 - short description when available.
 
-Advanced analytical details are deferred.
+Advanced analytical details and commercial metrics are deferred.
+
+Sales and complementary engagement indicators belong to a dedicated future market-metrics vertical and must not expand the scope of Milestone 2.
 
 ### Automated Tests
 
@@ -381,28 +417,107 @@ Expand the validated Comparable Games experience with more specialized research 
 - platform-distribution charts;
 - release-timeline visualization;
 - richer desktop research layout;
-- expanded game-details experience.
+- expanded game-details experience;
+- organized external research references;
+- official game website links when available;
+- storefront references such as Steam when licensing and source rules allow;
+- official trailer or gameplay references when appropriate;
+- producer-oriented paths for deeper manual research.
 
 This milestone should be refined only after the first query experience and the initial real dataset have been validated.
 
-## Milestone 6 — Market Analysis Foundations
+## Milestone 6 — Market Metrics Foundation
 
-Status: **Future**
+Status: **Future — High Product Priority**
+
+### Goal
+
+Establish the source-aware commercial evidence model required to evaluate how comparable games performed in the market.
+
+Sales are the highest-priority metric family.
+
+### Priority Metric Scope
+
+Primary commercial indicators:
+
+- units sold;
+- revenue.
+
+Complementary indicators, when relevant or when sales data is unavailable:
+
+- estimated owners;
+- downloads;
+- active players;
+- peak concurrent players;
+- reviews;
+- wishlists;
+- followers;
+- other engagement observations.
 
 ### Potential Scope
 
 - metric snapshots;
 - historical observations;
+- official-versus-estimated classification;
+- metric meaning and units;
+- source association;
+- source reliability;
+- platform scope;
+- regional scope;
+- observation period;
+- publication and collection dates;
+- known limitations;
+- data freshness indicators;
+- market-metric read contracts;
+- commercial evidence presentation.
+
+This milestone must preserve the distinction between sales, downloads, owners, players, and engagement.
+
+It must be refined only after the Comparable Games dataset, source availability, licensing constraints, storage impact, and product usage patterns have been validated.
+
+## Milestone 7 — Market Analysis
+
+Status: **Future**
+
+### Goal
+
+Transform validated comparable-game and market-metric data into contextual analysis without presenting uncertain conclusions as facts.
+
+### Potential Scope
+
 - platform-level comparisons;
+- regional comparisons;
+- sales distributions;
+- comparison between famous and less-visible games;
 - genre-saturation indicators;
 - launch-window analysis;
 - source-aware aggregations;
-- market-signal foundations;
-- regional observations;
-- data freshness indicators;
-- analytical comparison contracts.
+- commercial-performance summaries;
+- analytical comparison contracts;
+- charts and trend visualizations;
+- survivorship-bias-aware presentation;
+- confidence and data-coverage communication.
 
-This milestone must be refined only after the Comparable Games dataset and product usage patterns are validated.
+## Milestone 8 — Market Signals
+
+Status: **Future**
+
+### Goal
+
+Provide decision-oriented signals derived from validated evidence while keeping the producer responsible for the final decision.
+
+### Potential Scope
+
+- market-signal foundations;
+- opportunity indicators;
+- similarity-based context;
+- evidence coverage;
+- confidence indicators;
+- producer-oriented summaries;
+- explainable signal inputs;
+- warnings for insufficient or conflicting evidence.
+
+Predictive models and automated recommendations remain deferred until sufficient data quality, product validation, and explainability requirements are demonstrated.
 
 ## Deferred Product Areas
 
@@ -416,13 +531,27 @@ The following areas remain intentionally deferred:
 - historical raw payload storage;
 - large binary assets;
 - subscription-market analysis;
-- console-sales analysis;
+- platform-market analysis beyond validated metric sources;
 - advanced market signals;
 - authentication and user accounts;
 - collaborative workspaces;
 - paid features.
 
 They may become separate future verticals after the Comparable Games workflow is validated.
+
+## Architectural Explorations
+
+Exploratory architecture documents preserve ideas that may become useful after the MVP without turning them into current commitments.
+
+The following exploration is recorded separately:
+
+```text
+docs/architecture/explorations/hybrid-database-data-tiering-exploration.md
+```
+
+It examines a possible future strategy for retaining recent release-date-ordered data in Neon and older data in a historical relational store.
+
+The exploration is not an approved architecture decision and does not change the MVP database, deployment model, or implementation sequence.
 
 ## Current Delivery Focus
 

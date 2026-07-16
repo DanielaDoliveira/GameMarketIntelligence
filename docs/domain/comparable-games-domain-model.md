@@ -8,6 +8,8 @@ The model should provide enough information to support early production and mark
 
 The model is intentionally pragmatic and may evolve as data-source limitations, storage constraints, and product requirements become clearer.
 
+Comparable Games is the first stage of a broader producer decision workflow. Future research references and commercial metrics must be modeled as separate concepts rather than being compressed into unqualified fields on `Game`.
+
 ## Current Status
 
 The first domain and persistence increment has been implemented.
@@ -50,6 +52,9 @@ The current model starts supporting:
 
 Future increments should support:
 
+- Which official or specialized sources should the producer inspect next?
+- Is an official game website available?
+- Which storefront, trailer, gameplay, review, or evidence links are relevant?
 - Which publisher is associated with the game?
 - Which source provided the information?
 - When was the information collected?
@@ -58,6 +63,10 @@ Future increments should support:
 
 The model should later enable:
 
+- commercial-performance evidence, prioritizing sales;
+- complementary download, owner, player, and engagement observations;
+- comparison between famous and less-visible comparable games;
+- source-aware interpretation of official and estimated values;
 - comparable-game filtering;
 - genre-saturation analysis;
 - launch-window analysis;
@@ -76,7 +85,10 @@ The planned scope also includes:
 
 - `DataSource`;
 - source-specific external references;
-- future metric snapshots;
+- organized official website, storefront, trailer, gameplay, and review references;
+- producer research references such as official websites and storefronts;
+- future metric snapshots, prioritizing sales;
+- complementary engagement observations;
 - future market signals.
 
 `DataSource` and `SourceReliability` already exist elsewhere in the domain, but they are not yet associated with `Game`, `Genre`, or `Platform`.
@@ -371,6 +383,74 @@ The model may later support:
 
 These properties should be added only when required by market-analysis use cases or by the selected data sources.
 
+## Research References and Commercial Evidence
+
+Comparable Games discovery should eventually help the producer continue research through relevant original or specialized sources.
+
+Possible research references include:
+
+- official game website;
+- official publisher or developer page;
+- Steam or another storefront;
+- official trailer;
+- gameplay video;
+- review aggregator;
+- source article;
+- market report.
+
+These references should not be represented as unrelated URL fields added directly to `Game`.
+
+A future extensible model may use a structure such as:
+
+```text
+GameExternalReference
+├── GameId
+├── ReferenceType
+├── Url
+├── DisplayName
+├── IsOfficial
+├── DataSourceId
+└── CollectedAt
+```
+
+GameMarketIntel should organize paths to deeper research without replacing the referenced services.
+
+Commercial performance must also remain separate from the `Game` entity.
+
+The domain should not introduce fields such as:
+
+```text
+Game.TotalSales
+```
+
+A sales value may vary by:
+
+- source;
+- period;
+- platform;
+- region;
+- official or estimated nature;
+- units sold, shipped, owners, players, or downloads;
+- collection date;
+- reliability.
+
+A future market-metric observation should preserve this context.
+
+Sales are the highest-priority future commercial indicator.
+
+Complementary observations may include:
+
+- revenue;
+- estimated owners;
+- downloads;
+- active players;
+- peak concurrent players;
+- reviews;
+- wishlists;
+- followers.
+
+These concepts are intentionally deferred from the current Comparable Games implementation and should be introduced through a dedicated market-metrics vertical after real data sources are evaluated.
+
 ## External Source Mapping
 
 External provider identifiers and names must not directly become the canonical identity of internal entities.
@@ -558,6 +638,14 @@ Storage growth may require:
 
 Infrastructure constraints may influence product scope when necessary.
 
+A separate exploratory document records a possible post-MVP recent-and-historical relational data-tiering strategy:
+
+```text
+docs/architecture/explorations/hybrid-database-data-tiering-exploration.md
+```
+
+That exploration is not an approved decision and does not alter the current Neon PostgreSQL architecture.
+
 ## Implementation Progress
 
 Completed:
@@ -602,6 +690,8 @@ The following concepts are intentionally deferred:
 - multiple publisher relationships;
 - score or opportunity prediction;
 - market-signal generation;
+- sales and revenue observations;
+- download, owner, player, and engagement observations;
 - historical metric snapshots;
 - machine learning.
 
