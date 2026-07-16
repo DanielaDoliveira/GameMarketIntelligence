@@ -4,7 +4,7 @@ using System.Text;
 
 namespace GameMarketIntel.Shared.Contracts.Games
 {
-    internal class ComparableGame
+    internal class SearchGamesResponse
     {
     }
 }

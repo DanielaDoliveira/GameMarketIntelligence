@@ -10,6 +10,11 @@ public static class DepedencyInjection
     public static IServiceCollection AddInfrastructure(this IServiceCollection services)
     {
         services.AddScoped<IDataSourceRepository, DataSourceRepository>();
+        services.AddScoped<IDataSourceRepository, DataSourceRepository>();
+        services.AddScoped<IGameRepository, GameRepository>();
+        services.AddScoped<IGenreRepository, GenreRepository>();
+        services.AddScoped<IPlatformRepository, PlatformRepository>();
+
         return services;
     }
 }

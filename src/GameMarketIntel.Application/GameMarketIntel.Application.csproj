@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <Folder Include="Abstractions\ExternalServices\" />
+    <Folder Include="Models\" />
   </ItemGroup>
 
   <ItemGroup>
