@@ -5,7 +5,6 @@ A robust, cloud-native platform designed to streamline market research, benchmar
 ```
 Project Status: Active Development (Early Stages)
 
-This platform is currently under active construction. We are iteratively building out features to solve real-world research bottlenecks in game production.
 ```
 
 ## Technologies
