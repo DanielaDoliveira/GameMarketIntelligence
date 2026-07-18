@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\GameMarketIntel.Domain\GameMarketIntel.Domain.csproj" />
+    <ProjectReference Include="..\GameMarketIntel.Exceptions\GameMarketIntel.Exceptions.csproj" />
     <ProjectReference Include="..\GameMarketIntel.Shared\GameMarketIntel.Shared.csproj" />
   </ItemGroup>
 

@@ -15,6 +15,7 @@ public static class DependencyInjection
         services.AddValidatorsFromAssemblyContaining<SearchGamesQueryValidator>();
         services.AddScoped<IDataSourceService, DataSourceService>();
         services.AddScoped<IGameSearchService, GameSearchService>();
+        services.AddScoped<IGameService, GameService>();
 
         return services;
     }

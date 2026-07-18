@@ -4,6 +4,7 @@
     <Project Path="src/GameMarketIntel.Application/GameMarketIntel.Application.csproj" Id="a1cc64cf-883f-4428-90b3-594dfc6457c0" />
     <Project Path="src/GameMarketIntel.Collector/GameMarketIntel.Collector.csproj" Id="91fb4cbe-75ed-48c3-a149-dfeb0663e8d0" />
     <Project Path="src/GameMarketIntel.Domain/GameMarketIntel.Domain.csproj" Id="58247a6a-5cf6-40d5-98eb-005d9797a762" />
+    <Project Path="src/GameMarketIntel.Exceptions/GameMarketIntel.Exceptions.csproj" Id="638a5d71-8957-4727-82df-ab12d9105918" />
     <Project Path="src/GameMarketIntel.Infrastructure/GameMarketIntel.Infrastructure.csproj" Id="01c87ffa-9174-44bc-b83a-6f56acc71d0f" />
     <Project Path="src/GameMarketIntel.Shared/GameMarketIntel.Shared.csproj" Id="1f4552f7-a24b-4e00-a425-9bf61cbbf3e0" />
     <Project Path="src/GameMarketIntel.Web/GameMarketIntel.Web.csproj" Id="012f3db9-36ac-4035-b1d2-3bdccf55bac6" />
