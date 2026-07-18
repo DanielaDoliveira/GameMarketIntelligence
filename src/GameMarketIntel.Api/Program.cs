@@ -84,5 +84,6 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 
 app.MapDataSourceEndpoints();
+app.MapGameEndpoints();
 
 app.Run();
