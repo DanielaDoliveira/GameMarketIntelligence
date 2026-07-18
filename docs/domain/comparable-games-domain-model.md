@@ -82,7 +82,16 @@ Implemented:
 * `GET /api/games`;
 * FluentValidation for search parameters;
 * OpenAPI and Scalar documentation;
-* 89 automated tests passing across the solution.
+* game-details query and projection;
+* `GET /api/games/{id:guid}`;
+* missing-game handling through `NotFoundException`;
+* centralized API exception handling;
+* standardized `ProblemDetails` responses;
+* validation failures mapped to HTTP `400`;
+* missing resources mapped to HTTP `404`;
+* conflicts mapped to HTTP `409`;
+* unexpected failures mapped to HTTP `500`;
+* 97 automated tests passing across the solution.
 
 Not yet implemented:
 
@@ -90,12 +99,9 @@ Not yet implemented:
 * external provider identifiers;
 * publisher modeling;
 * collection timestamps on game records;
-* game-details query;
 * genre listing query;
 * platform listing query;
 * ingestion from a real external source;
-* global API exception handling;
-* standardized validation `ProblemDetails`;
 * commercial metric observations.
 
 ## Game
@@ -505,7 +511,7 @@ ReleaseYear <= current year
 
 Validation occurs in the Application service before the repository is called.
 
-The API still requires global exception handling to convert validation failures into standardized HTTP `400` responses.
+The centralized API exception handler converts validation failures into standardized HTTP `400` responses using `ValidationProblemDetails`.
 
 ## Implemented Comparable Games Response
 
@@ -602,23 +608,37 @@ Rules include:
 
 ### API Validation Response
 
-The API is responsible for translating validation failures into HTTP responses.
+The API translates FluentValidation failures into standardized HTTP responses.
 
-This translation is not yet complete.
-
-The planned implementation is:
+The implemented flow is:
 
 ```text
-GameMarketIntel.Exceptions
+FluentValidation.ValidationException
     ↓
-Global API exception handler
+GlobalExceptionHandler
     ↓
-ProblemDetails
+ValidationProblemDetails
     ↓
-HTTP 400 for validation failures
+HTTP 400 Bad Request
 ```
 
-The Exceptions project must remain independent of HTTP concerns.
+Other application and unexpected failures use the same centralized handler:
+
+```text
+NotFoundException
+    ↓
+HTTP 404 Not Found
+
+ConflictException
+    ↓
+HTTP 409 Conflict
+
+Unexpected Exception
+    ↓
+HTTP 500 Internal Server Error
+```
+
+The Exceptions project remains independent of HTTP concerns.
 
 ## Implementation Progress
 
@@ -652,23 +672,33 @@ Completed sequence:
 26. FluentValidation;
 27. validator tests;
 28. repository integration tests;
-29. 89 solution tests passing.
+29. `GameMarketIntel.Exceptions` class library;
+30. reusable `NotFoundException` and `ConflictException`;
+31. centralized ASP.NET Core `IExceptionHandler`;
+32. standardized `ProblemDetails` responses;
+33. validation-to-HTTP `400` mapping;
+34. missing-resource-to-HTTP `404` mapping;
+35. conflict-to-HTTP `409` mapping;
+36. unexpected-error-to-HTTP `500` mapping;
+37. game-details Application service;
+38. game-details contract projection;
+39. `GET /api/games/{id:guid}`;
+40. Scalar documentation for game details;
+41. exception-handler tests;
+42. game-service tests;
+43. game-details endpoint test;
+44. 97 solution tests passing.
 
 ## Next Implementation Steps
 
-1. create `GameMarketIntel.Exceptions`;
-2. define shared application exception types;
-3. implement centralized API exception handling;
-4. return standardized `ProblemDetails`;
-5. map validation failures to HTTP `400`;
-6. map missing resources to HTTP `404`;
-7. map conflicts to HTTP `409`;
-8. implement game-details query;
-9. implement genre listing;
-10. implement platform listing;
-11. begin the responsive frontend;
-12. connect Blazor WebAssembly to the API;
-13. evaluate the first real data source.
+1. implement genre listing;
+2. implement platform listing;
+3. document both read endpoints in OpenAPI and Scalar;
+4. add Application and API tests for both endpoints;
+5. begin the responsive frontend;
+6. connect Blazor WebAssembly to the API;
+7. validate loading, error, empty, and not-found states;
+8. evaluate the first real data source.
 
 ## Deferred Concepts
 

@@ -131,19 +131,29 @@ Completed:
 * paginated results;
 * pagination metadata;
 * `GET /api/games`;
+* `GET /api/games/{id:guid}`;
+* game-details Application service;
+* game-details projection with genres and platforms;
+* missing-game handling through `NotFoundException`;
 * OpenAPI and Scalar endpoint documentation;
 * FluentValidation for search parameters;
-* Application tests for query validation;
+* standardized HTTP `400 Bad Request` validation responses;
+* `GameMarketIntel.Exceptions` class library;
+* reusable `NotFoundException` and `ConflictException`;
+* centralized global exception handling through ASP.NET Core `IExceptionHandler`;
+* standardized `ProblemDetails` and `ValidationProblemDetails` responses;
+* validation failures mapped to HTTP `400`;
+* missing resources mapped to HTTP `404`;
+* conflicts mapped to HTTP `409`;
+* unexpected failures mapped to HTTP `500`;
+* Application tests for query validation and game-details behavior;
+* API tests for exception-to-response mappings;
+* API HTTP test for game retrieval by ID;
 * PostgreSQL integration tests for filtering and pagination;
-* 89 automated tests passing across the solution.
+* 97 automated tests passing across the solution.
 
 Pending:
 
-* standardized HTTP `400 Bad Request` responses for validation failures;
-* `GameMarketIntel.Exceptions` class library;
-* centralized global exception handling;
-* standardized `ProblemDetails` responses;
-* `GET /api/games/{id}`;
 * `GET /api/genres`;
 * `GET /api/platforms`;
 * responsive frontend implementation;
@@ -168,20 +178,21 @@ Implemented:
 
 * repository abstraction for game searches;
 * game-search service;
+* game-details service;
 * validation before repository execution;
 * partial game-name search;
 * genre filtering;
 * platform filtering;
 * release-year filtering;
 * entity-to-contract projection;
-* pagination metadata.
+* game-details projection with genres and platforms;
+* pagination metadata;
+* missing-game handling through `NotFoundException`.
 
 Pending:
 
-* game-details query;
 * genre listing query;
-* platform listing query;
-* missing-record handling for detail endpoints.
+* platform listing query.
 
 #### Infrastructure Layer
 
@@ -202,15 +213,17 @@ Implemented:
 Implemented:
 
 * `GET /api/games`;
+* `GET /api/games/{id:guid}`;
 * OpenAPI documentation;
-* Scalar endpoint documentation.
+* Scalar endpoint documentation;
+* standardized validation responses;
+* standardized not-found responses;
+* centralized exception-to-HTTP mapping.
 
 Pending:
 
-* `GET /api/games/{id}`;
 * `GET /api/genres`;
-* `GET /api/platforms`;
-* standardized validation responses.
+* `GET /api/platforms`.
 
 ### Current Games Search Contract
 
@@ -301,29 +314,28 @@ ReleaseYear <= current year
 
 Validation is executed by the Application service before the repository is called.
 
-A failed validation currently raises a FluentValidation exception.
+A failed validation raises a FluentValidation `ValidationException`.
 
-The API still requires centralized exception handling to translate validation failures into a standardized HTTP `400 Bad Request` response.
+The centralized API exception handler translates validation failures into standardized HTTP `400 Bad Request` responses using `ValidationProblemDetails`.
 
-### Global Exception Handling Follow-up
+### Global Exception Handling
 
-After the Comparable Games search backend increment is closed:
+Centralized exception handling is implemented through ASP.NET Core `IExceptionHandler`.
 
-* create the `GameMarketIntel.Exceptions` class library;
-* define reusable application exception types;
-* keep the Exceptions project independent from ASP.NET Core and HTTP;
-* implement centralized API exception handling;
-* prefer ASP.NET Core `IExceptionHandler`;
-* use standardized `ProblemDetails`;
-* map validation failures to HTTP `400`;
-* map not-found failures to HTTP `404`;
-* map conflicts to HTTP `409`;
-* map unexpected failures to HTTP `500`;
-* add automated tests for exception-to-response mappings.
+The API uses standardized `ProblemDetails` responses and maps:
 
-HTTP-specific behavior must remain in `GameMarketIntel.Api`.
+* FluentValidation failures to HTTP `400`;
+* missing resources to HTTP `404`;
+* resource conflicts to HTTP `409`;
+* unexpected failures to HTTP `500`.
 
-The `GameMarketIntel.Exceptions` project must not depend on:
+Unexpected responses do not expose exception messages, stack traces, database information, or other internal implementation details.
+
+Expected application failures are logged as warnings. Unexpected failures are logged as errors.
+
+HTTP-specific behavior remains in `GameMarketIntel.Api`.
+
+The `GameMarketIntel.Exceptions` project remains independent from:
 
 * ASP.NET Core;
 * HTTP status codes;
@@ -436,7 +448,7 @@ Sales and complementary engagement indicators belong to a dedicated future Marke
 Current solution status:
 
 ```text
-89 automated tests passing
+97 automated tests passing
 ```
 
 Implemented coverage includes:
@@ -456,16 +468,20 @@ Implemented coverage includes:
 * combined filters;
 * pagination;
 * empty search results;
-* contract projection.
+* contract projection;
+* game-details mapping;
+* missing-game behavior;
+* exception-to-HTTP mappings;
+* validation `ProblemDetails`;
+* not-found `ProblemDetails`;
+* conflict `ProblemDetails`;
+* unexpected-error protection;
+* game-details HTTP endpoint.
 
 Remaining test areas for Milestone 2:
 
-* game-details query;
 * genre listing;
 * platform listing;
-* missing-record responses;
-* global exception handling;
-* API error-to-`ProblemDetails` mapping;
 * frontend component and behavior tests where practical.
 
 ### Out of Scope for This Milestone
@@ -697,19 +713,17 @@ Machine learning must not be introduced before the project has:
 The current delivery focus is:
 
 ```text
-Close Comparable Games search backend
-    ↓
-Implement GameMarketIntel.Exceptions
-    ↓
-Implement global exception handling
-    ↓
 Complete remaining read endpoints
+    ↓
+Implement genre listing
+    ↓
+Implement platform listing
     ↓
 Build responsive frontend
     ↓
 Connect Blazor WebAssembly to the API
 ```
 
-The immediate technical follow-up is standardized exception handling.
+The immediate technical follow-up is the implementation of the genre and platform read endpoints.
 
 The next product-facing delivery is the responsive Comparable Games frontend integrated with the deployed API.
