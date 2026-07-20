@@ -84,6 +84,12 @@ Implemented:
 * OpenAPI and Scalar documentation;
 * game-details query and projection;
 * `GET /api/games/{id:guid}`;
+* genre listing query;
+* genre entity-to-contract projection;
+* `GET /api/genres`;
+* platform listing query;
+* platform entity-to-contract projection;
+* `GET /api/platforms`;
 * missing-game handling through `NotFoundException`;
 * centralized API exception handling;
 * standardized `ProblemDetails` responses;
@@ -91,7 +97,7 @@ Implemented:
 * missing resources mapped to HTTP `404`;
 * conflicts mapped to HTTP `409`;
 * unexpected failures mapped to HTTP `500`;
-* 97 automated tests passing across the solution.
+* 108 automated tests passing across the solution.
 
 Not yet implemented:
 
@@ -99,8 +105,6 @@ Not yet implemented:
 * external provider identifiers;
 * publisher modeling;
 * collection timestamps on game records;
-* genre listing query;
-* platform listing query;
 * ingestion from a real external source;
 * commercial metric observations.
 
@@ -687,17 +691,31 @@ Completed sequence:
 41. exception-handler tests;
 42. game-service tests;
 43. game-details endpoint test;
-44. 97 solution tests passing.
+44. genre-listing Application service;
+45. genre entity-to-contract projection;
+46. `GET /api/genres`;
+47. Scalar documentation for genre listing;
+48. genre-service tests;
+49. genre-repository integration tests;
+50. genre-listing endpoint test;
+51. platform-listing Application service;
+52. platform entity-to-contract projection;
+53. `GET /api/platforms`;
+54. Scalar documentation for platform listing;
+55. platform-service tests;
+56. platform-repository integration tests;
+57. platform-listing endpoint test;
+58. 108 solution tests passing.
 
 ## Next Implementation Steps
 
-1. implement genre listing;
-2. implement platform listing;
-3. document both read endpoints in OpenAPI and Scalar;
-4. add Application and API tests for both endpoints;
-5. begin the responsive frontend;
-6. connect Blazor WebAssembly to the API;
-7. validate loading, error, empty, and not-found states;
+1. begin the responsive frontend;
+2. connect Blazor WebAssembly to the API;
+3. implement the Comparable Games search and filter experience;
+4. populate genre and platform filters through their read endpoints;
+5. implement loading, error, empty, and not-found states;
+6. validate CORS and the production API connection;
+7. validate the complete production flow;
 8. evaluate the first real data source.
 
 ## Deferred Concepts

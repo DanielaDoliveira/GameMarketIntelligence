@@ -135,6 +135,16 @@ Completed:
 * game-details Application service;
 * game-details projection with genres and platforms;
 * missing-game handling through `NotFoundException`;
+* `GET /api/genres`;
+* genre-listing Application service;
+* genre projection to `GenreDetails`;
+* PostgreSQL genre repository;
+* alphabetical genre ordering;
+* `GET /api/platforms`;
+* platform-listing Application service;
+* platform projection to `PlatformDetails`;
+* PostgreSQL platform repository;
+* alphabetical platform ordering;
 * OpenAPI and Scalar endpoint documentation;
 * FluentValidation for search parameters;
 * standardized HTTP `400 Bad Request` validation responses;
@@ -146,16 +156,14 @@ Completed:
 * missing resources mapped to HTTP `404`;
 * conflicts mapped to HTTP `409`;
 * unexpected failures mapped to HTTP `500`;
-* Application tests for query validation and game-details behavior;
+* Application tests for query validation, game-details behavior, genre listing, and platform listing;
 * API tests for exception-to-response mappings;
-* API HTTP test for game retrieval by ID;
-* PostgreSQL integration tests for filtering and pagination;
-* 97 automated tests passing across the solution.
+* API HTTP tests for game retrieval by ID, genre listing, and platform listing;
+* PostgreSQL integration tests for filtering, pagination, genre listing, and platform listing;
+* 108 automated tests passing across the solution.
 
 Pending:
 
-* `GET /api/genres`;
-* `GET /api/platforms`;
 * responsive frontend implementation;
 * Blazor WebAssembly integration with the API.
 
@@ -179,6 +187,8 @@ Implemented:
 * repository abstraction for game searches;
 * game-search service;
 * game-details service;
+* genre-listing service;
+* platform-listing service;
 * validation before repository execution;
 * partial game-name search;
 * genre filtering;
@@ -186,24 +196,25 @@ Implemented:
 * release-year filtering;
 * entity-to-contract projection;
 * game-details projection with genres and platforms;
+* genre projection to `GenreDetails`;
+* platform projection to `PlatformDetails`;
 * pagination metadata;
 * missing-game handling through `NotFoundException`.
-
-Pending:
-
-* genre listing query;
-* platform listing query.
 
 #### Infrastructure Layer
 
 Implemented:
 
 * PostgreSQL search repository;
+* PostgreSQL genre repository;
+* PostgreSQL platform repository;
 * EF Core filtered queries;
 * read-only query behavior;
 * case-insensitive PostgreSQL search through `ILike`;
 * many-to-many relationship filtering;
-* alphabetical result ordering;
+* alphabetical game-result ordering;
+* alphabetical genre ordering;
+* alphabetical platform ordering;
 * pagination through `Skip` and `Take`;
 * direct projection to search DTOs;
 * PostgreSQL integration tests.
@@ -214,16 +225,13 @@ Implemented:
 
 * `GET /api/games`;
 * `GET /api/games/{id:guid}`;
+* `GET /api/genres`;
+* `GET /api/platforms`;
 * OpenAPI documentation;
 * Scalar endpoint documentation;
 * standardized validation responses;
 * standardized not-found responses;
 * centralized exception-to-HTTP mapping.
-
-Pending:
-
-* `GET /api/genres`;
-* `GET /api/platforms`.
 
 ### Current Games Search Contract
 
@@ -448,7 +456,7 @@ Sales and complementary engagement indicators belong to a dedicated future Marke
 Current solution status:
 
 ```text
-97 automated tests passing
+108 automated tests passing
 ```
 
 Implemented coverage includes:
@@ -460,6 +468,8 @@ Implemented coverage includes:
 * duplicate prevention;
 * search-service behavior;
 * query validation;
+* genre-service mapping;
+* platform-service mapping;
 * partial-name search;
 * case-insensitive PostgreSQL search;
 * genre filtering;
@@ -476,12 +486,14 @@ Implemented coverage includes:
 * not-found `ProblemDetails`;
 * conflict `ProblemDetails`;
 * unexpected-error protection;
-* game-details HTTP endpoint.
+* game-details HTTP endpoint;
+* genre-listing repository ordering and empty results;
+* platform-listing repository ordering and empty results;
+* genre-listing HTTP endpoint;
+* platform-listing HTTP endpoint.
 
 Remaining test areas for Milestone 2:
 
-* genre listing;
-* platform listing;
 * frontend component and behavior tests where practical.
 
 ### Out of Scope for This Milestone
@@ -713,17 +725,17 @@ Machine learning must not be introduced before the project has:
 The current delivery focus is:
 
 ```text
-Complete remaining read endpoints
+Begin responsive frontend implementation
     ↓
-Implement genre listing
+Build the Comparable Games search experience
     ↓
-Implement platform listing
+Connect filters to genre and platform endpoints
     ↓
 Build responsive frontend
     ↓
 Connect Blazor WebAssembly to the API
 ```
 
-The immediate technical follow-up is the implementation of the genre and platform read endpoints.
+The immediate technical follow-up is the responsive Blazor WebAssembly frontend and its integration with the completed read endpoints.
 
 The next product-facing delivery is the responsive Comparable Games frontend integrated with the deployed API.
