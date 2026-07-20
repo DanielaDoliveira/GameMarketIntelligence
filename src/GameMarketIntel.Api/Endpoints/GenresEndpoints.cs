@@ -8,8 +8,7 @@ public static class GenreEndpoints
 {
     public static IEndpointRouteBuilder MapGenreEndpoints(this IEndpointRouteBuilder endpoints)
     {
-        endpoints.MapGet( "/api/genres",
-                async (IGenreService genreService,CancellationToken cancellationToken) =>
+        endpoints.MapGet( "/api/genres",async (IGenreService genreService,CancellationToken cancellationToken) =>
                 {
                     IReadOnlyList<GenreDetails> genres =await genreService.GetAllAsync(cancellationToken);
 
