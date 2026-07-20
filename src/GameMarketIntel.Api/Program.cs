@@ -93,6 +93,7 @@ app.MapScalarApiReference();
 
 app.MapDataSourceEndpoints();
 app.MapGameEndpoints();
+app.MapGenreEndpoints();
 
 app.Run();
 public partial class Program;
