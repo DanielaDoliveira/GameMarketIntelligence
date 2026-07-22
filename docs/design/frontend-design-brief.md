@@ -1,19 +1,94 @@
+# Comparable Games Frontend Design Brief
+
+## Status
+
+**Approved for Milestone 2 implementation**
+
+Backend search foundation: **Implemented**
+
+Frontend implementation: **Pending**
+
+## Purpose
+
+Define the visual, responsive, interaction, accessibility, and feedback-state direction for Milestone 2 — Comparable Games Read Experience.
+
+This document describes the first frontend increment only.
+
+Future Research Hub capabilities, commercial evidence, market metrics, analytical dashboards, and advanced decision-support experiences remain outside its scope.
+
+The broader product direction is documented in:
+
+```text
+docs/product/product-vision.md
+```
+
+## Maintenance Note
+
+This document is temporarily maintained as a single file.
+
+Its content is grouped by responsibility so that each major section can later be extracted into a smaller document without redesigning the information architecture.
+
+Commercial metrics are intentionally deferred to the future Market Metrics Foundation milestone.
+
+Their future inclusion must not alter the contracts, scope, or Definition of Done of the first Comparable Games frontend delivery.
+
+## Backend Compatibility Note
+
+The implemented Comparable Games API currently supports:
+
+* partial game-name search;
+* one optional genre identifier;
+* one optional platform identifier;
+* one optional release year;
+* pagination.
+
+Different supplied categories use AND semantics.
+
+The current API does not yet accept multiple genre or platform identifiers in the same request.
+
+Therefore, the first frontend implementation must use:
+
+* one optional selected genre;
+* one optional selected platform.
+
+Multiple genre and platform selection remains a planned product evolution.
+
+It requires an API contract extension before implementation.
+
+## Document Map
+
+1. **Application Structure and Navigation** — shell, header, sidebar, drawer, search placement, footer, and navigation decisions.
+2. **Visual System and Styling** — palette, tokens, CSS strategy, responsive behavior, and motion.
+3. **Comparable Games Query and Results** — filters, combination rules, result layouts, and game-card content.
+4. **Feedback States and Accessibility** — loading, empty, validation, error, not-found, accessibility, and reduced-motion behavior.
+
+## Table of Contents
+
+* [1. Application Structure and Navigation](#1-application-structure-and-navigation)
+* [2. Visual System and Styling](#2-visual-system-and-styling)
+* [3. Comparable Games Query and Results](#3-comparable-games-query-and-results)
+* [4. Feedback States and Accessibility](#4-feedback-states-and-accessibility)
+* [Future Evolution](#future-evolution)
+* [Future Document Split](#future-document-split)
+
+# 1. Application Structure and Navigation
+
 ## Navigation Pattern
 
 GameMarketIntel will use an adaptive lateral-navigation pattern inspired by modern productivity applications.
 
-The navigation structure remains consistent across devices, while its presentation changes according to the available viewport width.
+The navigation structure remains consistent across devices, while its presentation changes according to available viewport width.
 
 ### Desktop Behavior
 
 On desktop layouts:
 
-- the lateral navigation is visible by default;
-- the application header contains a menu button that can collapse or expand the sidebar;
-- the sidebar occupies its own layout space and does not cover the page content;
-- the content area resizes when the sidebar changes state;
-- navigation labels and icons are visible in the expanded state;
-- a future compact state may display icons only.
+* lateral navigation is visible by default;
+* the application header contains a menu button that can collapse or expand the sidebar;
+* the sidebar occupies its own layout space and does not cover page content;
+* the content area resizes when the sidebar changes state;
+* navigation labels and icons are visible in the expanded state;
+* a future compact state may display icons only.
 
 Initial desktop structure:
 
@@ -38,18 +113,18 @@ Page Layout
 
 The sidebar should be expanded by default on sufficiently wide screens.
 
-The user should be able to collapse it when more horizontal space is required for research or comparison content.
+The user should be able to collapse it when additional horizontal space is required for research or comparison content.
 
 ### Mobile Behavior
 
 On mobile layouts:
 
-- the sidebar is hidden by default;
-- the application header contains a visible menu button;
-- the menu button opens a temporary lateral drawer;
-- the drawer appears above the page content;
-- the remaining page receives a visual overlay while the drawer is open;
-- the content remains the primary focus when navigation is not required.
+* the sidebar is hidden by default;
+* the application header contains a visible menu button;
+* the menu button opens a temporary lateral drawer;
+* the drawer appears above the page content;
+* the remaining page receives a visual overlay while the drawer is open;
+* content remains the primary focus when navigation is not required.
 
 Initial mobile structure:
 
@@ -68,27 +143,27 @@ Temporary Drawer
 
 The drawer must close when:
 
-- the user selects a destination;
-- the user activates the close button;
-- the user clicks or taps outside the drawer;
-- the user presses the Escape key when a keyboard is available.
+* the user selects a destination;
+* the user activates the close button;
+* the user clicks or taps outside the drawer;
+* the user presses Escape when a keyboard is available.
 
 ### Gesture Support
 
 Swipe gestures may be added later as progressive enhancement.
 
-They must not be the only way to open or close the navigation because gesture-only navigation may:
+They must not be the only way to open or close navigation because gesture-only navigation may:
 
-- be difficult to discover;
-- conflict with browser or operating-system gestures;
-- reduce keyboard and mouse accessibility;
-- behave inconsistently across devices.
+* be difficult to discover;
+* conflict with browser or operating-system gestures;
+* reduce keyboard and mouse accessibility;
+* behave inconsistently across devices.
 
 The visible menu button remains the primary navigation control.
 
 ### Responsive Navigation Principle
 
-The navigation should follow this progression:
+Navigation should follow this progression:
 
 ```text
 Mobile
@@ -101,9 +176,9 @@ Wide desktop
 → expanded sidebar visible by default
 ```
 
-The application must preserve the same navigation hierarchy and routes across all viewport sizes.
+The application must preserve the same navigation hierarchy and routes across viewport sizes.
 
-Only the presentation and interaction model should adapt.
+Only presentation and interaction should adapt.
 
 ## Application Shell
 
@@ -127,27 +202,29 @@ The main content contains the active research experience.
 
 The footer contains secondary product, source, and project information.
 
-The application shell must remain visually consistent across:
+The shell must remain visually consistent across:
 
-- result pages;
-- game-detail pages;
-- loading states;
-- no-results states;
-- error states;
-- route-not-found pages.
+* result pages;
+* game-detail pages;
+* loading states;
+* no-results states;
+* no-data states;
+* validation states;
+* request-error states;
+* route-not-found pages.
 
 ## Header Pattern
 
-The application header should remain visible, lightweight, and visually consistent across pages.
+The header should remain visible, lightweight, and visually consistent across pages.
 
 Its responsibilities are:
 
-- expose the navigation menu control;
-- preserve product identity;
-- provide access to the current search experience;
-- reserve limited space for future secondary actions.
+* expose the navigation menu control;
+* preserve product identity;
+* provide access to the current search experience;
+* reserve limited space for future secondary actions.
 
-The header must not duplicate the navigation options already available in the sidebar.
+The header must not duplicate navigation options already available in the sidebar.
 
 ### Desktop Header
 
@@ -170,25 +247,25 @@ Recommended structure:
 [ Menu ] [ GameMarketIntel ]   [ Search comparable games... ]   [ Action ]
 ```
 
-The search field should occupy the central region of the header and receive most of the available horizontal space.
+The search field should occupy the central region and receive most available horizontal space.
 
-The product identity should remain visible on the left without competing with the search experience.
+The product identity should remain visible on the left without competing with search.
 
 The right region should remain minimal during the first increment.
 
 It may later support:
 
-- user preferences;
-- language selection;
-- help;
-- profile;
-- notifications.
+* user preferences;
+* language selection;
+* help;
+* profile;
+* notifications.
 
-No placeholder avatar or unnecessary action should be introduced before a real product need exists.
+No placeholder avatar or unnecessary action should be introduced before a real need exists.
 
 ### Mobile Header
 
-On mobile, the header should use a compact search-centered composition inspired by modern productivity applications.
+On mobile, the header should use a compact search-centered composition.
 
 Recommended structure:
 
@@ -200,29 +277,31 @@ The search field should remain the dominant element.
 
 The full product name does not need to remain visible when horizontal space is limited.
 
-A compact product mark may appear when it does not reduce the usability of the search field.
+A compact product mark may appear when it does not reduce search usability.
 
 The mobile header should preserve:
 
-- a visible menu button;
-- a comfortable search target;
-- sufficient spacing between controls;
-- clear focus and active states;
-- support for touch and keyboard interaction.
+* a visible menu button;
+* a comfortable search target;
+* sufficient spacing between controls;
+* clear focus and active states;
+* support for touch and keyboard interaction.
 
 ## Search Placement
 
-For the first frontend increment, the Comparable Games search should appear in the center of the application header.
+For the first frontend increment, Comparable Games search should appear in the center of the application header.
 
-The Comparable Games page must not repeat the same primary search field inside the main content area.
+The Comparable Games page must not repeat the same primary search field inside the main content.
 
-The main content should instead contain:
+The main content should contain:
 
-- the page title;
-- genre and platform filters;
-- active-filter chips;
-- result count;
-- results or feedback states.
+* page title;
+* genre filter;
+* platform filter;
+* optional release-year filter;
+* active-filter presentation;
+* result count;
+* results or feedback states.
 
 Recommended structure:
 
@@ -232,8 +311,8 @@ Header
 
 Comparable Games page
 ├── Page title
-├── Genre and platform filters
-├── Active-filter chips
+├── Genre, platform, and optional year filters
+├── Active-filter context
 ├── Result count
 └── Results
 ```
@@ -242,21 +321,21 @@ This prevents duplicate search controls and gives the application a clear visual
 
 ## Search Scope
 
-During the first increment, the header search is contextual.
+During the first increment, header search is contextual.
 
-On the Comparable Games page, it searches comparable games by partial name.
+On the Comparable Games page, it searches games by partial name.
 
 It is not yet a global application search.
 
-Future versions may expand the same header search position to include:
+Future versions may expand the same search position to include:
 
-- games;
-- genres;
-- platforms;
-- data sources;
-- market indicators.
+* games;
+* genres;
+* platforms;
+* data sources;
+* market indicators.
 
-Any future expansion to global search must clearly communicate the type and scope of the returned results.
+Any future expansion to global search must clearly communicate the type and scope of returned results.
 
 ## Footer Pattern
 
@@ -264,11 +343,11 @@ The application should include a lightweight footer below the main content.
 
 The footer may contain:
 
-- product name;
-- About link;
-- Data Sources link;
-- repository or project link;
-- data-update information when available.
+* product name;
+* About link;
+* Data Sources link;
+* repository or project link;
+* data-update information when available.
 
 Recommended desktop structure:
 
@@ -295,12 +374,29 @@ The initial application-shell decision is:
 
 This pattern was selected because it:
 
-- gives search a prominent and stable location;
-- avoids duplicating search controls inside the page;
-- separates navigation from search;
-- supports both desktop and mobile layouts;
-- preserves space for future analytical content;
-- maintains a consistent visual structure across pages.
+* gives search a prominent and stable location;
+* avoids duplicating search controls;
+* separates navigation from search;
+* supports desktop and mobile layouts;
+* preserves space for future analytical content;
+* maintains consistent visual structure across pages.
+
+## Navigation Design Decision
+
+The initial navigation decision is:
+
+> Use a persistent and collapsible lateral sidebar on desktop, and a temporary lateral drawer opened from the header on mobile.
+
+This pattern was selected because it:
+
+* preserves screen space on smaller devices;
+* supports a growing number of product modules;
+* maintains consistent navigation across viewport sizes;
+* keeps main research content visible when navigation is not required;
+* supports mouse, keyboard, touch, and assistive technology;
+* can evolve without redesigning the application shell.
+
+# 2. Visual System and Styling
 
 ## Initial Color Direction
 
@@ -308,12 +404,12 @@ The first visual direction will use a light interface.
 
 The color system should communicate:
 
-- trust;
-- calm;
-- clarity;
-- lightness;
-- practicality;
-- fluidity.
+* trust;
+* calm;
+* clarity;
+* lightness;
+* practicality;
+* fluidity.
 
 ### Base Surfaces
 
@@ -335,7 +431,7 @@ Borders
 
 The interface should avoid using pure white for every layer.
 
-A subtle distinction between the page background, cards, navigation, and supporting surfaces should help organize content without creating visual weight.
+A subtle distinction between page background, cards, navigation, and supporting surfaces should organize content without creating visual weight.
 
 ### Primary Color
 
@@ -343,25 +439,25 @@ The primary color should come from a stable blue family.
 
 It may be used for:
 
-- active navigation;
-- primary buttons;
-- links;
-- focus indicators;
-- selected controls;
-- progress feedback.
+* active navigation;
+* primary buttons;
+* links;
+* focus indicators;
+* selected controls;
+* progress feedback.
 
-The blue should feel trustworthy and clear without becoming highly saturated or resembling a financial trading interface.
+The blue should feel trustworthy and clear without resembling a financial trading interface.
 
 ### Secondary Color
 
-A restrained blue-green or cyan family may support the sense of:
+A restrained blue-green or cyan family may support:
 
-- movement;
-- progress;
-- freshness;
-- fluidity.
+* movement;
+* progress;
+* freshness;
+* fluidity.
 
-It should be used for secondary emphasis rather than competing with the primary blue.
+It should support secondary emphasis rather than compete with the primary blue.
 
 ### Accent Color
 
@@ -369,13 +465,13 @@ A soft violet or lilac may be used selectively for product identity.
 
 Appropriate uses include:
 
-- subtle gradients;
-- decorative details;
-- selected badges;
-- loading illustrations;
-- secondary highlights.
+* subtle gradients;
+* decorative details;
+* selected badges;
+* loading illustrations;
+* secondary highlights.
 
-The accent must remain restrained so that the interface does not become visually dominated by purple.
+The accent must remain restrained.
 
 ### Text Colors
 
@@ -395,65 +491,59 @@ Disabled text
 → low-contrast neutral tone
 ```
 
-Pure black should not be required for the main interface.
+Pure black should not be required.
 
-A dark navy tone may preserve readability while remaining aligned with the product identity.
+A dark navy tone may preserve readability while aligning with product identity.
 
 ### Semantic Colors
 
 The design system should define distinct colors for:
 
-- success;
-- information;
-- warning;
-- error.
+* success;
+* information;
+* warning;
+* error.
 
 Semantic meaning must never depend on color alone.
 
 Icons, labels, and explanatory text should support each state.
 
-### Initial Palette
+## Initial Palette
 
-The initial GameMarketIntel palette is:
+| Design token     |       Hex | Primary use                           |
+| ---------------- | --------: | ------------------------------------- |
+| `background`     | `#F5F7FB` | Application background                |
+| `surface`        | `#FFFFFF` | Cards, header, and navigation         |
+| `surface-muted`  | `#EEF2F8` | Secondary surfaces and skeletons      |
+| `border`         | `#DDE4EE` | Subtle separators and borders         |
+| `text-primary`   | `#172033` | Main text                             |
+| `text-secondary` | `#5E6B80` | Supporting text and metadata          |
+| `text-muted`     | `#8995A8` | Low-emphasis information              |
+| `primary`        | `#315E9E` | Primary actions and active navigation |
+| `primary-hover`  | `#274C82` | Hover and pressed states              |
+| `primary-soft`   | `#E7EFFA` | Selected surfaces and highlights      |
+| `secondary`      | `#3F8F9D` | Progress and secondary emphasis       |
+| `secondary-soft` | `#E2F2F3` | Soft secondary surfaces               |
+| `accent`         | `#7A6FC2` | Product identity accents              |
+| `accent-soft`    | `#EFECFA` | Soft accent surfaces                  |
+| `success`        | `#2E7D5B` | Success states                        |
+| `warning`        | `#B7791F` | Warning states                        |
+| `error`          | `#B54747` | Error states                          |
+| `info`           | `#3975AD` | Information and loading states        |
 
-| Design token | Hex | Primary use |
-|---|---:|---|
-| `background` | `#F5F7FB` | Application background |
-| `surface` | `#FFFFFF` | Cards, header, and navigation |
-| `surface-muted` | `#EEF2F8` | Secondary surfaces and skeletons |
-| `border` | `#DDE4EE` | Subtle separators and borders |
-| `text-primary` | `#172033` | Main text |
-| `text-secondary` | `#5E6B80` | Supporting text and metadata |
-| `text-muted` | `#8995A8` | Low-emphasis information |
-| `primary` | `#315E9E` | Primary actions and active navigation |
-| `primary-hover` | `#274C82` | Hover and pressed states |
-| `primary-soft` | `#E7EFFA` | Selected surfaces and subtle highlights |
-| `secondary` | `#3F8F9D` | Progress and secondary emphasis |
-| `secondary-soft` | `#E2F2F3` | Soft secondary surfaces |
-| `accent` | `#7A6FC2` | Restrained product identity accents |
-| `accent-soft` | `#EFECFA` | Soft accent surfaces |
-| `success` | `#2E7D5B` | Success states |
-| `warning` | `#B7791F` | Warning states |
-| `error` | `#B54747` | Error states |
-| `info` | `#3975AD` | Informational and loading states |
+These values are an initial design direction and must be validated for accessibility in actual component combinations.
 
-These values are an initial design direction and must be validated for accessibility in their actual component combinations.
+The implementation should reference semantic tokens instead of arbitrary colors.
 
-The implementation should reference semantic tokens rather than choosing arbitrary framework colors directly.
-
-### Dark Theme
+## Dark Theme
 
 A dark theme is not part of the first frontend delivery.
 
-The initial system should nevertheless avoid decisions that make future dark-theme support unnecessarily difficult.
+The initial system should avoid decisions that make future dark-theme support unnecessarily difficult.
 
-Color values must be represented through reusable semantic design tokens rather than scattered literal values.
+Colors must be represented through reusable semantic tokens rather than scattered literal values.
 
 ## Initial Design Tokens
-
-The frontend should use semantic design tokens so that components reference the purpose of a color rather than repeating literal values.
-
-Initial CSS custom properties:
 
 ```css
 :root {
@@ -483,7 +573,7 @@ Initial CSS custom properties:
 }
 ```
 
-Components must use semantic tokens rather than repeating hexadecimal values.
+Components must use semantic tokens instead of repeating hexadecimal values.
 
 Example:
 
@@ -504,22 +594,20 @@ Example:
 }
 ```
 
-This preserves the product identity if the underlying palette changes later.
-
 ## Styling Strategy
 
-The initial GameMarketIntel frontend will use standard CSS and Blazor CSS isolation.
+The initial frontend will use standard CSS and Blazor CSS isolation.
 
 Tailwind CSS will not be introduced in the first frontend implementation.
 
 This decision prioritizes:
 
-- native integration with the Blazor build process;
-- simpler local development;
-- fewer external build dependencies;
-- predictable Continuous Integration and deployment;
-- direct control over responsive layouts and interaction states;
-- clear separation between global design tokens and component-specific styles.
+* native integration with the Blazor build process;
+* simpler local development;
+* fewer external build dependencies;
+* predictable CI and deployment;
+* direct control over responsive layouts;
+* clear separation between global tokens and component styles.
 
 The styling structure should use:
 
@@ -542,22 +630,22 @@ Blazor CSS isolation
 └── error states
 ```
 
-CSS Grid and Flexbox should provide the primary layout mechanisms.
+CSS Grid and Flexbox should provide primary layout mechanisms.
 
-Media queries should progressively adapt the mobile-first layout for tablet and desktop viewports.
+Media queries should progressively adapt the mobile-first layout.
 
 ### Global CSS Responsibilities
 
-Global CSS should contain styles that intentionally apply across the application, including:
+Global CSS should contain styles intentionally shared across the application:
 
-- semantic design tokens;
-- font and text defaults;
-- box-sizing and base resets;
-- page background;
-- default link behavior;
-- shared focus indicators;
-- reduced-motion behavior;
-- reusable layout helpers when they provide clear value.
+* semantic design tokens;
+* font and text defaults;
+* box-sizing and base resets;
+* page background;
+* default link behavior;
+* shared focus indicators;
+* reduced-motion behavior;
+* reusable layout helpers where valuable.
 
 Global CSS should avoid component-specific selectors unless a style is intentionally shared.
 
@@ -569,7 +657,7 @@ Examples:
 
 ```text
 MainLayout.razor.css
-→ application shell, header, sidebar, and drawer
+→ shell, header, sidebar, and drawer
 
 GameCard.razor.css
 → game-card structure and responsive behavior
@@ -584,8 +672,6 @@ ErrorState.razor.css
 → error-state presentation and retry action
 ```
 
-This keeps component behavior close to its Razor markup and reduces accidental style collisions.
-
 ### Responsive Strategy
 
 The frontend must remain mobile-first.
@@ -593,8 +679,6 @@ The frontend must remain mobile-first.
 Base styles should represent the mobile layout.
 
 Larger layouts should be introduced through progressive media queries.
-
-Example direction:
 
 ```css
 .comparable-games-grid {
@@ -624,15 +708,13 @@ CSS transitions and animations should remain subtle and purposeful.
 
 They may support:
 
-- sidebar expansion and collapse;
-- mobile drawer entrance and exit;
-- overlay appearance;
-- loading skeletons;
-- focus and active states.
+* sidebar expansion and collapse;
+* mobile drawer entrance and exit;
+* overlay appearance;
+* loading skeletons;
+* focus and active states.
 
-The interface should respect the user's reduced-motion preference.
-
-Example:
+The interface should respect reduced-motion preferences.
 
 ```css
 @media (prefers-reduced-motion: reduce) {
@@ -647,32 +729,51 @@ Example:
 }
 ```
 
-### Styling Decision
-
-The initial styling decision is:
+## Styling Decision
 
 > Use standard CSS, semantic CSS custom properties, CSS Grid, Flexbox, media queries, and Blazor CSS isolation.
 
-This approach may be reviewed later if the frontend grows enough to justify an additional styling framework.
-
+# 3. Comparable Games Query and Results
 
 ## Comparable Games Query Experience
 
 The first functional frontend case will allow users to search and filter comparable games.
 
-The query must support:
+The first implementation must support:
 
-- partial game-name search;
-- selection of one or more genres;
-- selection of one or more platforms;
-- removal of individual filters;
-- clearing all active filters;
-- result-count feedback;
-- loading, no-results, error, and unavailable-data states.
+* partial game-name search;
+* one optional genre;
+* one optional platform;
+* optional release year when exposed by the first UI;
+* removal of individual active filters;
+* clearing all active filters;
+* result-count feedback;
+* pagination;
+* loading, no-results, validation, error, and unavailable-data states.
 
-### Query Combination Rules
+## Current Query Combination Rules
 
-Different filter categories must use AND semantics.
+Different filter categories use AND semantics.
+
+Example:
+
+```text
+Name contains "Hades"
+AND
+Genre matches Action
+AND
+Platform matches PC
+AND
+Release year matches 2020
+```
+
+The first API contract accepts only one selected genre and one selected platform.
+
+The frontend must not present multi-select behavior before the API supports it.
+
+## Future Multi-Select Behavior
+
+A future API and frontend version may support multiple values inside the same category using OR semantics.
 
 Example:
 
@@ -684,35 +785,7 @@ AND
 Platform matches PC OR Nintendo Switch
 ```
 
-Multiple values inside the same category must initially use OR semantics.
-
-For genres:
-
-```text
-Selected genres
-→ Action
-→ Roguelike
-
-Result
-→ games associated with Action OR Roguelike
-```
-
-For platforms:
-
-```text
-Selected platforms
-→ PC
-→ Nintendo Switch
-
-Result
-→ games available on PC OR Nintendo Switch
-```
-
-This behavior supports exploratory research, reduces the likelihood of empty result sets, and remains familiar to users of digital catalogs.
-
-Support for matching all selected genres may be evaluated later for more specialized research.
-
-A possible future control would be:
+Possible future genre control:
 
 ```text
 Genre matching
@@ -726,7 +799,7 @@ This control is not part of the first frontend delivery.
 
 The primary Comparable Games search field must appear in the center of the application header.
 
-The page body must not repeat the same game-name search field.
+The page body must not repeat the same name-search field.
 
 Initial page structure:
 
@@ -736,215 +809,266 @@ Header
 
 Comparable Games
 
-[ Genres ] [ Platforms ] [ More filters ]
+[ Genre ] [ Platform ] [ Release year ]
 
 Active filters
-[Action ×] [Roguelike ×] [PC ×] [Clear all]
+[Action ×] [PC ×] [2020 ×] [Clear all]
 
 12 games found
 
 Results
+Pagination
 ```
+
+### Mobile
 
 On mobile:
 
-- the search field should occupy the dominant central area of the header;
-- genre and platform filters may open in a temporary panel, drawer, or bottom sheet;
-- active filters should remain visible as removable chips;
-- the result count should appear before the result list;
-- controls must remain comfortable for touch interaction.
+* the search field should occupy the dominant header area;
+* filters may open in a temporary panel, drawer, or bottom sheet;
+* active filters should remain visible;
+* result count should appear before results;
+* controls must remain comfortable for touch interaction;
+* pagination must remain understandable on narrow screens.
+
+### Desktop
 
 On desktop:
 
-- the search field should occupy the center of the header;
-- filters may remain visible in a horizontal toolbar or supporting side panel;
-- active filters and result count should remain visually close to the results;
-- the layout may use additional horizontal space without becoming dense.
+* filters may appear in a horizontal toolbar or supporting side panel;
+* active filters and result count should remain visually close to results;
+* the layout may use additional horizontal space without becoming dense;
+* pagination should appear after the result region.
 
-The exact filter-panel presentation will be validated in the wireframes.
+The exact filter-panel presentation will be validated in wireframes.
+
+## Search Behavior
+
+The frontend should debounce text input before sending a request.
+
+It should avoid requesting the API after every individual keystroke without delay.
+
+Recommended behavior:
+
+```text
+User types
+    ↓
+Short debounce delay
+    ↓
+Cancel superseded request when possible
+    ↓
+Send latest search query
+```
+
+The current search and filters should be preserved during loading and recoverable error states.
+
+## Pagination Behavior
+
+The API returns:
+
+* current page;
+* page size;
+* total items;
+* total pages.
+
+The frontend should:
+
+* return to page `1` when a filter changes;
+* disable previous-page navigation on page `1`;
+* disable next-page navigation on the final page;
+* preserve active search and filters when changing pages;
+* avoid showing impossible page numbers;
+* present the current page and total pages clearly.
+
+Default behavior:
+
+```text
+Page:
+1
+
+Page size:
+20
+```
+
+The first UI does not need to expose a page-size selector unless it provides clear value.
 
 ## Results Layout
 
-The result presentation must adapt to the available width.
+The result presentation must adapt to available width.
 
-### Mobile Results
+### Mobile Result Pattern
 
-Mobile results must use one card per row.
+Mobile should use a vertically stacked result list.
 
-Cards should be stacked vertically and use the available content width.
-
-```text
-Result list
-├── Game card
-├── Game card
-├── Game card
-└── Game card
-```
-
-This approach prioritizes:
-
-- readability;
-- touch interaction;
-- predictable vertical scanning;
-- sufficient space for game names and metadata;
-- a calm layout without compressed columns.
-
-A multi-column result grid should not be used on narrow mobile screens.
-
-### Desktop Results
-
-Desktop layouts may use a responsive multi-column composition.
-
-The result area may evolve from one column to two or three columns when the content has enough space.
-
-```css
-.comparable-games-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 1rem;
-}
-
-@media (min-width: 48rem) {
-    .comparable-games-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-}
-
-@media (min-width: 75rem) {
-    .comparable-games-grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-}
-```
-
-CSS Grid may organize the result collection, while Flexbox may organize content inside each card.
-
-The final desktop arrangement should be validated according to card width, metadata density, and image proportions rather than maximizing the number of columns.
-
-## Initial Game Card Content
-
-The first game card should prioritize concise research information.
-
-Required content:
+Each result should contain:
 
 ```text
-Game image
+Cover image
 Game name
-Release year
+Release year or date
 Genres
 Platforms
+Details affordance
 ```
 
-The card should not contain a long description.
-
-Long text would reduce scanability, particularly on mobile, and compete with the information needed for comparison.
-
-A future details page or expanded view may contain:
-
-- full description;
-- publisher;
-- developer;
-- release history;
-- source information;
-- market metrics;
-- comparison indicators.
-
-The initial card may use badges or compact text groups for genres and platforms.
-
-## Experience States
-
-The Comparable Games experience must distinguish between different application and query states.
-
-Required states:
+Recommended pattern:
 
 ```text
-Initial application loading
-Query loading
-Results available
-No matching results
-No data available
-Request error
-Route not found
+┌────────────────────────────┐
+│ [Cover]  Game name         │
+│          Release year      │
+│          Genres            │
+│          Platforms      ›  │
+└────────────────────────────┘
 ```
 
-These states must share the same visual language while differing in prominence and purpose.
+One result should appear per row.
 
-## Initial Application Loading
+### Desktop Result Pattern
 
-The initial Blazor WebAssembly loading experience is a product-level state.
+Desktop may use a responsive card grid.
 
-It must reassure the user that the application is starting rather than appearing frozen or broken.
+Recommended progression:
 
-Primary message:
+```text
+Narrow
+→ one card per row
+
+Medium
+→ two cards per row
+
+Wide
+→ three cards per row
+```
+
+Cards should remain readable and should not become excessively narrow.
+
+## Game Card Content
+
+Each card should initially expose:
+
+* cover image or fallback;
+* game name;
+* release year or date;
+* genres;
+* platforms;
+* details affordance.
+
+Long descriptions should not appear in result cards.
+
+Descriptions belong to the details destination.
+
+## Images
+
+Image URLs come from external data.
+
+The frontend must support:
+
+* missing image URLs;
+* broken external images;
+* delayed image loading;
+* accessible alternative text;
+* neutral fallback visuals.
+
+Fallback imagery should use the established palette and should not resemble an error state.
+
+## Genre and Platform Presentation
+
+Genres and platforms should be visually secondary to the game name.
+
+They may appear as:
+
+* compact tags;
+* restrained text lists;
+* short metadata rows.
+
+Cards must avoid excessive chip density.
+
+When many categories are present, the UI may show a limited number followed by a summary such as:
+
+```text
++2 more
+```
+
+## Basic Game Details Destination
+
+The first details destination should expose:
+
+* cover image or fallback;
+* game name;
+* release date;
+* genres;
+* platforms;
+* short description when available.
+
+It should not introduce:
+
+* market metrics;
+* sales data;
+* analytical charts;
+* recommendation scores;
+* unsupported source claims.
+
+A more complete details experience may be added later.
+
+# 4. Feedback States and Accessibility
+
+## Initial Blazor Loading State
+
+Blazor WebAssembly may require noticeable time during the first load.
+
+The interface must reassure users that loading is expected and progressing.
+
+Recommended message:
 
 > Preparing your market research workspace...
 
-The visual direction should use:
+The loading experience should:
 
-- a centered product mark or loading symbol;
-- the soft violet accent from the product palette;
-- subtle expanding or rotating circular elements;
-- calm, continuous motion;
-- clear readable text;
-- generous empty space.
+* appear immediately;
+* use the GameMarketIntel visual identity;
+* avoid a blank page;
+* avoid indefinite-looking motion;
+* remain lightweight;
+* preserve user confidence during cold or first loads.
 
-The motion may take inspiration from animated circular hover effects in the visual references, but it should be adapted into a calm loading identity rather than reproduced as a button interaction.
+## Query Loading State
 
-The animation must not:
-
-- flash aggressively;
-- rotate at a distracting speed;
-- imply an exact progress percentage when none is available;
-- continue when reduced motion is requested.
-
-Suggested structure:
-
-```text
-Soft animated product symbol
-
-Preparing your market research workspace...
-```
-
-## In-Application Query Loading
-
-Query loading must use a smaller and more discreet version of the initial loading identity.
-
-Primary message:
+When the application is searching:
 
 > Searching comparable games...
 
-The visual treatment may include:
+The query-loading state should:
 
-- a small circular loader or product symbol;
-- subtle violet or primary-blue motion;
-- animated ellipsis;
-- optional skeleton placeholders when the result structure is already known.
+* preserve the current page structure;
+* keep search and filters visible;
+* use skeletons or restrained progress feedback;
+* avoid replacing the entire application shell;
+* avoid content jumps where practical.
 
-Suggested wireframe representation:
+## Results Available State
+
+When results are available, the page should show:
+
+* current search and filters;
+* active-filter context;
+* total matching game count;
+* result list or grid;
+* pagination controls.
+
+Example:
 
 ```text
-[ loading icon ] Searching comparable games...
+12 games found
 ```
 
-The query loading state should communicate activity without making the user feel that the entire application has restarted.
-
-The relationship between both loading states is:
-
-```text
-Initial application loading
-→ prominent branded experience
-
-Query loading
-→ compact functional version of the same visual identity
-```
+Pluralization should be handled correctly.
 
 ## No Results State
 
-The no-results state appears when data exists, but no game matches the current search and filters.
+The no-results state appears when the request succeeds but no game matches the current criteria.
 
-It must not be presented as a technical failure.
-
-The page should preserve the current search and filter context so the user can understand why no results were returned.
+The page should preserve search and filter context.
 
 Recommended structure:
 
@@ -958,45 +1082,19 @@ Try changing your search or removing one or more filters.
 [ Clear all filters ]
 ```
 
-Alternative concise heading:
+Alternative heading:
 
 > No results found
 
 The supporting message should explain the next useful action.
 
-The primary recovery action should be one of:
-
-- clear all filters;
-- reset filters;
-- clear search;
-- return to all games.
-
-For the first Comparable Games case, the preferred action is:
+The preferred action is:
 
 > Clear all filters
 
-The action should use the primary color and remain visually clear without dominating the page.
-
-### No Results Visual Direction
-
-The no-results state should follow the lighter visual references:
-
-- centered composition;
-- generous whitespace;
-- simple line-based illustration;
-- low visual noise;
-- restrained use of primary blue, blue-green, and soft violet;
-- heading, supporting text, and one clear recovery action.
-
-The illustration may use a search, empty document, or empty-container metaphor.
-
-It should not appear humorous or alarming enough to undermine the reliability of the research product.
-
 ### Mobile No Results
 
-On mobile, the state should be vertically centered within the available result region when practical.
-
-Structure:
+On mobile, the state should be vertically stacked:
 
 ```text
 Illustration
@@ -1009,15 +1107,22 @@ The illustration should remain compact enough that the action is visible without
 
 ### Desktop No Results
 
-On desktop, the same centered state may occupy the main result region while search and filters remain accessible.
+On desktop, the state should occupy the main result region while search and filters remain accessible.
 
-The larger viewport may allow a slightly more detailed illustration, but the state should remain visually restrained.
+It should use:
+
+* centered composition;
+* generous but controlled whitespace;
+* restrained line-based illustration;
+* clear heading;
+* short supporting message;
+* one recovery action.
 
 ## No Data Available State
 
 The no-data state is different from no results.
 
-It appears when the application does not currently have game records available for the query experience.
+It appears when the application does not currently contain game records.
 
 Recommended structure:
 
@@ -1031,13 +1136,45 @@ We are preparing the first comparable-games dataset.
 [ Try again ]
 ```
 
-This state should not instruct users to clear filters when filters are not the cause.
+This state must not instruct the user to clear filters when filters are not the cause.
 
-The message may be refined later according to the actual collection and data-import process.
+## Validation State
 
-## Error State
+Invalid query values should eventually return standardized HTTP `400` responses.
 
-A request error occurs when the query cannot be completed because of a network, API, or unexpected application failure.
+Current validation rules include:
+
+* page must be at least `1`;
+* page size must be between `1` and `100`;
+* release year cannot be greater than the current year.
+
+The frontend should not normally generate invalid values.
+
+When a validation response is received, the interface should:
+
+* preserve current user input;
+* explain which input is invalid;
+* avoid presenting the problem as an unexpected system failure;
+* guide the user toward a valid correction.
+
+Example:
+
+```text
+Some search options are invalid
+
+Page size must be between 1 and 100.
+```
+
+The final response structure depends on the future global `ProblemDetails` implementation.
+
+## Request Error State
+
+A request error occurs when a query cannot be completed because of:
+
+* network failure;
+* API unavailability;
+* unexpected server failure;
+* deployment cold start exceeding the expected request duration.
 
 Recommended structure:
 
@@ -1051,25 +1188,44 @@ Please try again. Your search and filters have been preserved.
 [ Try again ]
 ```
 
-The current search and selected filters should remain intact whenever possible.
-
 Error messaging should avoid technical details in the primary interface.
 
 Diagnostic information may be logged separately.
 
+## Cold Start and User Confidence
+
+The API may experience cold starts under free hosting constraints.
+
+The frontend should communicate that the request is still progressing rather than appearing frozen.
+
+Recommended behavior:
+
+```text
+Initial request
+    ↓
+Normal loading feedback
+    ↓
+If loading continues longer than expected
+    ↓
+Reassuring secondary message
+```
+
+Possible secondary message:
+
+> The research service is starting. This may take a little longer on the first request.
+
+The interface must not:
+
+* display an indefinite blank region;
+* imply that the user caused the delay;
+* repeatedly retry without control;
+* erase the current search context.
+
 ## Route Not Found Page
 
-The application must provide a dedicated not-found page for invalid or unavailable routes.
+The application must provide a dedicated not-found page for invalid routes.
 
-This page is different from the Comparable Games no-results state.
-
-The route-not-found page should:
-
-- use the established GameMarketIntel palette;
-- maintain the product identity;
-- clearly communicate that the requested page does not exist;
-- provide a direct path back to a valid application destination;
-- remain simple and lightweight.
+This differs from the Comparable Games no-results state.
 
 Recommended content:
 
@@ -1083,85 +1239,117 @@ The page you are looking for may have moved or does not exist.
 [ Return to overview ]
 ```
 
-Alternative supporting text:
+The page should:
 
-> We couldn't find the page you requested.
+* use the established palette;
+* maintain product identity;
+* clearly communicate that the route does not exist;
+* provide a direct path back to a valid destination;
+* remain simple and lightweight.
 
-The preferred primary action is:
+## Accessibility Requirements
 
-> Return to overview
+The first frontend increment must include:
 
-### Route Not Found Visual Direction
+* semantic HTML;
+* meaningful heading hierarchy;
+* visible keyboard focus;
+* keyboard-accessible navigation;
+* Escape support for the mobile drawer;
+* labels for search and filter controls;
+* accessible names for icon-only buttons;
+* sufficient color contrast;
+* status announcements where appropriate;
+* alternative text for meaningful images;
+* decorative images hidden from assistive technology;
+* reduced-motion support;
+* touch-friendly target sizes.
 
-The page may take structural inspiration from the provided 404 reference:
+## Live Feedback
 
-- a large centered content surface;
-- an illustration occupying one side or the upper area;
-- concise text;
-- one clear recovery button;
-- subtle decorative shapes behind the main surface;
-- strong contrast between the page background and primary content container.
+Dynamic feedback such as loading, result counts, validation, and errors should be announced appropriately.
 
-The GameMarketIntel version should use the existing light palette rather than adopting the dark blue palette from the reference directly.
+Possible use:
 
-Possible composition:
-
-```text
-Application background
-
-Decorative accent shapes
-
-Large surface
-├── 404 and message
-├── supporting text
-├── Return to overview action
-└── restrained research or game-related illustration
+```html
+<div aria-live="polite">
+    12 games found
+</div>
 ```
 
-On mobile, the composition should stack vertically:
+Urgent errors may use a stronger announcement when necessary, but routine updates should not interrupt the user excessively.
 
-```text
-Illustration
-404
-Page not found
-Supporting message
-Return to overview
+## Keyboard Interaction
+
+Keyboard users must be able to:
+
+* open and close navigation;
+* move through navigation links;
+* focus the search field;
+* operate filter controls;
+* remove active filters;
+* activate clear-all;
+* navigate pagination;
+* open a game result;
+* activate retry actions.
+
+Focus must return to a logical location after dialogs, drawers, or temporary panels close.
+
+## Reduced Motion
+
+The application should respect:
+
+```css
+@media (prefers-reduced-motion: reduce)
 ```
 
-On desktop, text and illustration may be positioned side by side.
+Motion should not be required to understand state changes.
 
-The not-found page should not require the main application sidebar to remain open.
+## Error Tone
 
-A lightweight header with product identity may be retained so the page still feels part of the application.
+Errors should sound:
 
-## Empty-State Accessibility
+* calm;
+* direct;
+* actionable;
+* non-technical.
 
-All empty, loading, error, and not-found states must:
+They should not blame the user or expose internal stack traces.
 
-- provide real text rather than embedding essential messages inside illustrations;
-- preserve sufficient color contrast;
-- avoid relying on color alone;
-- expose meaningful accessible names for icons and actions;
-- maintain keyboard-accessible recovery actions;
-- announce important dynamic state changes when appropriate;
-- respect reduced-motion preferences.
+# Future Evolution
 
-Decorative illustrations should be hidden from assistive technologies when they do not add semantic meaning.
+After the first frontend and API contract are validated, the query experience may evolve to include:
 
-Loading messages should be exposed through an appropriate live region when the implementation changes state dynamically.
+* multiple genre selection;
+* multiple platform selection;
+* OR semantics inside the same category;
+* optional all-selected-genres matching;
+* release-period filters;
+* publisher filters;
+* developer filters;
+* sorting;
+* URL-preserved query state;
+* saved searches;
+* richer details pages;
+* source and reliability context;
+* research links;
+* market metrics;
+* analytical comparisons.
 
+These capabilities must not be introduced before their API contracts and product value are defined.
 
-## Navigation Design Decision
+# Future Document Split
 
-The initial navigation decision is:
+When the frontend documentation grows, this file may be divided into:
 
-> Use a persistent and collapsible lateral sidebar on desktop, and a temporary lateral drawer opened from the header on mobile.
+```text
+docs/frontend/
+├── application-shell.md
+├── visual-system.md
+├── comparable-games-query.md
+├── comparable-games-results.md
+├── feedback-states.md
+└── accessibility.md
+```
 
-This pattern was selected because it:
-
-- preserves screen space on smaller devices;
-- supports a growing number of product modules;
-- maintains consistent navigation across viewport sizes;
-- keeps the main research content visible when navigation is not required;
-- supports mouse, keyboard, touch, and assistive-technology interaction;
-- can evolve without redesigning the application shell.
+The current section structure is designed to support that future split.

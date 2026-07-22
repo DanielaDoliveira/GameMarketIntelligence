@@ -1,13 +1,14 @@
+using GameMarketIntel.Api.Endpoints;
+using GameMarketIntel.Api.ExceptionHandling;
+using GameMarketIntel.Application;
 using GameMarketIntel.Domain.Entities;
 using GameMarketIntel.Domain.Enums;
 using GameMarketIntel.Domain.ValueObjects;
+using GameMarketIntel.Infrastructure;
 using GameMarketIntel.Infrastructure.Persistence;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
-using GameMarketIntel.Infrastructure;
-using GameMarketIntel.Application;
-using GameMarketIntel.Api.Endpoints;
-using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,6 +26,9 @@ builder.Services.AddInfrastructure();
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders =
@@ -35,12 +39,24 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.KnownProxies.Clear();
 });
 
+const string FrontendCorsPolicy = "Frontend";
+
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy( FrontendCorsPolicy, policy =>
+        {
+            policy.WithOrigins("https://localhost:7160").AllowAnyHeader().AllowAnyMethod();
+        });
+});
+
 var app = builder.Build();
 
 app.UseForwardedHeaders();
-
-app.MapOpenApi();
-app.MapScalarApiReference();
+app.UseExceptionHandler();
+app.UseHttpsRedirection();
+app.UseAuthorization();
+app.UseCors(FrontendCorsPolicy);
 
 if (app.Environment.IsDevelopment())
 {
@@ -79,10 +95,12 @@ if (app.Environment.IsDevelopment())
         });
 }
 
-app.UseHttpsRedirection();
-
-app.UseAuthorization();
+app.MapOpenApi();
+app.MapScalarApiReference();
 
 app.MapDataSourceEndpoints();
-
+app.MapGameEndpoints();
+app.MapGenreEndpoints();
+app.MapPlatformEndpoints();
 app.Run();
+public partial class Program;

@@ -18,6 +18,7 @@ public sealed class GamePersistenceTests
     [Fact]
     public async Task SaveAndLoad_ShouldPersistGameWithGenresAndPlatforms()
     {
+        await _fixture.ResetDatabaseAsync();
         // Arrange
         var game = new Game(
             name: "Hades",

@@ -1,5 +1,110 @@
-﻿<h3>Games</h3>
+﻿@page "/games"
+@using GameMarketIntel.Shared.Contracts.Games.Search
+@using GameMarketIntel.Shared.Contracts.Genres
+@using GameMarketIntel.Shared.Contracts.Platforms
+@using GameMarketIntel.Shared.Requests.Games
+@using GameMarketIntel.Web.Services
+@inject IGameApiService GameApiService
+@inject IGenreApiService GenreApiService
+@inject IPlatformApiService PlatformApiService
+
+<PageTitle>Games</PageTitle>
+
+<h1>Games</h1>
+
+@if (_isLoading)
+{
+    <p>Loading data...</p>
+}
+else if (_errorMessage is not null)
+{
+    <p>@_errorMessage</p>
+}
+else
+{
+    <h2>Genres</h2>
+
+    @if (_genres.Count == 0)
+    {
+        <p>No genres were found.</p>
+    }
+    else
+    {
+        <ul>
+            @foreach (var genre in _genres)
+            {
+                <li>@genre.Name</li>
+            }
+        </ul>
+    }
+
+    <h2>Platforms</h2>
+
+    @if (_platforms.Count == 0)
+    {
+        <p>No platforms were found.</p>
+    }
+    else
+    {
+        <ul>
+            @foreach (var platform in _platforms)
+            {
+                <li>@platform.Name</li>
+            }
+        </ul>
+    }
+
+    <h2>Search result</h2>
+
+    @if (_gamesResult is null || _gamesResult.Items.Count == 0)
+    {
+        <p>No games were found.</p>
+    }
+    else
+    {
+        <ul>
+            @foreach (var game in _gamesResult.Items)
+            {
+                <li>@game.Name</li>
+            }
+        </ul>
+    }
+}
 
 @code {
+    private IReadOnlyList<GenreDetails> _genres = [];
+    private IReadOnlyList<PlatformDetails> _platforms = [];
+    private SearchGamesResult? _gamesResult;
 
+    private bool _isLoading = true;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var genresTask =
+                GenreApiService.GetAllAsync();
+
+            var platformsTask =
+                PlatformApiService.GetAllAsync();
+
+            var gamesTask =
+                GameApiService.SearchAsync(new SearchGamesRequest());
+
+            await Task.WhenAll(genresTask, platformsTask, gamesTask);
+
+            _genres = await genresTask;
+            _platforms = await platformsTask;
+            _gamesResult = await gamesTask;
+        }
+        catch (HttpRequestException)
+        {
+            _errorMessage = "The data could not be loaded. Please try again.";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
 }

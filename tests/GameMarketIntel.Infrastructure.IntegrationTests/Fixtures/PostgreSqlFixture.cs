@@ -36,4 +36,18 @@ public sealed class PostgreSqlFixture : IAsyncLifetime
     {
         await _container.DisposeAsync();
     }
+
+    public async Task ResetDatabaseAsync()
+    {
+        await using var dbContext = CreateDbContext();
+
+        await dbContext.Database.ExecuteSqlRawAsync(
+            """
+        TRUNCATE TABLE
+            "Games",
+            "Platforms",
+            "Genres"
+        RESTART IDENTITY CASCADE;
+        """);
+    }
 }

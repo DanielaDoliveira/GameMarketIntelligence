@@ -1,4 +1,5 @@
-﻿using GameMarketIntel.Shared.Contracts.Sources;
+﻿
+using GameMarketIntel.Shared.Contracts.Sources;
 
 namespace GameMarketIntel.Api.Documentation;
 
@@ -9,9 +10,9 @@ public static class DataSourceEndpointDocumentation
     {
         return builder
             .WithName("GetDataSources")
-            .WithSummary("Obtém todas as fontes de dados")
+            .WithSummary("Gets all data sources")
             .WithDescription(
-                "Retorna as fontes públicas utilizadas pelo sistema e suas informações de confiabilidade.")
+                "Returns the public data sources used by the system and their reliability information.")
             .Produces<IReadOnlyList<DataSourceDetails>>(
                 StatusCodes.Status200OK);
     }

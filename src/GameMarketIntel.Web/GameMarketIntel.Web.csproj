@@ -9,6 +9,9 @@
 
   <ItemGroup>
     <Content Remove="Pages\Counter.razor" />
+    <Content Update="wwwroot\appsettings.Development.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>

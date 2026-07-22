@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\GameMarketIntel.Application\GameMarketIntel.Application.csproj" />
+    <ProjectReference Include="..\GameMarketIntel.Exceptions\GameMarketIntel.Exceptions.csproj" />
     <ProjectReference Include="..\GameMarketIntel.Infrastructure\GameMarketIntel.Infrastructure.csproj" />
     <ProjectReference Include="..\GameMarketIntel.Shared\GameMarketIntel.Shared.csproj" />
   </ItemGroup>

@@ -8,14 +8,18 @@
 
   <ItemGroup>
     <ProjectReference Include="..\GameMarketIntel.Domain\GameMarketIntel.Domain.csproj" />
+    <ProjectReference Include="..\GameMarketIntel.Exceptions\GameMarketIntel.Exceptions.csproj" />
     <ProjectReference Include="..\GameMarketIntel.Shared\GameMarketIntel.Shared.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <Folder Include="Abstractions\ExternalServices\" />
+    <Folder Include="Models\" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="FluentValidation" Version="12.1.1" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.9" />
   </ItemGroup>
 
