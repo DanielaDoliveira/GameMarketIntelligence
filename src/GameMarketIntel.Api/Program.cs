@@ -39,9 +39,16 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.KnownProxies.Clear();
 });
 
+const string FrontendCorsPolicy = "Frontend";
 
 
-
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy( FrontendCorsPolicy, policy =>
+        {
+            policy.WithOrigins("https://localhost:7160").AllowAnyHeader().AllowAnyMethod();
+        });
+});
 
 var app = builder.Build();
 
@@ -49,7 +56,7 @@ app.UseForwardedHeaders();
 app.UseExceptionHandler();
 app.UseHttpsRedirection();
 app.UseAuthorization();
-
+app.UseCors(FrontendCorsPolicy);
 
 if (app.Environment.IsDevelopment())
 {

@@ -1,5 +1,52 @@
-﻿<h3>Games</h3>
+﻿@page "/games"
+@using GameMarketIntel.Shared.Contracts.Genres
+@using GameMarketIntel.Web.Services
+@inject IGenreApiService GenreApiService
+
+<PageTitle>Games</PageTitle>
+
+<h1>Games</h1>
+
+@if (_isLoading)
+{
+    <p>Loading genres...</p>
+}
+else if (_errorMessage is not null)
+{
+    <p>@_errorMessage</p>
+}
+else if (_genres.Count == 0)
+{
+    <p>No genres were found.</p>
+}
+else
+{
+    <ul>
+        @foreach (var genre in _genres)
+        {
+            <li>@genre.Name</li>
+        }
+    </ul>
+}
 
 @code {
+    private IReadOnlyList<GenreDetails> _genres = [];
+    private bool _isLoading = true;
+    private string? _errorMessage;
 
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _genres = await GenreApiService.GetAllAsync();
+        }
+        catch (HttpRequestException)
+        {
+            _errorMessage = "The genres could not be loaded. Please try again.";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
 }

@@ -9,6 +9,9 @@
 
   <ItemGroup>
     <Content Remove="Pages\Counter.razor" />
+    <Content Update="wwwroot\appsettings.Development.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>
@@ -24,7 +27,6 @@
     <Folder Include="Components\Common\" />
     <Folder Include="Components\Games\" />
     <Folder Include="Components\Sources\" />
-    <Folder Include="Services\" />
   </ItemGroup>
 
 </Project>

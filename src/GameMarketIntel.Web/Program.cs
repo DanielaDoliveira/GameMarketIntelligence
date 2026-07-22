@@ -1,5 +1,6 @@
 using GameMarketIntel.Web;
 using GameMarketIntel.Web.Configuration;
+using GameMarketIntel.Web.Services;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 
@@ -13,7 +14,7 @@ if (string.IsNullOrWhiteSpace(apiOptions.BaseUrl))
 {
     throw new InvalidOperationException("The API base URL was not configured.");
 }
-
+builder.Services.AddScoped<IGenreApiService, GenreApiService>();
 builder.Services.AddSingleton(apiOptions);
 
 var apiBaseUrl = apiOptions.BaseUrl.TrimEnd('/') + "/";
