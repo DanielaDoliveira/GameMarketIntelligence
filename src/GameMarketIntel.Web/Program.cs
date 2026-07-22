@@ -15,6 +15,8 @@ if (string.IsNullOrWhiteSpace(apiOptions.BaseUrl))
     throw new InvalidOperationException("The API base URL was not configured.");
 }
 builder.Services.AddScoped<IGenreApiService, GenreApiService>();
+builder.Services.AddScoped< IPlatformApiService, PlatformApiService>();
+builder.Services.AddScoped<IGameApiService, GameApiService>();
 builder.Services.AddSingleton(apiOptions);
 
 var apiBaseUrl = apiOptions.BaseUrl.TrimEnd('/') + "/";

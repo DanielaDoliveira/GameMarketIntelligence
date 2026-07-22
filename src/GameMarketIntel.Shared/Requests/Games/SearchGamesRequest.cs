@@ -2,9 +2,15 @@
 
 public sealed class SearchGamesRequest
 {
-    public string? Name { get; init; }
+    public string? Search { get; init; }
 
-    public Guid[] GenreIds { get; init; } = [];
+    public Guid? GenreId { get; init; }
 
-    public Guid[] PlatformIds { get; init; } = [];
+    public Guid? PlatformId { get; init; }
+
+    public int? ReleaseYear { get; init; }
+
+    public int Page { get; init; } = 1;
+
+    public int PageSize { get; init; } = 20;
 }
