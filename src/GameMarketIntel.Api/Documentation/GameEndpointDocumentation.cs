@@ -1,5 +1,6 @@
 ﻿using GameMarketIntel.Application.Games.Search;
 using GameMarketIntel.Shared.Contracts.Games;
+using GameMarketIntel.Shared.Contracts.Games.Search;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GameMarketIntel.Api.Documentation;

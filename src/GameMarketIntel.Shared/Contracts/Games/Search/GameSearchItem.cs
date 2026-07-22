@@ -1,4 +1,4 @@
-namespace GameMarketIntel.Application.Games.Search;
+namespace GameMarketIntel.Shared.Contracts.Games.Search;
 
 public sealed record GameSearchItem(
     Guid Id,

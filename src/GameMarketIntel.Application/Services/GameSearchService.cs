@@ -1,6 +1,7 @@
 ﻿using FluentValidation;
 using GameMarketIntel.Application.Abstractions.Services;
 using GameMarketIntel.Application.Games.Search;
+using GameMarketIntel.Shared.Contracts.Games.Search;
 
 namespace GameMarketIntel.Application.Services;
 

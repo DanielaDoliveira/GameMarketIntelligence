@@ -1,5 +1,6 @@
 ﻿using GameMarketIntel.Application.Games.Search;
 using GameMarketIntel.Infrastructure.Persistence;
+using GameMarketIntel.Shared.Contracts.Games.Search;
 using Microsoft.EntityFrameworkCore;
 
 namespace GameMarketIntel.Infrastructure.Games.Search;

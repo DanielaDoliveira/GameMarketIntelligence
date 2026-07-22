@@ -1,4 +1,6 @@
-﻿namespace GameMarketIntel.Application.Games.Search;
+﻿using GameMarketIntel.Shared.Contracts.Games.Search;
+
+namespace GameMarketIntel.Application.Games.Search;
 
 public interface IGameSearchRepository
 {
