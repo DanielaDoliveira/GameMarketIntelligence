@@ -41,12 +41,17 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 
 const string FrontendCorsPolicy = "Frontend";
 
-
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy( FrontendCorsPolicy, policy =>
+    options.AddPolicy(
+        FrontendCorsPolicy,
+        policy =>
         {
-            policy.WithOrigins("https://localhost:7160").AllowAnyHeader().AllowAnyMethod();
+            policy
+                .WithOrigins(allowedOrigins)
+                .AllowAnyHeader()
+                .AllowAnyMethod();
         });
 });
 

@@ -9,6 +9,7 @@ COPY src/GameMarketIntel.Api/GameMarketIntel.Api.csproj src/GameMarketIntel.Api/
 COPY src/GameMarketIntel.Application/GameMarketIntel.Application.csproj src/GameMarketIntel.Application/
 COPY src/GameMarketIntel.Domain/GameMarketIntel.Domain.csproj src/GameMarketIntel.Domain/
 COPY src/GameMarketIntel.Infrastructure/GameMarketIntel.Infrastructure.csproj src/GameMarketIntel.Infrastructure/
+COPY src/GameMarketIntel.Exceptions/GameMarketIntel.Exceptions.csproj src/GameMarketIntel.Exceptions/
 
 RUN dotnet restore src/GameMarketIntel.Api/GameMarketIntel.Api.csproj
 
