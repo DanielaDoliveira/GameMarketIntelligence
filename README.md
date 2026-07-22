@@ -8,7 +8,10 @@ Instead of competing with official game websites, digital stores, review platfor
 Project Status: Active Development — Early Stages
 Current Delivery Focus: Milestone 2 — Comparable Games Read Experience
 ```
+```text
+website: https://agreeable-ground-00051ce10.7.azurestaticapps.net/ 
 
+```
 ## Product Vision
 
 GameMarketIntel helps producers move from a game idea to an informed decision.
