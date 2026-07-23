@@ -354,8 +354,7 @@
         }
     }
 
-    private string ResultsGridCssClass =>
-        _isLoading ? "results-grid results-grid--loading" : "results-grid";
+    private string ResultsGridCssClass => _isLoading ? "results-grid results-grid--loading" : "results-grid";
 
     protected override async Task OnInitializedAsync()
     {
@@ -369,14 +368,11 @@
 
         try
         {
-            var genresTask =
-                GenreApiService.GetAllAsync();
+            var genresTask = GenreApiService.GetAllAsync();
 
-            var platformsTask =
-                PlatformApiService.GetAllAsync();
+            var platformsTask = PlatformApiService.GetAllAsync();
 
-            var gamesTask =
-                SearchGamesAsync();
+            var gamesTask = SearchGamesAsync();
 
             await Task.WhenAll(genresTask, platformsTask, gamesTask);
 
@@ -419,39 +415,36 @@
     }
 
     private Task<SearchGamesResult> SearchGamesAsync()
-    {
-        var request = new SearchGamesRequest
-        {
-            GenreId = _selectedGenreId,
-            PlatformId = _selectedPlatformId,
-            ReleaseYear = _releaseYear,
-            Page = _currentPage,
-            PageSize = DefaultPageSize
-        };
+         {
+            var request = new SearchGamesRequest
+            {
+                GenreId = _selectedGenreId,
+                PlatformId = _selectedPlatformId,
+                ReleaseYear = _releaseYear,
+                Page = _currentPage,
+                PageSize = DefaultPageSize
+            };
 
         return GameApiService.SearchAsync(request);
     }
 
     private async Task HandleGenreChangedAsync(ChangeEventArgs args)
     {
-        _selectedGenreId =
-            TryParseGuid(args.Value?.ToString());
+        _selectedGenreId = TryParseGuid(args.Value?.ToString());
 
         await ResetPageAndRefreshAsync();
     }
 
     private async Task HandlePlatformChangedAsync(ChangeEventArgs args)
     {
-        _selectedPlatformId =
-            TryParseGuid(args.Value?.ToString());
+        _selectedPlatformId = TryParseGuid(args.Value?.ToString());
 
         await ResetPageAndRefreshAsync();
     }
 
     private async Task HandleReleaseYearChangedAsync(ChangeEventArgs args)
     {
-        _releaseYear =
-            TryParseReleaseYear(args.Value?.ToString());
+        _releaseYear = TryParseReleaseYear(args.Value?.ToString());
 
         await ResetPageAndRefreshAsync();
     }
@@ -545,9 +538,6 @@
             return null;
         }
 
-        return year is >= 1950 &&
-               year <= CurrentYear
-            ? year
-            : null;
+        return year is >= 1950 && year <= CurrentYear ? year : null;
     }
 }

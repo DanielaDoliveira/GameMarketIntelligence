@@ -4,15 +4,11 @@ using GameMarketIntel.Shared.Contracts.Sources;
 
 namespace GameMarketIntel.Application.Services;
 
-public sealed class DataSourceService(
-    IDataSourceRepository dataSourceRepository)
-    : IDataSourceService
+public sealed class DataSourceService(IDataSourceRepository dataSourceRepository) : IDataSourceService
 {
-    public async Task<IReadOnlyList<DataSourceDetails>> GetAllAsync(
-        CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<DataSourceDetails>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        var dataSources = await dataSourceRepository.GetAllAsync(
-            cancellationToken);
+        var dataSources = await dataSourceRepository.GetAllAsync(cancellationToken);
 
         return dataSources
             .Select(source => new DataSourceDetails(
