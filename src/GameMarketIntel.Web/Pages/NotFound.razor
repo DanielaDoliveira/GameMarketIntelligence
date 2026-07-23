@@ -1,5 +1,27 @@
 ﻿@page "/not-found"
 @layout MainLayout
 
-<h3>Not Found</h3>
-<p>Sorry, the content you are looking for does not exist.</p>
+<PageTitle>Page not found | GameMarketIntel</PageTitle>
+
+<section class="not-found">
+    <div class="not-found__visual" aria-hidden="true">
+        <span>404</span>
+
+        <svg viewBox="0 0 120 90">
+            <path d="M20 67c14-14 26-17 39-7s25 9 41-8" />
+            <circle cx="42" cy="34" r="15" />
+            <path d="m53 45 13 13" />
+            <path d="M77 26h22M77 36h15" />
+        </svg>
+    </div>
+
+    <div class="not-found__content">
+        <span class="not-found__eyebrow"> Navigation error </span>
+
+        <h1>Page not found</h1>
+
+        <p> The page you are looking for may have moved or does not exist. </p>
+
+        <a class="button button--primary" href="/"> Return to overview </a>
+    </div>
+</section>

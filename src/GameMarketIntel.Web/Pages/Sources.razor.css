@@ -1,0 +1,57 @@
+.page-heading__eyebrow {
+    display: inline-block;
+    margin-bottom: 0.5rem;
+    color: var(--color-secondary);
+    font-size: 0.75rem;
+    font-weight: 750;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.source-introduction {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+    max-width: 52rem;
+    margin-bottom: 1.5rem;
+    padding: 1.25rem;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-large);
+    box-shadow: var(--shadow-small);
+}
+
+.source-introduction__icon {
+    display: grid;
+    width: 3rem;
+    height: 3rem;
+    place-items: center;
+    color: var(--color-secondary);
+    background: var(--color-secondary-soft);
+    border-radius: var(--radius-medium);
+}
+
+.source-introduction__icon svg {
+    width: 1.625rem;
+    height: 1.625rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.source-introduction h2 {
+    margin-bottom: 0.75rem;
+}
+
+.source-introduction p:last-child {
+    margin-bottom: 0;
+}
+
+@media (min-width: 40rem) {
+    .source-introduction {
+        grid-template-columns: auto minmax(0, 1fr);
+        padding: 1.5rem;
+    }
+}

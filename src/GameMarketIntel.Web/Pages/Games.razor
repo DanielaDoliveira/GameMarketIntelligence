@@ -8,79 +8,499 @@
 @inject IGenreApiService GenreApiService
 @inject IPlatformApiService PlatformApiService
 
-<PageTitle>Games</PageTitle>
+<PageTitle>Comparable Games | GameMarketIntel</PageTitle>
 
-<h1>Games</h1>
+<section class="page-heading"> <span class="page-heading__eyebrow"> Comparable Games </span>
 
-@if (_isLoading)
-{
-    <p>Loading data...</p>
-}
-else if (_errorMessage is not null)
-{
-    <p>@_errorMessage</p>
-}
-else
-{
-    <h2>Genres</h2>
+    <h1>Explore comparable games</h1>
 
-    @if (_genres.Count == 0)
+    <p class="page-heading__description">
+        Filter the current dataset by genre, platform, and release year
+        to support early product and market research.
+    </p>
+</section>
+
+<section class="filters" aria-labelledby="filters-heading">
+
+    <div class="filters__heading">
+        <div>
+            <h2 id="filters-heading">Filters</h2>
+
+            <p>
+                Different filter categories are combined using
+                <strong>AND</strong>.
+            </p>
+        </div>
+
+        @if (HasActiveFilters)
+        {
+            <button type="button"
+                    class="button button--ghost"
+                    disabled="@_isLoading"
+                    @onclick="ClearFiltersAsync">
+                Clear all
+            </button>
+        }
+    </div>
+
+    <div class="filters__controls">
+        <div class="form-field">
+            <label for="genre-filter">
+                Genre
+            </label>
+
+            <select id="genre-filter"
+                    value="@SelectedGenreValue"
+                    disabled="@(_isLoading || !_referenceDataLoaded)"
+                    @onchange="HandleGenreChangedAsync">
+                <option value="">All genres</option>
+
+                @foreach (var genre in _genres)
+                {
+                    <option value="@genre.Id">
+                        @genre.Name
+                    </option>
+                }
+            </select>
+        </div>
+
+        <div class="form-field">
+            <label for="platform-filter">
+                Platform
+            </label>
+
+            <select id="platform-filter"
+                    value="@SelectedPlatformValue"
+                    disabled="@(_isLoading || !_referenceDataLoaded)"
+                    @onchange="HandlePlatformChangedAsync">
+                <option value="">All platforms</option>
+
+                @foreach (var platform in _platforms)
+                {
+                    <option value="@platform.Id">
+                        @platform.Name
+                    </option>
+                }
+            </select>
+        </div>
+
+        <div class="form-field">
+            <label for="release-year-filter">
+                Release year
+            </label>
+
+            <input id="release-year-filter"
+                   type="number"
+                   min="1950"
+                   max="@CurrentYear"
+                   value="@ReleaseYearValue"
+                   placeholder="Any year"
+                   disabled="@_isLoading"
+                   @onchange="HandleReleaseYearChangedAsync" />
+        </div>
+    </div>
+
+    @if (HasActiveFilters)
     {
-        <p>No genres were found.</p>
+        <div class="active-filters"
+             aria-label="Active filters">
+
+            <span class="active-filters__label">
+                Active filters
+            </span>
+
+            <div class="active-filters__items">
+                @if (_selectedGenreId.HasValue)
+                {
+                    <button type="button"
+                            class="filter-chip"
+                            disabled="@_isLoading"
+                            aria-label="Remove genre filter"
+                            @onclick="RemoveGenreFilterAsync">
+                        @SelectedGenreName
+
+                        <span aria-hidden="true">×</span>
+                    </button>
+                }
+
+                @if (_selectedPlatformId.HasValue)
+                {
+                    <button type="button"
+                            class="filter-chip"
+                            disabled="@_isLoading"
+                            aria-label="Remove platform filter"
+                            @onclick="RemovePlatformFilterAsync">
+                        @SelectedPlatformName
+
+                        <span aria-hidden="true">×</span>
+                    </button>
+                }
+
+                @if (_releaseYear.HasValue)
+                {
+                    <button type="button"
+                            class="filter-chip"
+                            disabled="@_isLoading"
+                            aria-label="Remove release year filter"
+                            @onclick="RemoveReleaseYearFilterAsync">
+                        @_releaseYear
+
+                        <span aria-hidden="true">×</span>
+                    </button>
+                }
+            </div>
+        </div>
+    }
+</section>
+
+<section class="results"
+         aria-labelledby="results-heading">
+
+    <div class="results__heading">
+        <div>
+            <h2 id="results-heading">Results</h2>
+
+            <div class="results__status"
+                 aria-live="polite">
+                @ResultsStatusText
+            </div>
+        </div>
+    </div>
+
+    @if (_isInitialLoading)
+    {
+        <div class="loading-state"
+             role="status">
+            <div class="loading-state__header">
+                <span class="loading-state__spinner"
+                      aria-hidden="true">
+                </span>
+
+                <div>
+                    <h3>Searching comparable games...</h3>
+
+                    <p>
+                        Loading games, genres, and platforms.
+                    </p>
+                </div>
+            </div>
+
+            <div class="skeleton-grid"
+                 aria-hidden="true">
+                @for (var index = 0; index < 6; index++)
+                {
+                    <div class="skeleton-card">
+                        <div class="skeleton-card__image"></div>
+                        <div class="skeleton-card__line skeleton-card__line--title"></div>
+                        <div class="skeleton-card__line"></div>
+                        <div class="skeleton-card__line skeleton-card__line--short"></div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+    else if (_errorMessage is not null)
+    {
+        <div class="feedback-state feedback-state--error"
+             role="alert">
+            <div class="feedback-state__icon"
+                 aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                    <circle cx="12"
+                            cy="12"
+                            r="9" />
+                    <path d="M12 7.5v5.5M12 16.5h.01" />
+                </svg>
+            </div>
+
+            <div class="feedback-state__content">
+                <h3>We couldn't load comparable games</h3>
+
+                <p>
+                    @_errorMessage Your current filters have been preserved.
+                </p>
+
+                <button type="button"
+                        class="button button--primary"
+                        @onclick="RetryAsync">
+                    Try again
+                </button>
+            </div>
+        </div>
+    }
+    else if (_gamesResult is null || _gamesResult.TotalItems == 0)
+    {
+        @if (!HasAnyGameData && !HasActiveFilters)
+        {
+            <div class="feedback-state">
+                <div class="feedback-state__icon"
+                     aria-hidden="true">
+                    <svg viewBox="0 0 24 24">
+                        <ellipse cx="12"
+                                 cy="6"
+                                 rx="7.5"
+                                 ry="3" />
+                        <path d="M4.5 6v6c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3V6" />
+                        <path d="M4.5 12v6c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3v-6" />
+                    </svg>
+                </div>
+
+                <div class="feedback-state__content">
+                    <h3>Game data is not available yet</h3>
+
+                    <p>
+                        We are preparing the first comparable-games dataset.
+                    </p>
+
+                    <button type="button"
+                            class="button button--secondary"
+                            @onclick="RetryAsync">
+                        Try again
+                    </button>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="feedback-state">
+                <div class="feedback-state__icon"
+                     aria-hidden="true">
+                    <svg viewBox="0 0 24 24">
+                        <circle cx="10.5"
+                                cy="10.5"
+                                r="6.5" />
+                        <path d="m15.5 15.5 5 5M8 10.5h5" />
+                    </svg>
+                </div>
+
+                <div class="feedback-state__content">
+                    <h3>No matching games found</h3>
+
+                    <p>
+                        Try changing your search or removing one or more
+                        filters.
+                    </p>
+
+                    @if (HasActiveFilters)
+                    {
+                        <button type="button"
+                                class="button button--primary"
+                                @onclick="ClearFiltersAsync">
+                            Clear all filters
+                        </button>
+                    }
+                </div>
+            </div>
+        }
     }
     else
     {
-        <ul>
-            @foreach (var genre in _genres)
-            {
-                <li>@genre.Name</li>
-            }
-        </ul>
-    }
+        <div class="@ResultsGridCssClass"
+             aria-busy="@_isLoading">
 
-    <h2>Platforms</h2>
-
-    @if (_platforms.Count == 0)
-    {
-        <p>No platforms were found.</p>
-    }
-    else
-    {
-        <ul>
-            @foreach (var platform in _platforms)
-            {
-                <li>@platform.Name</li>
-            }
-        </ul>
-    }
-
-    <h2>Search result</h2>
-
-    @if (_gamesResult is null || _gamesResult.Items.Count == 0)
-    {
-        <p>No games were found.</p>
-    }
-    else
-    {
-        <ul>
             @foreach (var game in _gamesResult.Items)
             {
-                <li>@game.Name</li>
+                <article class="game-result">
+                    <div class="game-result__image">
+                        @if (!string.IsNullOrWhiteSpace(game.ImageUrl))
+                        {
+                            <img src="@game.ImageUrl"
+                                 alt="Cover art for @game.Name"
+                                 loading="lazy" />
+                        }
+                        else
+                        {
+                            <div class="game-result__fallback"
+                                 aria-hidden="true">
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M8.5 8h7a5.5 5.5 0 0 1 5.2 7.3l-.8 2.2a2 2 0 0 1-3.3.8l-2.2-2.1H9.6l-2.2 2.1a2 2 0 0 1-3.3-.8l-.8-2.2A5.5 5.5 0 0 1 8.5 8Z" />
+                                    <path d="M8 11v4M6 13h4M16.5 11.5h.01M18.5 14h.01" />
+                                </svg>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="game-result__body">
+                        <div class="game-result__title-row">
+                            <h3>@game.Name</h3>
+
+                            @if (game.ReleaseDate.HasValue)
+                            {
+                                <span class="game-result__year">
+                                    @game.ReleaseDate.Value.Year
+                                </span>
+                            }
+                        </div>
+
+                        @if (game.Genres.Count > 0)
+                        {
+                            <div class="game-result__metadata">
+                                <span class="game-result__metadata-label">
+                                    Genres
+                                </span>
+
+                                <span>
+                                    @FormatCategories(game.Genres)
+                                </span>
+                            </div>
+                        }
+
+                        @if (game.Platforms.Count > 0)
+                        {
+                            <div class="game-result__metadata">
+                                <span class="game-result__metadata-label">
+                                    Platforms
+                                </span>
+
+                                <span>
+                                    @FormatCategories(game.Platforms)
+                                </span>
+                            </div>
+                        }
+
+                        <a class="game-result__details"
+                           href="@($"/games/{game.Id}")">
+                            View details
+
+                            <svg viewBox="0 0 24 24"
+                                 aria-hidden="true">
+                                <path d="M5 12h14M14 7l5 5-5 5" />
+                            </svg>
+                        </a>
+                    </div>
+                </article>
             }
-        </ul>
+        </div>
+
+        @if (_gamesResult.TotalPages > 1)
+        {
+            <nav class="pagination"
+                 aria-label="Comparable games pages">
+
+                <button type="button"
+                        class="button button--secondary pagination__button"
+                        disabled="@(_isLoading || _gamesResult.Page <= 1)"
+                        @onclick="GoToPreviousPageAsync">
+                    Previous
+                </button>
+
+                <span class="pagination__status"
+                      aria-live="polite">
+                    Page @_gamesResult.Page of @_gamesResult.TotalPages
+                </span>
+
+                <button type="button"
+                        class="button button--secondary pagination__button"
+                        disabled="@(
+                            _isLoading ||
+                            _gamesResult.Page >= _gamesResult.TotalPages)"
+                        @onclick="GoToNextPageAsync">
+                    Next
+                </button>
+            </nav>
+        }
     }
-}
+</section>
 
 @code {
+    private const int DefaultPage = 1;
+    private const int DefaultPageSize = 20;
+
+    private readonly int CurrentYear = DateTime.UtcNow.Year;
+
     private IReadOnlyList<GenreDetails> _genres = [];
     private IReadOnlyList<PlatformDetails> _platforms = [];
+
     private SearchGamesResult? _gamesResult;
 
-    private bool _isLoading = true;
+    private Guid? _selectedGenreId;
+    private Guid? _selectedPlatformId;
+    private int? _releaseYear;
+
+    private int _currentPage = DefaultPage;
+
+    private bool _isInitialLoading = true;
+    private bool _isLoading;
+    private bool _referenceDataLoaded;
+    private bool _hasCompletedUnfilteredSearch;
+
     private string? _errorMessage;
+
+    private bool HasActiveFilters =>
+        _selectedGenreId.HasValue ||
+        _selectedPlatformId.HasValue ||
+        _releaseYear.HasValue;
+
+    private bool HasAnyGameData =>
+        !_hasCompletedUnfilteredSearch ||
+        (_gamesResult?.TotalItems ?? 0) > 0;
+
+    private string SelectedGenreValue =>
+        _selectedGenreId?.ToString() ?? string.Empty;
+
+    private string SelectedPlatformValue =>
+        _selectedPlatformId?.ToString() ?? string.Empty;
+
+    private string ReleaseYearValue =>
+        _releaseYear?.ToString() ?? string.Empty;
+
+    private string SelectedGenreName =>
+        _genres
+            .FirstOrDefault(genre => genre.Id == _selectedGenreId)
+            ?.Name
+        ?? "Genre";
+
+    private string SelectedPlatformName =>
+        _platforms
+            .FirstOrDefault(platform => platform.Id == _selectedPlatformId)
+            ?.Name
+        ?? "Platform";
+
+    private string ResultsStatusText
+    {
+        get
+        {
+            if (_isInitialLoading)
+            {
+                return "Loading comparable games.";
+            }
+
+            if (_isLoading)
+            {
+                return "Updating results.";
+            }
+
+            if (_errorMessage is not null)
+            {
+                return "Comparable games could not be loaded.";
+            }
+
+            var totalItems = _gamesResult?.TotalItems ?? 0;
+
+            return totalItems switch
+            {
+                0 => "No games found.",
+                1 => "1 game found.",
+                _ => $"{totalItems} games found."
+            };
+        }
+    }
+
+    private string ResultsGridCssClass =>
+        _isLoading
+            ? "results-grid results-grid--loading"
+            : "results-grid";
 
     protected override async Task OnInitializedAsync()
     {
+        await LoadInitialDataAsync();
+    }
+
+    private async Task LoadInitialDataAsync()
+    {
+        _isInitialLoading = true;
+        _errorMessage = null;
+
         try
         {
             var genresTask =
@@ -90,21 +510,204 @@ else
                 PlatformApiService.GetAllAsync();
 
             var gamesTask =
-                GameApiService.SearchAsync(new SearchGamesRequest());
+                SearchGamesAsync();
 
-            await Task.WhenAll(genresTask, platformsTask, gamesTask);
+            await Task.WhenAll(
+                genresTask,
+                platformsTask,
+                gamesTask);
 
             _genres = await genresTask;
             _platforms = await platformsTask;
             _gamesResult = await gamesTask;
+
+            _referenceDataLoaded = true;
+            _hasCompletedUnfilteredSearch = true;
         }
         catch (HttpRequestException)
         {
-            _errorMessage = "The data could not be loaded. Please try again.";
+            _errorMessage =
+                "Please try again. The research service may still be starting.";
+        }
+        finally
+        {
+            _isInitialLoading = false;
+        }
+    }
+
+    private async Task RefreshResultsAsync()
+    {
+        _isLoading = true;
+        _errorMessage = null;
+
+        try
+        {
+            _gamesResult = await SearchGamesAsync();
+        }
+        catch (HttpRequestException)
+        {
+            _errorMessage =
+                "Please try again. The research service may still be starting.";
         }
         finally
         {
             _isLoading = false;
         }
+    }
+
+    private Task<SearchGamesResult> SearchGamesAsync()
+    {
+        var request = new SearchGamesRequest
+        {
+            GenreId = _selectedGenreId,
+            PlatformId = _selectedPlatformId,
+            ReleaseYear = _releaseYear,
+            Page = _currentPage,
+            PageSize = DefaultPageSize
+        };
+
+        return GameApiService.SearchAsync(request);
+    }
+
+    private async Task HandleGenreChangedAsync(
+        ChangeEventArgs args)
+    {
+        _selectedGenreId =
+            TryParseGuid(args.Value?.ToString());
+
+        await ResetPageAndRefreshAsync();
+    }
+
+    private async Task HandlePlatformChangedAsync(
+        ChangeEventArgs args)
+    {
+        _selectedPlatformId =
+            TryParseGuid(args.Value?.ToString());
+
+        await ResetPageAndRefreshAsync();
+    }
+
+    private async Task HandleReleaseYearChangedAsync(
+        ChangeEventArgs args)
+    {
+        _releaseYear =
+            TryParseReleaseYear(args.Value?.ToString());
+
+        await ResetPageAndRefreshAsync();
+    }
+
+    private async Task RemoveGenreFilterAsync()
+    {
+        _selectedGenreId = null;
+
+        await ResetPageAndRefreshAsync();
+    }
+
+    private async Task RemovePlatformFilterAsync()
+    {
+        _selectedPlatformId = null;
+
+        await ResetPageAndRefreshAsync();
+    }
+
+    private async Task RemoveReleaseYearFilterAsync()
+    {
+        _releaseYear = null;
+
+        await ResetPageAndRefreshAsync();
+    }
+
+    private async Task ClearFiltersAsync()
+    {
+        _selectedGenreId = null;
+        _selectedPlatformId = null;
+        _releaseYear = null;
+
+        await ResetPageAndRefreshAsync();
+    }
+
+    private async Task ResetPageAndRefreshAsync()
+    {
+        _currentPage = DefaultPage;
+
+        await RefreshResultsAsync();
+    }
+
+    private async Task GoToPreviousPageAsync()
+    {
+        if (_gamesResult is null || _gamesResult.Page <= 1)
+        {
+            return;
+        }
+
+        _currentPage = _gamesResult.Page - 1;
+
+        await RefreshResultsAsync();
+    }
+
+    private async Task GoToNextPageAsync()
+    {
+        if (_gamesResult is null ||
+            _gamesResult.Page >= _gamesResult.TotalPages)
+        {
+            return;
+        }
+
+        _currentPage = _gamesResult.Page + 1;
+
+        await RefreshResultsAsync();
+    }
+
+    private async Task RetryAsync()
+    {
+        if (!_referenceDataLoaded)
+        {
+            await LoadInitialDataAsync();
+
+            return;
+        }
+
+        await RefreshResultsAsync();
+    }
+
+    private static Guid? TryParseGuid(string? value)
+    {
+        return Guid.TryParse(value, out var id)
+            ? id
+            : null;
+    }
+
+    private int? TryParseReleaseYear(string? value)
+    {
+        if (!int.TryParse(value, out var year))
+        {
+            return null;
+        }
+
+        return year is >= 1950 && year <= CurrentYear
+            ? year
+            : null;
+    }
+
+    private static string FormatCategories(
+        IReadOnlyCollection<GameSearchCategory> categories)
+    {
+        const int visibleCategoryCount = 2;
+
+        var visibleCategories =
+            categories
+                .Take(visibleCategoryCount)
+                .Select(category => category.Name)
+                .ToList();
+
+        var hiddenCategoryCount =
+            categories.Count - visibleCategories.Count;
+
+        var formattedCategories =
+            string.Join(", ", visibleCategories);
+
+        return hiddenCategoryCount > 0
+            ? $"{formattedCategories} +{hiddenCategoryCount} more"
+            : formattedCategories;
     }
 }
