@@ -1,0 +1,130 @@
+.game-card {
+    display: grid;
+    grid-template-columns: 6.5rem minmax(0, 1fr);
+    min-width: 0;
+    overflow: hidden;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-large);
+    transition:
+            border-color 150ms ease,
+            box-shadow 150ms ease,
+            transform 150ms ease;
+}
+
+.game-card:hover {
+    border-color:
+            color-mix(
+                    in srgb,
+                    var(--color-primary) 35%,
+                    var(--color-border)
+            );
+    box-shadow: var(--shadow-medium);
+    transform: translateY(-1px);
+}
+
+.game-card__image {
+    min-height: 9rem;
+    overflow: hidden;
+    background: var(--color-surface-muted);
+}
+
+.game-card__image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.game-card__body {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    padding: 1rem;
+}
+
+.game-card__title-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.game-card__title-row h3 {
+    min-width: 0;
+    margin-bottom: 0;
+    overflow-wrap: anywhere;
+}
+
+.game-card__year {
+    flex: 0 0 auto;
+    padding: 0.125rem 0.4rem;
+    color: var(--color-text-secondary);
+    background: var(--color-surface-muted);
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.game-card__metadata {
+    display: grid;
+    grid-template-columns: 4.5rem minmax(0, 1fr);
+    gap: 0.5rem;
+    margin-bottom: 0.375rem;
+    color: var(--color-text-secondary);
+    font-size: 0.8rem;
+}
+
+.game-card__metadata-label {
+    color: var(--color-text-muted);
+    font-weight: 700;
+}
+
+.game-card__details {
+    display: inline-flex;
+    align-items: center;
+    align-self: flex-start;
+    gap: 0.375rem;
+    margin-top: auto;
+    padding-top: 0.875rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.game-card__details svg {
+    width: 1rem;
+    height: 1rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+@media (min-width: 60rem) {
+    .game-card {
+        grid-template-columns: 7.5rem minmax(0, 1fr);
+    }
+}
+
+@media (min-width: 80rem) {
+    .game-card {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .game-card__image {
+        aspect-ratio: 16 / 9;
+        min-height: 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .game-card {
+        transition: none;
+    }
+
+    .game-card:hover {
+        transform: none;
+    }
+}

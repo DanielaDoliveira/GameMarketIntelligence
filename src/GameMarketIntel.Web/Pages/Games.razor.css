@@ -1,12 +1,13 @@
-.page-heading__eyebrow {
-    display: inline-block;
-    margin-bottom: 0.5rem;
-    color: var(--color-primary);
-    font-size: 0.75rem;
-    font-weight: 750;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-}
+
+   .page-heading__eyebrow {
+       display: inline-block;
+       margin-bottom: 0.5rem;
+       color: var(--color-primary);
+       font-size: 0.75rem;
+       font-weight: 750;
+       letter-spacing: 0.08em;
+       text-transform: uppercase;
+   }
 
 .filters,
 .results {
@@ -165,161 +166,52 @@
     opacity: 0.55;
 }
 
-.game-result {
-    display: grid;
-    grid-template-columns: 6.5rem minmax(0, 1fr);
-    min-width: 0;
-    overflow: hidden;
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-large);
-    transition:
-            border-color 150ms ease,
-            box-shadow 150ms ease,
-            transform 150ms ease;
-}
 
-.game-result:hover {
-    border-color:
-            color-mix(
-                    in srgb,
-                    var(--color-primary) 35%,
-                    var(--color-border)
-            );
-    box-shadow: var(--shadow-medium);
-    transform: translateY(-1px);
-}
 
-.game-result__image {
-    min-height: 9rem;
-    overflow: hidden;
-    background: var(--color-surface-muted);
-}
 
-.game-result__image img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
 
-.game-result__fallback {
-    display: grid;
-    width: 100%;
-    height: 100%;
-    min-height: 9rem;
-    place-items: center;
-    color: var(--color-primary);
-    background:
-            linear-gradient(
-                    145deg,
-                    var(--color-primary-soft),
-                    var(--color-accent-soft)
-            );
-}
+   .loading-state__symbol {
+       display: grid;
+       width: 2.75rem;
+       height: 2.75rem;
+       flex: 0 0 auto;
+       place-items: center;
+   }
 
-.game-result__fallback svg {
-    width: 2.5rem;
-    height: 2.5rem;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 1.5;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-}
+   .loading-state__symbol svg {
+       width: 100%;
+       height: 100%;
+       overflow: visible;
+   }
 
-.game-result__body {
-    display: flex;
-    min-width: 0;
-    flex-direction: column;
-    padding: 1rem;
-}
+   .loading-state__orbit {
+       fill: none;
+       stroke: var(--color-border);
+       stroke-width: 1.5;
+       stroke-dasharray: 2 4;
+   }
 
-.game-result__title-row {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 0.75rem;
-    margin-bottom: 0.75rem;
-}
+   .loading-state__dot {
+       transform-box: fill-box;
+       transform-origin: center;
+       animation: loading-dot-pulse 1.35s ease-in-out infinite;
+   }
 
-.game-result__title-row h3 {
-    min-width: 0;
-    margin-bottom: 0;
-    overflow-wrap: anywhere;
-}
+   .loading-state__dot--one {
+       fill: var(--color-secondary);
+   }
 
-.game-result__year {
-    flex: 0 0 auto;
-    padding: 0.125rem 0.4rem;
-    color: var(--color-text-secondary);
-    background: var(--color-surface-muted);
-    border-radius: 999px;
-    font-size: 0.75rem;
-    font-weight: 700;
-}
+   .loading-state__dot--two {
+       fill: var(--color-accent);
+       animation-delay: 150ms;
+   }
 
-.game-result__metadata {
-    display: grid;
-    grid-template-columns: 4.5rem minmax(0, 1fr);
-    gap: 0.5rem;
-    margin-bottom: 0.375rem;
-    color: var(--color-text-secondary);
-    font-size: 0.8rem;
-}
-
-.game-result__metadata-label {
-    color: var(--color-text-muted);
-    font-weight: 700;
-}
-
-.game-result__details {
-    display: inline-flex;
-    align-items: center;
-    align-self: flex-start;
-    gap: 0.375rem;
-    margin-top: auto;
-    padding-top: 0.875rem;
-    font-size: 0.875rem;
-    font-weight: 700;
-    text-decoration: none;
-}
-
-.game-result__details svg {
-    width: 1rem;
-    height: 1rem;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 2;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-}
-
-.loading-state__header {
-    display: flex;
-    align-items: center;
-    gap: 0.875rem;
-    margin-bottom: 1.25rem;
-}
-
-.loading-state__header h3 {
-    margin-bottom: 0.25rem;
-}
-
-.loading-state__header p {
-    margin-bottom: 0;
-    font-size: 0.875rem;
-}
-
-.loading-state__spinner {
-    width: 2rem;
-    height: 2rem;
-    flex: 0 0 auto;
-    border: 0.2rem solid var(--color-primary-soft);
-    border-top-color: var(--color-primary);
-    border-radius: 50%;
-    animation: spinner-rotation 800ms linear infinite;
-}
-
+   .loading-state__dot--three {
+       fill: var(--color-text-muted);
+       animation-delay: 300ms;
+   }
+   
+   
 .skeleton-grid {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
@@ -445,12 +337,18 @@
     text-align: center;
 }
 
-@keyframes spinner-rotation {
-    to {
-        transform: rotate(360deg);
-    }
-}
+   @keyframes loading-dot-pulse {
+       0%,
+       100% {
+           opacity: 0.45;
+           transform: scale(0.82);
+       }
 
+       50% {
+           opacity: 1;
+           transform: scale(1.15);
+       }
+   }
 @keyframes skeleton-shimmer {
     to {
         transform: translateX(100%);
@@ -502,10 +400,6 @@
         grid-template-columns:
             repeat(2, minmax(0, 1fr));
     }
-
-    .game-result {
-        grid-template-columns: 7.5rem minmax(0, 1fr);
-    }
 }
 
 @media (min-width: 80rem) {
@@ -513,34 +407,16 @@
         grid-template-columns:
             repeat(3, minmax(0, 1fr));
     }
-
-    .game-result {
-        grid-template-columns: minmax(0, 1fr);
-    }
-
-    .game-result__image {
-        aspect-ratio: 16 / 9;
-        min-height: 0;
-    }
-
-    .game-result__fallback {
-        min-height: 0;
-    }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .game-result,
     .results-grid,
     .form-field select,
     .form-field input {
         transition: none;
     }
 
-    .game-result:hover {
-        transform: none;
-    }
-
-    .loading-state__spinner,
+    .loading-state__dot,
     .skeleton-card__image::after,
     .skeleton-card__line::after {
         animation: none;

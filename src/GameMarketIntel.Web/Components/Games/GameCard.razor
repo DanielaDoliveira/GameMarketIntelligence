@@ -1,0 +1,107 @@
+@using GameMarketIntel.Shared.Contracts.Games.Search
+
+<article class="game-card">
+    <div class="game-card__image">
+        @if (ShouldShowImage)
+        {
+            <img src="@Game.ImageUrl"
+                 alt="Cover art for @Game.Name"
+                 loading="lazy"
+                 @onerror="HandleImageError" />
+        }
+        else
+        {
+            <GameImageFallback />
+        }
+    </div>
+
+    <div class="game-card__body">
+        <div class="game-card__title-row">
+            <h3>@Game.Name</h3>
+
+            @if (Game.ReleaseDate.HasValue)
+            {
+                <span class="game-card__year">
+                    @Game.ReleaseDate.Value.Year
+                </span>
+            }
+        </div>
+
+        @if (Game.Genres.Count > 0)
+        {
+            <div class="game-card__metadata">
+                <span class="game-card__metadata-label">
+                    Genres
+                </span>
+
+                <span>
+                    @FormatCategories(Game.Genres)
+                </span>
+            </div>
+        }
+
+        @if (Game.Platforms.Count > 0)
+        {
+            <div class="game-card__metadata">
+                <span class="game-card__metadata-label">
+                    Platforms
+                </span>
+
+                <span>
+                    @FormatCategories(Game.Platforms)
+                </span>
+            </div>
+        }
+
+        <a class="game-card__details"
+           href="@DetailsUrl">
+            View details
+
+            <svg viewBox="0 0 24 24"
+                 aria-hidden="true">
+                <path d="M5 12h14M14 7l5 5-5 5" />
+            </svg>
+        </a>
+    </div>
+</article>
+
+@code {
+    private const int VisibleCategoryCount = 2;
+
+    [Parameter, EditorRequired]
+    public GameSearchItem Game { get; set; } = default!;
+
+    private bool _imageLoadFailed;
+
+    private bool ShouldShowImage =>
+        !_imageLoadFailed &&
+        !string.IsNullOrWhiteSpace(Game.ImageUrl);
+
+    private string DetailsUrl =>
+        $"/games/{Game.Id}";
+
+    private void HandleImageError()
+    {
+        _imageLoadFailed = true;
+    }
+
+    private static string FormatCategories(
+        IReadOnlyCollection<GameSearchCategory> categories)
+    {
+        var visibleCategories =
+            categories
+                .Take(VisibleCategoryCount)
+                .Select(category => category.Name)
+                .ToList();
+
+        var hiddenCategoryCount =
+            categories.Count - visibleCategories.Count;
+
+        var formattedCategories =
+            string.Join(", ", visibleCategories);
+
+        return hiddenCategoryCount > 0
+            ? $"{formattedCategories} +{hiddenCategoryCount} more"
+            : formattedCategories;
+    }
+}

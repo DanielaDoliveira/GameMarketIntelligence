@@ -69,9 +69,9 @@
 }
 
 .product-identity {
-    display: none;
+    display: flex;
     align-items: center;
-    min-width: 0;
+    min-width: max-content;
     gap: 0.625rem;
     color: var(--color-text-primary);
     font-weight: 750;
@@ -81,7 +81,13 @@
 .product-identity:hover {
     color: var(--color-text-primary);
 }
-
+.product-identity__name {
+    display: none;
+    font-size: 0.850rem;
+    font-weight: 600;
+    line-height: 1.1;
+    white-space: nowrap;
+}
 .product-identity__mark {
     display: grid;
     width: 2rem;
@@ -101,11 +107,7 @@
     box-shadow: var(--shadow-small);
 }
 
-.product-identity__name {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
+
 
 .header-search {
     display: flex;
@@ -287,6 +289,9 @@
 }
 
 @media (min-width: 64rem) {
+    .product-identity__name {
+        display: inline;
+    }
     .application-shell {
         grid-template:
             "header header" var(--header-height)

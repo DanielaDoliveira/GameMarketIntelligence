@@ -3,6 +3,8 @@
 @using GameMarketIntel.Shared.Contracts.Genres
 @using GameMarketIntel.Shared.Contracts.Platforms
 @using GameMarketIntel.Shared.Requests.Games
+@using GameMarketIntel.Web.Components.Common
+@using GameMarketIntel.Web.Components.Games
 @using GameMarketIntel.Web.Services
 @inject IGameApiService GameApiService
 @inject IGenreApiService GenreApiService
@@ -169,24 +171,10 @@
 
     @if (_isInitialLoading)
     {
-        <div class="loading-state"
-             role="status">
-            <div class="loading-state__header">
-                <span class="loading-state__spinner"
-                      aria-hidden="true">
-                </span>
+        <div class="loading-state" role="status">
+            <LoadingIndicator Heading="Searching comparable games..." Message="Loading games, genres, and platforms." />
 
-                <div>
-                    <h3>Searching comparable games...</h3>
-
-                    <p>
-                        Loading games, genres, and platforms.
-                    </p>
-                </div>
-            </div>
-
-            <div class="skeleton-grid"
-                 aria-hidden="true">
+            <div class="skeleton-grid" aria-hidden="true">
                 @for (var index = 0; index < 6; index++)
                 {
                     <div class="skeleton-card">
@@ -300,75 +288,7 @@
 
             @foreach (var game in _gamesResult.Items)
             {
-                <article class="game-result">
-                    <div class="game-result__image">
-                        @if (!string.IsNullOrWhiteSpace(game.ImageUrl))
-                        {
-                            <img src="@game.ImageUrl"
-                                 alt="Cover art for @game.Name"
-                                 loading="lazy" />
-                        }
-                        else
-                        {
-                            <div class="game-result__fallback"
-                                 aria-hidden="true">
-                                <svg viewBox="0 0 24 24">
-                                    <path d="M8.5 8h7a5.5 5.5 0 0 1 5.2 7.3l-.8 2.2a2 2 0 0 1-3.3.8l-2.2-2.1H9.6l-2.2 2.1a2 2 0 0 1-3.3-.8l-.8-2.2A5.5 5.5 0 0 1 8.5 8Z" />
-                                    <path d="M8 11v4M6 13h4M16.5 11.5h.01M18.5 14h.01" />
-                                </svg>
-                            </div>
-                        }
-                    </div>
-
-                    <div class="game-result__body">
-                        <div class="game-result__title-row">
-                            <h3>@game.Name</h3>
-
-                            @if (game.ReleaseDate.HasValue)
-                            {
-                                <span class="game-result__year">
-                                    @game.ReleaseDate.Value.Year
-                                </span>
-                            }
-                        </div>
-
-                        @if (game.Genres.Count > 0)
-                        {
-                            <div class="game-result__metadata">
-                                <span class="game-result__metadata-label">
-                                    Genres
-                                </span>
-
-                                <span>
-                                    @FormatCategories(game.Genres)
-                                </span>
-                            </div>
-                        }
-
-                        @if (game.Platforms.Count > 0)
-                        {
-                            <div class="game-result__metadata">
-                                <span class="game-result__metadata-label">
-                                    Platforms
-                                </span>
-
-                                <span>
-                                    @FormatCategories(game.Platforms)
-                                </span>
-                            </div>
-                        }
-
-                        <a class="game-result__details"
-                           href="@($"/games/{game.Id}")">
-                            View details
-
-                            <svg viewBox="0 0 24 24"
-                                 aria-hidden="true">
-                                <path d="M5 12h14M14 7l5 5-5 5" />
-                            </svg>
-                        </a>
-                    </div>
-                </article>
+                <GameCard Game="@game" />
             }
         </div>
 
@@ -689,25 +609,5 @@
             : null;
     }
 
-    private static string FormatCategories(
-        IReadOnlyCollection<GameSearchCategory> categories)
-    {
-        const int visibleCategoryCount = 2;
-
-        var visibleCategories =
-            categories
-                .Take(visibleCategoryCount)
-                .Select(category => category.Name)
-                .ToList();
-
-        var hiddenCategoryCount =
-            categories.Count - visibleCategories.Count;
-
-        var formattedCategories =
-            string.Join(", ", visibleCategories);
-
-        return hiddenCategoryCount > 0
-            ? $"{formattedCategories} +{hiddenCategoryCount} more"
-            : formattedCategories;
-    }
+   
 }

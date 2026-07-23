@@ -24,8 +24,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Components\Common\" />
-    <Folder Include="Components\Games\" />
     <Folder Include="Components\Sources\" />
   </ItemGroup>
 
