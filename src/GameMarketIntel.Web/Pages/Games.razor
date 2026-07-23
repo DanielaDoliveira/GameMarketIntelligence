@@ -1,4 +1,5 @@
 ﻿@page "/games"
+
 @using GameMarketIntel.Shared.Contracts.Games.Search
 @using GameMarketIntel.Shared.Contracts.Genres
 @using GameMarketIntel.Shared.Contracts.Platforms
@@ -6,13 +7,17 @@
 @using GameMarketIntel.Web.Components.Common
 @using GameMarketIntel.Web.Components.Games
 @using GameMarketIntel.Web.Services
+
 @inject IGameApiService GameApiService
 @inject IGenreApiService GenreApiService
 @inject IPlatformApiService PlatformApiService
 
-<PageTitle>Comparable Games | GameMarketIntel</PageTitle>
+<PageTitle>Comparable Games | Game Market Intelligence</PageTitle>
 
-<section class="page-heading"> <span class="page-heading__eyebrow"> Comparable Games </span>
+<section class="page-heading">
+    <span class="page-heading__eyebrow">
+        Comparable Games
+    </span>
 
     <h1>Explore comparable games</h1>
 
@@ -47,9 +52,7 @@
 
     <div class="filters__controls">
         <div class="form-field">
-            <label for="genre-filter">
-                Genre
-            </label>
+            <label for="genre-filter">Genre</label>
 
             <select id="genre-filter"
                     value="@SelectedGenreValue"
@@ -67,9 +70,7 @@
         </div>
 
         <div class="form-field">
-            <label for="platform-filter">
-                Platform
-            </label>
+            <label for="platform-filter">Platform</label>
 
             <select id="platform-filter"
                     value="@SelectedPlatformValue"
@@ -104,12 +105,9 @@
 
     @if (HasActiveFilters)
     {
-        <div class="active-filters"
-             aria-label="Active filters">
+        <div class="active-filters" aria-label="Active filters">
 
-            <span class="active-filters__label">
-                Active filters
-            </span>
+            <span class="active-filters__label">Active filters</span>
 
             <div class="active-filters__items">
                 @if (_selectedGenreId.HasValue)
@@ -155,23 +153,20 @@
     }
 </section>
 
-<section class="results"
-         aria-labelledby="results-heading">
+<section class="results" aria-labelledby="results-heading">
 
     <div class="results__heading">
         <div>
             <h2 id="results-heading">Results</h2>
 
-            <div class="results__status"
-                 aria-live="polite">
-                @ResultsStatusText
+            <div class="results__status" aria-live="polite"> @ResultsStatusText
             </div>
         </div>
     </div>
 
     @if (_isInitialLoading)
     {
-        <div class="loading-state" role="status">
+        <div class="loading-state">
             <LoadingIndicator Heading="Searching comparable games..." Message="Loading games, genres, and platforms." />
 
             <div class="skeleton-grid" aria-hidden="true">
@@ -179,9 +174,14 @@
                 {
                     <div class="skeleton-card">
                         <div class="skeleton-card__image"></div>
-                        <div class="skeleton-card__line skeleton-card__line--title"></div>
+
+                        <div class="skeleton-card__line skeleton-card__line--title">
+                        </div>
+
                         <div class="skeleton-card__line"></div>
-                        <div class="skeleton-card__line skeleton-card__line--short"></div>
+
+                        <div class="skeleton-card__line skeleton-card__line--short">
+                        </div>
                     </div>
                 }
             </div>
@@ -189,14 +189,11 @@
     }
     else if (_errorMessage is not null)
     {
-        <div class="feedback-state feedback-state--error"
-             role="alert">
-            <div class="feedback-state__icon"
-                 aria-hidden="true">
+        <div class="feedback-state feedback-state--error" role="alert">
+
+            <div class="feedback-state__icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24">
-                    <circle cx="12"
-                            cy="12"
-                            r="9" />
+                    <circle cx="12" cy="12" r="9" />
                     <path d="M12 7.5v5.5M12 16.5h.01" />
                 </svg>
             </div>
@@ -204,13 +201,9 @@
             <div class="feedback-state__content">
                 <h3>We couldn't load comparable games</h3>
 
-                <p>
-                    @_errorMessage Your current filters have been preserved.
-                </p>
+                <p>@_errorMessage Your current filters have been preserved.</p>
 
-                <button type="button"
-                        class="button button--primary"
-                        @onclick="RetryAsync">
+                <button type="button" class="button button--primary" @onclick="RetryAsync">
                     Try again
                 </button>
             </div>
@@ -221,14 +214,12 @@
         @if (!HasAnyGameData && !HasActiveFilters)
         {
             <div class="feedback-state">
-                <div class="feedback-state__icon"
-                     aria-hidden="true">
+                <div class="feedback-state__icon" aria-hidden="true">
                     <svg viewBox="0 0 24 24">
-                        <ellipse cx="12"
-                                 cy="6"
-                                 rx="7.5"
-                                 ry="3" />
+                        <ellipse cx="12" cy="6" rx="7.5" ry="3" />
+
                         <path d="M4.5 6v6c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3V6" />
+
                         <path d="M4.5 12v6c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3v-6" />
                     </svg>
                 </div>
@@ -236,13 +227,9 @@
                 <div class="feedback-state__content">
                     <h3>Game data is not available yet</h3>
 
-                    <p>
-                        We are preparing the first comparable-games dataset.
-                    </p>
+                    <p>We are preparing the first comparable-games dataset.</p>
 
-                    <button type="button"
-                            class="button button--secondary"
-                            @onclick="RetryAsync">
+                    <button type="button"class="button button--secondary" @onclick="RetryAsync">
                         Try again
                     </button>
                 </div>
@@ -251,12 +238,10 @@
         else
         {
             <div class="feedback-state">
-                <div class="feedback-state__icon"
-                     aria-hidden="true">
+                <div class="feedback-state__icon" aria-hidden="true">
                     <svg viewBox="0 0 24 24">
-                        <circle cx="10.5"
-                                cy="10.5"
-                                r="6.5" />
+                        <circle cx="10.5"cy="10.5"r="6.5" />
+
                         <path d="m15.5 15.5 5 5M8 10.5h5" />
                     </svg>
                 </div>
@@ -271,9 +256,7 @@
 
                     @if (HasActiveFilters)
                     {
-                        <button type="button"
-                                class="button button--primary"
-                                @onclick="ClearFiltersAsync">
+                        <button type="button"class="button button--primary"@onclick="ClearFiltersAsync">
                             Clear all filters
                         </button>
                     }
@@ -283,8 +266,7 @@
     }
     else
     {
-        <div class="@ResultsGridCssClass"
-             aria-busy="@_isLoading">
+        <div class="@ResultsGridCssClass" aria-busy="@_isLoading">
 
             @foreach (var game in _gamesResult.Items)
             {
@@ -294,30 +276,12 @@
 
         @if (_gamesResult.TotalPages > 1)
         {
-            <nav class="pagination"
-                 aria-label="Comparable games pages">
-
-                <button type="button"
-                        class="button button--secondary pagination__button"
-                        disabled="@(_isLoading || _gamesResult.Page <= 1)"
-                        @onclick="GoToPreviousPageAsync">
-                    Previous
-                </button>
-
-                <span class="pagination__status"
-                      aria-live="polite">
-                    Page @_gamesResult.Page of @_gamesResult.TotalPages
-                </span>
-
-                <button type="button"
-                        class="button button--secondary pagination__button"
-                        disabled="@(
-                            _isLoading ||
-                            _gamesResult.Page >= _gamesResult.TotalPages)"
-                        @onclick="GoToNextPageAsync">
-                    Next
-                </button>
-            </nav>
+            <GamesPagination
+                CurrentPage="@_gamesResult.Page"
+                TotalPages="@_gamesResult.TotalPages"
+                IsLoading="@_isLoading"
+                OnPrevious="@GoToPreviousPageAsync"
+                OnNext="@GoToNextPageAsync" />
         }
     }
 </section>
@@ -346,35 +310,19 @@
 
     private string? _errorMessage;
 
-    private bool HasActiveFilters =>
-        _selectedGenreId.HasValue ||
-        _selectedPlatformId.HasValue ||
-        _releaseYear.HasValue;
+    private bool HasActiveFilters => _selectedGenreId.HasValue || _selectedPlatformId.HasValue || _releaseYear.HasValue;
 
-    private bool HasAnyGameData =>
-        !_hasCompletedUnfilteredSearch ||
-        (_gamesResult?.TotalItems ?? 0) > 0;
+    private bool HasAnyGameData => !_hasCompletedUnfilteredSearch || (_gamesResult?.TotalItems ?? 0) > 0;
 
-    private string SelectedGenreValue =>
-        _selectedGenreId?.ToString() ?? string.Empty;
+    private string SelectedGenreValue => _selectedGenreId?.ToString() ?? string.Empty;
 
-    private string SelectedPlatformValue =>
-        _selectedPlatformId?.ToString() ?? string.Empty;
+    private string SelectedPlatformValue => _selectedPlatformId?.ToString() ?? string.Empty;
 
-    private string ReleaseYearValue =>
-        _releaseYear?.ToString() ?? string.Empty;
+    private string ReleaseYearValue => _releaseYear?.ToString() ?? string.Empty;
 
-    private string SelectedGenreName =>
-        _genres
-            .FirstOrDefault(genre => genre.Id == _selectedGenreId)
-            ?.Name
-        ?? "Genre";
+    private string SelectedGenreName => _genres.FirstOrDefault(genre => genre.Id == _selectedGenreId)?.Name ?? "Genre";
 
-    private string SelectedPlatformName =>
-        _platforms
-            .FirstOrDefault(platform => platform.Id == _selectedPlatformId)
-            ?.Name
-        ?? "Platform";
+    private string SelectedPlatformName => _platforms.FirstOrDefault(platform => platform.Id == _selectedPlatformId)?.Name ?? "Platform";
 
     private string ResultsStatusText
     {
@@ -407,9 +355,7 @@
     }
 
     private string ResultsGridCssClass =>
-        _isLoading
-            ? "results-grid results-grid--loading"
-            : "results-grid";
+        _isLoading ? "results-grid results-grid--loading" : "results-grid";
 
     protected override async Task OnInitializedAsync()
     {
@@ -432,13 +378,12 @@
             var gamesTask =
                 SearchGamesAsync();
 
-            await Task.WhenAll(
-                genresTask,
-                platformsTask,
-                gamesTask);
+            await Task.WhenAll(genresTask, platformsTask, gamesTask);
 
             _genres = await genresTask;
+
             _platforms = await platformsTask;
+
             _gamesResult = await gamesTask;
 
             _referenceDataLoaded = true;
@@ -446,8 +391,7 @@
         }
         catch (HttpRequestException)
         {
-            _errorMessage =
-                "Please try again. The research service may still be starting.";
+            _errorMessage = "Please try again. " + "The research service may still be starting.";
         }
         finally
         {
@@ -466,8 +410,7 @@
         }
         catch (HttpRequestException)
         {
-            _errorMessage =
-                "Please try again. The research service may still be starting.";
+            _errorMessage = "Please try again. " + "The research service may still be starting.";
         }
         finally
         {
@@ -489,8 +432,7 @@
         return GameApiService.SearchAsync(request);
     }
 
-    private async Task HandleGenreChangedAsync(
-        ChangeEventArgs args)
+    private async Task HandleGenreChangedAsync(ChangeEventArgs args)
     {
         _selectedGenreId =
             TryParseGuid(args.Value?.ToString());
@@ -498,8 +440,7 @@
         await ResetPageAndRefreshAsync();
     }
 
-    private async Task HandlePlatformChangedAsync(
-        ChangeEventArgs args)
+    private async Task HandlePlatformChangedAsync(ChangeEventArgs args)
     {
         _selectedPlatformId =
             TryParseGuid(args.Value?.ToString());
@@ -507,8 +448,7 @@
         await ResetPageAndRefreshAsync();
     }
 
-    private async Task HandleReleaseYearChangedAsync(
-        ChangeEventArgs args)
+    private async Task HandleReleaseYearChangedAsync(ChangeEventArgs args)
     {
         _releaseYear =
             TryParseReleaseYear(args.Value?.ToString());
@@ -555,25 +495,26 @@
 
     private async Task GoToPreviousPageAsync()
     {
-        if (_gamesResult is null || _gamesResult.Page <= 1)
+        if (_isLoading |_gamesResult is null || _gamesResult.Page <= 1)
         {
             return;
         }
 
-        _currentPage = _gamesResult.Page - 1;
+        _currentPage =
+            _gamesResult.Page - 1;
 
         await RefreshResultsAsync();
     }
 
     private async Task GoToNextPageAsync()
     {
-        if (_gamesResult is null ||
-            _gamesResult.Page >= _gamesResult.TotalPages)
+        if (_isLoading || _gamesResult is null || _gamesResult.Page >= _gamesResult.TotalPages)
         {
             return;
         }
 
-        _currentPage = _gamesResult.Page + 1;
+        _currentPage =
+            _gamesResult.Page + 1;
 
         await RefreshResultsAsync();
     }
@@ -604,10 +545,9 @@
             return null;
         }
 
-        return year is >= 1950 && year <= CurrentYear
+        return year is >= 1950 &&
+               year <= CurrentYear
             ? year
             : null;
     }
-
-   
 }
