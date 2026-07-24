@@ -173,48 +173,61 @@
         NavigationManager.LocationChanged +=
             HandleLocationChanged;
     }
-
     private void SubmitSearch()
     {
-        if (string.IsNullOrWhiteSpace(_searchText))
+        var currentUri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+
+        var normalizedSearch = string.IsNullOrWhiteSpace(_searchText) ? null : _searchText.Trim();
+
+        if (!currentUri.AbsolutePath.Equals("/games", StringComparison.OrdinalIgnoreCase))
         {
-            NavigationManager.NavigateTo("/games");
+            if (normalizedSearch is null)
+            {
+                NavigationManager.NavigateTo("/games");
+
+                return;
+            }
+
+            var encodedSearch = Uri.EscapeDataString(normalizedSearch);
+
+            NavigationManager.NavigateTo($"/games?search={encodedSearch}");
 
             return;
         }
 
-        var normalizedSearch =
-            _searchText.Trim();
+        var query = System.Web.HttpUtility.ParseQueryString(currentUri.Query);
 
-        var encodedSearch =
-            Uri.EscapeDataString(normalizedSearch);
+        query.Remove("page");
 
-        NavigationManager.NavigateTo(
-            $"/games?search={encodedSearch}");
+        if (normalizedSearch is null)
+        {
+            query.Remove("search");
+        }
+        else
+        {
+            query["search"] = normalizedSearch;
+        }
+
+        var queryString = query.ToString();
+
+        var targetUri = string.IsNullOrWhiteSpace(queryString) ? "/games" : $"/games?{queryString}";
+
+        NavigationManager.NavigateTo(targetUri);
     }
 
-    private void HandleLocationChanged(
-        object? sender,
-        LocationChangedEventArgs args)
+    private void HandleLocationChanged(object? sender, LocationChangedEventArgs args)
     {
         SynchronizeSearchWithUrl();
-
         _ = InvokeAsync(StateHasChanged);
     }
 
     private void SynchronizeSearchWithUrl()
     {
-        var currentUri =
-            NavigationManager.ToAbsoluteUri(
-                NavigationManager.Uri);
+        var currentUri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
 
-        var queryParameters =
-            System.Web.HttpUtility.ParseQueryString(
-                currentUri.Query);
+        var queryParameters = System.Web.HttpUtility.ParseQueryString(currentUri.Query);
 
-        _searchText =
-            queryParameters["search"] ??
-            string.Empty;
+        _searchText = queryParameters["search"] ?? string.Empty;
     }
 
     private void ToggleMobileDrawer()
@@ -224,8 +237,7 @@
 
     private void ToggleDesktopSidebar()
     {
-        IsDesktopSidebarCollapsed =
-            !IsDesktopSidebarCollapsed;
+        IsDesktopSidebarCollapsed = !IsDesktopSidebarCollapsed;
     }
 
     private void CloseMobileDrawer()
@@ -233,8 +245,7 @@
         IsMobileDrawerOpen = false;
     }
 
-    private void HandleKeyDown(
-        KeyboardEventArgs args)
+    private void HandleKeyDown(KeyboardEventArgs args)
     {
         if (args.Key == "Escape")
         {
@@ -244,7 +255,6 @@
 
     public void Dispose()
     {
-        NavigationManager.LocationChanged -=
-            HandleLocationChanged;
+        NavigationManager.LocationChanged -= HandleLocationChanged;
     }
 }

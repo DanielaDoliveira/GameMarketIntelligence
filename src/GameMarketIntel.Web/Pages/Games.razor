@@ -13,7 +13,6 @@
 @inject IPlatformApiService PlatformApiService
 @inject NavigationManager NavigationManager
 
-
 <PageTitle>Comparable Games | Game Market Intelligence</PageTitle>
 
 <section class="page-heading">
@@ -30,7 +29,8 @@
     </p>
 </section>
 
-<section class="filters" aria-labelledby="filters-heading">
+<section class="filters"
+         aria-labelledby="filters-heading">
 
     <div class="filters__heading">
         <div>
@@ -46,7 +46,9 @@
 
         @if (HasActiveFilters)
         {
-            <AppButton Variant="AppButtonVariant.Ghost" Disabled="@_isLoading" OnClick="ClearFiltersAsync">
+            <AppButton Variant="AppButtonVariant.Ghost"
+                       Disabled="@_isLoading"
+                       OnClick="ClearFilters">
                 Clear all
             </AppButton>
         }
@@ -61,7 +63,7 @@
             <select id="genre-filter"
                     value="@SelectedGenreValue"
                     disabled="@(_isLoading || !_referenceDataLoaded)"
-                    @onchange="HandleGenreChangedAsync">
+                    @onchange="HandleGenreChanged">
                 <option value="">
                     All genres
                 </option>
@@ -83,7 +85,7 @@
             <select id="platform-filter"
                     value="@SelectedPlatformValue"
                     disabled="@(_isLoading || !_referenceDataLoaded)"
-                    @onchange="HandlePlatformChangedAsync">
+                    @onchange="HandlePlatformChanged">
                 <option value="">
                     All platforms
                 </option>
@@ -109,7 +111,7 @@
                    value="@ReleaseYearValue"
                    placeholder="Any year"
                    disabled="@_isLoading"
-                   @onchange="HandleReleaseYearChangedAsync" />
+                   @onchange="HandleReleaseYearChanged" />
         </div>
     </div>
 
@@ -123,7 +125,6 @@
             </span>
 
             <div class="active-filters__items">
-                
                 @if (!string.IsNullOrWhiteSpace(_searchTerm))
                 {
                     <button type="button"
@@ -138,13 +139,14 @@
                         </span>
                     </button>
                 }
+
                 @if (_selectedGenreId.HasValue)
                 {
                     <button type="button"
                             class="filter-chip"
                             disabled="@_isLoading"
                             aria-label="Remove genre filter"
-                            @onclick="RemoveGenreFilterAsync">
+                            @onclick="RemoveGenreFilter">
                         @SelectedGenreName
 
                         <span aria-hidden="true">
@@ -159,7 +161,7 @@
                             class="filter-chip"
                             disabled="@_isLoading"
                             aria-label="Remove platform filter"
-                            @onclick="RemovePlatformFilterAsync">
+                            @onclick="RemovePlatformFilter">
                         @SelectedPlatformName
 
                         <span aria-hidden="true">
@@ -174,7 +176,7 @@
                             class="filter-chip"
                             disabled="@_isLoading"
                             aria-label="Remove release year filter"
-                            @onclick="RemoveReleaseYearFilterAsync">
+                            @onclick="RemoveReleaseYearFilter">
                         @_releaseYear
 
                         <span aria-hidden="true">
@@ -301,29 +303,32 @@
         }
         else
         {
-            <FeedbackState Heading="No matching games found">
+            <FeedbackState
+                Heading="No matching games found">
+
                 <Icon>
                     <svg viewBox="0 0 24 24">
-                         <circle cx="10.5" cy="10.5" r="6.5"/>
-                         <path d="m15.5 15.5 5 5M8 10.5h5"/>
-                         
+                        <circle cx="10.5"
+                                cy="10.5"
+                                r="6.5" />
+
+                        <path d="m15.5 15.5 5 5M8 10.5h5" />
                     </svg>
                 </Icon>
 
                 <ChildContent>
                     <p>
-                        Try changing your search or removing one or more
-                        filters.
+                        Try changing your search or removing one or
+                        more filters.
                     </p>
                 </ChildContent>
 
                 <Actions>
-                    <AppButton OnClick="ClearFiltersAsync">
+                    <AppButton OnClick="ClearFilters">
                         Clear all filters
                     </AppButton>
                 </Actions>
             </FeedbackState>
-                  
         }
     }
     else
@@ -343,21 +348,35 @@
                 CurrentPage="@_gamesResult.Page"
                 TotalPages="@_gamesResult.TotalPages"
                 IsLoading="@_isLoading"
-                OnPrevious="@GoToPreviousPageAsync"
-                OnNext="@GoToNextPageAsync" />
+                OnPrevious="@GoToPreviousPage"
+                OnNext="@GoToNextPage" />
         }
     }
 </section>
 
 @code {
-    
-    [Parameter] [SupplyParameterFromQuery(Name = "search")]
-    public string? Search { get; set; }
-    private string? _searchTerm;
-    private string? _lastAppliedSearch;
-    private bool _pageInitialized;
     private const int DefaultPage = 1;
     private const int DefaultPageSize = 20;
+
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "search")]
+    public string? Search { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "genreId")]
+    public Guid? GenreId { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "platformId")]
+    public Guid? PlatformId { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "releaseYear")]
+    public int? ReleaseYear { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "page")]
+    public int? Page { get; set; }
 
     private readonly int CurrentYear =
         DateTime.UtcNow.Year;
@@ -368,6 +387,10 @@
 
     private SearchGamesResult? _gamesResult;
 
+    private string? _searchTerm;
+
+    private string? _lastAppliedSearch;
+
     private Guid? _selectedGenreId;
 
     private Guid? _selectedPlatformId;
@@ -375,6 +398,8 @@
     private int? _releaseYear;
 
     private int _currentPage = DefaultPage;
+
+    private bool _pageInitialized;
 
     private bool _isInitialLoading = true;
 
@@ -395,8 +420,6 @@
     private bool HasAnyGameData =>
         !_hasCompletedUnfilteredSearch ||
         (_gamesResult?.TotalItems ?? 0) > 0;
-    
-    
 
     private string SelectedGenreValue =>
         _selectedGenreId?.ToString() ??
@@ -464,30 +487,84 @@
 
     protected override async Task OnParametersSetAsync()
     {
-        var normalizedSearch = string.IsNullOrWhiteSpace(Search) ? null : Search.Trim();
+        var normalizedSearch =
+            string.IsNullOrWhiteSpace(Search)
+                ? null
+                : Search.Trim();
+
+        var normalizedReleaseYear =
+            IsValidReleaseYear(ReleaseYear)
+                ? ReleaseYear
+                : null;
+
+        var normalizedPage =
+            Page is > 0
+                ? Page.Value
+                : DefaultPage;
+
+        var queryStateChanged =
+            !string.Equals(
+                _lastAppliedSearch,
+                normalizedSearch,
+                StringComparison.OrdinalIgnoreCase) ||
+            _selectedGenreId != GenreId ||
+            _selectedPlatformId != PlatformId ||
+            _releaseYear != normalizedReleaseYear ||
+            _currentPage != normalizedPage;
 
         if (!_pageInitialized)
         {
             _pageInitialized = true;
-            _searchTerm = normalizedSearch;
-            _lastAppliedSearch = normalizedSearch;
+
+            ApplyQueryState(
+                normalizedSearch,
+                GenreId,
+                PlatformId,
+                normalizedReleaseYear,
+                normalizedPage);
 
             await LoadInitialDataAsync();
 
             return;
         }
 
-        if (string.Equals(_lastAppliedSearch, normalizedSearch,StringComparison.OrdinalIgnoreCase))
+        if (!queryStateChanged)
         {
             return;
         }
 
-        _searchTerm = normalizedSearch;
-        _lastAppliedSearch = normalizedSearch;
-        _currentPage = DefaultPage;
+        ApplyQueryState(
+            normalizedSearch,
+            GenreId,
+            PlatformId,
+            normalizedReleaseYear,
+            normalizedPage);
 
         await RefreshResultsAsync();
     }
+
+    private void ApplyQueryState(
+        string? search,
+        Guid? genreId,
+        Guid? platformId,
+        int? releaseYear,
+        int page)
+    {
+        _searchTerm = search;
+        _lastAppliedSearch = search;
+        _selectedGenreId = genreId;
+        _selectedPlatformId = platformId;
+        _releaseYear = releaseYear;
+        _currentPage = page;
+    }
+
+    private bool IsValidReleaseYear(
+        int? releaseYear)
+    {
+        return releaseYear is >= 1950 &&
+               releaseYear <= CurrentYear;
+    }
+
     private async Task LoadInitialDataAsync()
     {
         _isInitialLoading = true;
@@ -553,7 +630,7 @@
     private Task<SearchGamesResult> SearchGamesAsync()
     {
         var request = new SearchGamesRequest
-        {      
+        {
             Search = _searchTerm,
             GenreId = _selectedGenreId,
             PlatformId = _selectedPlatformId,
@@ -565,79 +642,48 @@
         return GameApiService.SearchAsync(request);
     }
 
-    private async Task HandleGenreChangedAsync(
+    private void HandleGenreChanged(
         ChangeEventArgs args)
     {
-        _selectedGenreId =
-            TryParseGuid(args.Value?.ToString());
+        var genreId =
+            TryParseGuid(
+                args.Value?.ToString());
 
-        await ResetPageAndRefreshAsync();
+        NavigateWithQueryChanges(
+            ("genreId", genreId?.ToString()),
+            ("page", null));
     }
 
-    private async Task HandlePlatformChangedAsync(
+    private void HandlePlatformChanged(
         ChangeEventArgs args)
     {
-        _selectedPlatformId =
-            TryParseGuid(args.Value?.ToString());
+        var platformId =
+            TryParseGuid(
+                args.Value?.ToString());
 
-        await ResetPageAndRefreshAsync();
+        NavigateWithQueryChanges(
+            ("platformId", platformId?.ToString()),
+            ("page", null));
     }
 
-    private async Task HandleReleaseYearChangedAsync(
+    private void HandleReleaseYearChanged(
         ChangeEventArgs args)
     {
-        _releaseYear =
+        var releaseYear =
             TryParseReleaseYear(
                 args.Value?.ToString());
 
-        await ResetPageAndRefreshAsync();
+        NavigateWithQueryChanges(
+            ("releaseYear", releaseYear?.ToString()),
+            ("page", null));
     }
 
-    private async Task RemoveGenreFilterAsync()
+    private void ClearFilters()
     {
-        _selectedGenreId = null;
-
-        await ResetPageAndRefreshAsync();
+        NavigationManager.NavigateTo("/games");
     }
 
-    private async Task RemovePlatformFilterAsync()
-    {
-        _selectedPlatformId = null;
-
-        await ResetPageAndRefreshAsync();
-    }
-
-    private async Task RemoveReleaseYearFilterAsync()
-    {
-        _releaseYear = null;
-
-        await ResetPageAndRefreshAsync();
-    }
-    private async Task ClearFiltersAsync()
-    {
-        _selectedGenreId = null;
-        _selectedPlatformId = null;
-        _releaseYear = null;
-        _currentPage = DefaultPage;
-
-        if (!string.IsNullOrWhiteSpace(_searchTerm))
-        {
-            NavigateWithSearch(null);
-
-            return;
-        }
-
-        await RefreshResultsAsync();
-    }
-
-    private async Task ResetPageAndRefreshAsync()
-    {
-        _currentPage = DefaultPage;
-
-        await RefreshResultsAsync();
-    }
-
-    private async Task GoToPreviousPageAsync()
+    private void GoToPreviousPage()
     {
         if (_isLoading ||
             _gamesResult is null ||
@@ -646,13 +692,19 @@
             return;
         }
 
-        _currentPage =
+        var previousPage =
             _gamesResult.Page - 1;
 
-        await RefreshResultsAsync();
+        NavigateWithQueryChanges(
+            (
+                "page",
+                previousPage == DefaultPage
+                    ? null
+                    : previousPage.ToString()
+            ));
     }
 
-    private async Task GoToNextPageAsync()
+    private void GoToNextPage()
     {
         if (_isLoading ||
             _gamesResult is null ||
@@ -662,10 +714,11 @@
             return;
         }
 
-        _currentPage =
-            _gamesResult.Page + 1;
-
-        await RefreshResultsAsync();
+        NavigateWithQueryChanges(
+            (
+                "page",
+                (_gamesResult.Page + 1).ToString()
+            ));
     }
 
     private async Task RetryAsync()
@@ -705,23 +758,66 @@
             ? year
             : null;
     }
+
     private void RemoveSearchFilter()
     {
-        NavigateWithSearch(null);
+        NavigateWithQueryChanges(
+            ("search", null),
+            ("page", null));
     }
-    private void NavigateWithSearch(string? search)
-    {
-        if (string.IsNullOrWhiteSpace(search))
-        {
-            NavigationManager.NavigateTo("/games");
 
-            return;
+    private void RemoveGenreFilter()
+    {
+        NavigateWithQueryChanges(
+            ("genreId", null),
+            ("page", null));
+    }
+
+    private void RemovePlatformFilter()
+    {
+        NavigateWithQueryChanges(
+            ("platformId", null),
+            ("page", null));
+    }
+
+    private void RemoveReleaseYearFilter()
+    {
+        NavigateWithQueryChanges(
+            ("releaseYear", null),
+            ("page", null));
+    }
+
+    private void NavigateWithQueryChanges(
+        params (string Name, string? Value)[] changes)
+    {
+        var currentUri =
+            NavigationManager.ToAbsoluteUri(
+                NavigationManager.Uri);
+
+        var query =
+            System.Web.HttpUtility.ParseQueryString(
+                currentUri.Query);
+
+        foreach (var change in changes)
+        {
+            if (string.IsNullOrWhiteSpace(change.Value))
+            {
+                query.Remove(change.Name);
+            }
+            else
+            {
+                query[change.Name] = change.Value;
+            }
         }
 
-        var normalizedSearch = search.Trim();
-        var targetUri = $"/games?search={Uri.EscapeDataString(normalizedSearch)}";
+        var queryString =
+            query.ToString();
+
+        var targetUri =
+            string.IsNullOrWhiteSpace(queryString)
+                ? currentUri.AbsolutePath
+                : $"{currentUri.AbsolutePath}?{queryString}";
 
         NavigationManager.NavigateTo(targetUri);
     }
-    
 }
