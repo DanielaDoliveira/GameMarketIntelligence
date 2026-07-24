@@ -6,23 +6,37 @@
     <header class="application-header">
         <div class="application-header__left">
             <button type="button"
-                    class="icon-button application-header__menu-button"
-                    aria-label="@MenuButtonLabel"
-                    aria-expanded="@IsNavigationExpanded"
+                    class="icon-button application-header__menu-button application-header__menu-button--mobile"
+                    aria-label="@MobileMenuButtonLabel"
+                    aria-expanded="@IsMobileDrawerOpen"
                     aria-controls="application-navigation"
-                    @onclick="ToggleNavigation">
+                    @onclick="ToggleMobileDrawer">
                 @if (IsMobileDrawerOpen)
                 {
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"
+                         aria-hidden="true">
                         <path d="M6 6 18 18M18 6 6 18" />
                     </svg>
                 }
                 else
                 {
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"
+                         aria-hidden="true">
                         <path d="M4 7H20M4 12H20M4 17H20" />
                     </svg>
                 }
+            </button>
+
+            <button type="button"
+                    class="icon-button application-header__menu-button application-header__menu-button--desktop"
+                    aria-label="@DesktopMenuButtonLabel"
+                    aria-expanded="@(!IsDesktopSidebarCollapsed)"
+                    aria-controls="application-navigation"
+                    @onclick="ToggleDesktopSidebar">
+                <svg viewBox="0 0 24 24"
+                     aria-hidden="true">
+                    <path d="M4 7H20M4 12H20M4 17H20" />
+                </svg>
             </button>
 
             <a class="product-identity"
@@ -46,7 +60,8 @@
             </label>
 
             <div class="header-search header-search--disabled">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
+                <svg viewBox="0 0 24 24"
+                     aria-hidden="true">
                     <circle cx="11"
                             cy="11"
                             r="6.5" />
@@ -88,11 +103,16 @@
 
             <nav aria-label="Footer navigation">
                 <a href="/">About</a>
-                <a href="/sources">Data Sources</a>
+
+                <a href="/sources">
+                    Data Sources
+                </a>
+
                 <a href="https://github.com/"
                    target="_blank"
                    rel="noopener noreferrer">
                     GitHub
+
                     <span class="visually-hidden">
                         opens in a new tab
                     </span>
@@ -127,17 +147,23 @@
                 ? "application-shell--drawer-open"
                 : null);
 
-    private bool IsNavigationExpanded =>
-        IsMobileDrawerOpen || !IsDesktopSidebarCollapsed;
-
-    private string MenuButtonLabel =>
+    private string MobileMenuButtonLabel =>
         IsMobileDrawerOpen
             ? "Close navigation"
-            : "Toggle navigation";
+            : "Open navigation";
 
-    private void ToggleNavigation()
+    private string DesktopMenuButtonLabel =>
+        IsDesktopSidebarCollapsed
+            ? "Expand navigation"
+            : "Collapse navigation";
+
+    private void ToggleMobileDrawer()
     {
         IsMobileDrawerOpen = !IsMobileDrawerOpen;
+    }
+
+    private void ToggleDesktopSidebar()
+    {
         IsDesktopSidebarCollapsed =
             !IsDesktopSidebarCollapsed;
     }

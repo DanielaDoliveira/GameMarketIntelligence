@@ -16,46 +16,32 @@
 
 <body>
     <div id="app">
-        <div class="blazor-startup-loading"
-             role="status"
-             aria-live="polite">
+        <div id="app">
+            <main class="startup-screen"
+                  role="status"
+                  aria-live="polite"
+                  aria-label="Loading Game Market Intelligence">
 
-            <div class="blazor-startup-loading__symbol"
-                 aria-hidden="true">
-                <svg viewBox="0 0 48 48">
-                    <circle class="blazor-startup-loading__orbit"
-                            cx="24"
-                            cy="24"
-                            r="15">
-                    </circle>
+                <div class="startup-screen__brand"
+                     aria-hidden="true">
+                    <span class="startup-screen__mark">GMI</span>
+                </div>
 
-                    <circle class="blazor-startup-loading__dot blazor-startup-loading__dot--one"
-                            cx="24"
-                            cy="9"
-                            r="3">
-                    </circle>
+                <div class="startup-screen__content">
+                    <strong class="startup-screen__name">
+                        Game Market Intelligence
+                    </strong>
 
-                    <circle class="blazor-startup-loading__dot blazor-startup-loading__dot--two"
-                            cx="37"
-                            cy="31"
-                            r="3">
-                    </circle>
-
-                    <circle class="blazor-startup-loading__dot blazor-startup-loading__dot--three"
-                            cx="11"
-                            cy="31"
-                            r="3">
-                    </circle>
-                </svg>
-            </div>
-
-            <div class="blazor-startup-loading__content">
-                <strong><strong>Game Market Intelligence</strong></strong>
-
-                <span>
+                    <span class="startup-screen__message">
                 Preparing your market research workspace...
             </span>
-            </div>
+                </div>
+
+                <div class="startup-screen__signal"
+                     aria-hidden="true">
+                    <span class="startup-screen__signal-line"></span>
+                </div>
+            </main>
         </div>
     </div>
 

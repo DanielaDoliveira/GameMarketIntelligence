@@ -21,6 +21,8 @@
     --color-success: #2e7d5b;
     --color-warning: #b7791f;
     --color-error: #b54747;
+    --color-error-soft: #fff1f1;
+    --color-error-border: #e7b8b8;
     --color-info: #3975ad;
 
     --shadow-small:
@@ -244,91 +246,153 @@ textarea {
     content: "An unexpected error occurred.";
 }
 
-.blazor-startup-loading {
+
+.startup-screen {
+    position: relative;
     display: flex;
     min-height: 100vh;
     align-items: center;
     justify-content: center;
     flex-direction: column;
-    gap: 1rem;
+    gap: 1.25rem;
     padding: 1.5rem;
+    overflow: hidden;
     text-align: center;
 }
 
-.blazor-startup-loading__symbol {
+.startup-screen::before {
+    position: absolute;
+    width: 28rem;
+    height: 28rem;
+    background:
+            radial-gradient(
+                    circle,
+                    rgb(49 94 158 / 0.08) 0%,
+                    rgb(122 111 194 / 0.035) 38%,
+                    transparent 70%
+            );
+    border-radius: 50%;
+    content: "";
+    pointer-events: none;
+}
+
+.startup-screen__brand,
+.startup-screen__content,
+.startup-screen__signal {
+    position: relative;
+    z-index: 1;
+}
+
+.startup-screen__brand {
     display: grid;
-    width: 4.5rem;
-    height: 4.5rem;
+    width: 3.25rem;
+    height: 3.25rem;
     place-items: center;
 }
 
-.blazor-startup-loading__symbol svg {
+.startup-screen__mark {
+    display: grid;
     width: 100%;
     height: 100%;
-    overflow: visible;
+    place-items: center;
+    color: var(--color-surface);
+    background:
+            linear-gradient(
+                    135deg,
+                    var(--color-primary),
+                    var(--color-accent)
+            );
+    border-radius: var(--radius-medium);
+    box-shadow:
+            var(--shadow-small),
+            0 0 0 0.375rem rgb(49 94 158 / 0.06);
+    font-size: 0.75rem;
+    font-weight: 750;
+    letter-spacing: 0.06em;
+    animation: startup-mark-enter 500ms ease-out both;
 }
 
-.blazor-startup-loading__orbit {
-    fill: none;
-    stroke: var(--color-border);
-    stroke-width: 1.5;
-    stroke-dasharray: 2 4;
-}
-
-.blazor-startup-loading__dot {
-    transform-box: fill-box;
-    transform-origin: center;
-    animation: blazor-startup-pulse 1.35s ease-in-out infinite;
-}
-
-.blazor-startup-loading__dot--one {
-    fill: var(--color-secondary);
-}
-
-.blazor-startup-loading__dot--two {
-    fill: var(--color-accent);
-    animation-delay: 150ms;
-}
-
-.blazor-startup-loading__dot--three {
-    fill: var(--color-text-muted);
-    animation-delay: 300ms;
-}
-
-.blazor-startup-loading__content {
+.startup-screen__content {
     display: flex;
+    align-items: center;
     flex-direction: column;
     gap: 0.25rem;
 }
 
-.blazor-startup-loading__content strong {
+.startup-screen__name {
     color: var(--color-text-primary);
     font-size: 1.125rem;
+    font-weight: 750;
+    letter-spacing: -0.015em;
 }
 
-.blazor-startup-loading__content span {
+.startup-screen__message {
     color: var(--color-text-secondary);
     font-size: 0.925rem;
 }
 
-@keyframes blazor-startup-pulse {
-    0%,
-    100% {
-        opacity: 0.42;
-        transform: scale(0.82);
+.startup-screen__signal {
+    width: min(13rem, 60vw);
+    height: 0.1875rem;
+    overflow: hidden;
+    background: var(--color-surface-muted);
+    border-radius: 999px;
+}
+
+.startup-screen__signal-line {
+    display: block;
+    width: 42%;
+    height: 100%;
+    background:
+            linear-gradient(
+                    90deg,
+                    transparent,
+                    var(--color-secondary),
+                    var(--color-primary),
+                    var(--color-accent),
+                    transparent
+            );
+    border-radius: inherit;
+    animation: startup-signal-flow 1.4s ease-in-out infinite;
+}
+
+@keyframes startup-mark-enter {
+    from {
+        opacity: 0;
+        transform: translateY(0.375rem) scale(0.94);
     }
 
-    50% {
+    to {
         opacity: 1;
-        transform: scale(1.15);
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes startup-signal-flow {
+    from {
+        transform: translateX(-110%);
+    }
+
+    to {
+        transform: translateX(340%);
     }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .blazor-startup-loading__dot {
+    .startup-screen__mark,
+    .startup-screen__signal-line {
         animation: none;
-        opacity: 1;
-        transform: none;
+    }
+
+    .startup-screen__signal-line {
+        width: 100%;
+        background:
+                linear-gradient(
+                        90deg,
+                        var(--color-secondary),
+                        var(--color-primary),
+                        var(--color-accent)
+                );
     }
 }
 
