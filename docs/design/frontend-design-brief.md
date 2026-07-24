@@ -6,7 +6,9 @@
 
 Backend search foundation: **Implemented**
 
-Frontend implementation: **Pending**
+First frontend delivery: **Implemented and validated with the current empty dataset**
+
+Milestone 2: **In Progress**
 
 ## Purpose
 
@@ -55,6 +57,42 @@ Multiple genre and platform selection remains a planned product evolution.
 
 It requires an API contract extension before implementation.
 
+## First Frontend Delivery Status
+
+The first responsive frontend delivery has been implemented without changing the broader Milestone 2 goal.
+
+Implemented:
+
+* responsive Blazor WebAssembly application shell;
+* expanded and compact desktop navigation;
+* temporary mobile navigation drawer with overlay and Escape-key support;
+* contextual Comparable Games search in the header;
+* one optional genre filter;
+* one optional platform filter;
+* optional release-year filter;
+* removable active-filter chips and clear-all behavior;
+* pagination controls;
+* search, filter, and page state stored in the URL;
+* synchronization with browser back and forward navigation;
+* branded initial loading and query-loading states;
+* no-data, no-results, request-error, and route-not-found states;
+* reusable button, feedback, loading, card, fallback-image, filter, and pagination components;
+* Blazor CSS isolation;
+* separation of Razor markup, C# code-behind, and isolated CSS where it improves maintainability.
+
+Validated:
+
+* local build;
+* automated solution tests;
+* desktop and mobile browser behavior supported by the current dataset;
+* deployed frontend-to-API communication.
+
+Data-dependent validation remains pending for populated genre and platform options, populated result cards, and multi-page pagination because the production database is currently empty.
+
+The basic game-details frontend destination remains pending.
+
+Multiple genre and platform selection remains part of the intended future product experience. The current single-selection controls are an incremental implementation aligned with the existing API contract, not a replacement for that future goal.
+
 ## Document Map
 
 1. **Application Structure and Navigation** — shell, header, sidebar, drawer, search placement, footer, and navigation decisions.
@@ -88,7 +126,7 @@ On desktop layouts:
 * the sidebar occupies its own layout space and does not cover page content;
 * the content area resizes when the sidebar changes state;
 * navigation labels and icons are visible in the expanded state;
-* a future compact state may display icons only.
+* the compact state displays icons while preserving product identity.
 
 Initial desktop structure:
 
@@ -844,23 +882,27 @@ The exact filter-panel presentation will be validated in wireframes.
 
 ## Search Behavior
 
-The frontend should debounce text input before sending a request.
+The first implementation uses explicit form submission from the header search.
 
-It should avoid requesting the API after every individual keystroke without delay.
+This avoids sending an API request after every individual keystroke and gives the user control over when a query is applied.
 
-Recommended behavior:
+Current behavior:
 
 ```text
 User types
     ↓
-Short debounce delay
+User submits the search
     ↓
-Cancel superseded request when possible
+Page returns to page 1
     ↓
-Send latest search query
+Latest search and existing filters are written to the URL
+    ↓
+The Comparable Games request is executed
 ```
 
-The current search and filters should be preserved during loading and recoverable error states.
+A debounced search interaction may be evaluated later if product usage demonstrates that it improves the research workflow.
+
+The current search and filters must remain preserved during loading and recoverable error states.
 
 ## Pagination Behavior
 
@@ -1140,7 +1182,7 @@ This state must not instruct the user to clear filters when filters are not the 
 
 ## Validation State
 
-Invalid query values should eventually return standardized HTTP `400` responses.
+Invalid query values return standardized HTTP `400` responses.
 
 Current validation rules include:
 
@@ -1165,7 +1207,7 @@ Some search options are invalid
 Page size must be between 1 and 100.
 ```
 
-The final response structure depends on the future global `ProblemDetails` implementation.
+The API uses the implemented global exception handler and `ValidationProblemDetails` response structure.
 
 ## Request Error State
 
@@ -1328,7 +1370,7 @@ After the first frontend and API contract are validated, the query experience ma
 * publisher filters;
 * developer filters;
 * sorting;
-* URL-preserved query state;
+* URL state extended for future multi-select and advanced filter contracts;
 * saved searches;
 * richer details pages;
 * source and reliability context;
