@@ -6,16 +6,11 @@ namespace GameMarketIntel.Api.Endpoints;
 
 public static class DataSourceEndpoints
 {
-    public static IEndpointRouteBuilder MapDataSourceEndpoints(
-        this IEndpointRouteBuilder endpoints)
+    public static IEndpointRouteBuilder MapDataSourceEndpoints(this IEndpointRouteBuilder endpoints)
     {
-        endpoints.MapGet("/api/data-sources", async
-            (
-                    IDataSourceService dataSourceService, CancellationToken cancellationToken) =>
+        endpoints.MapGet("/api/data-sources", async (IDataSourceService dataSourceService, CancellationToken cancellationToken) =>
                 {
-                    IReadOnlyList<DataSourceDetails> dataSources =
-                       await dataSourceService.GetAllAsync(cancellationToken);
-
+                    IReadOnlyList<DataSourceDetails> dataSources = await dataSourceService.GetAllAsync(cancellationToken);
                     return Results.Ok(dataSources);
                 })
           .WithGetAllDataSourcesDocumentation();

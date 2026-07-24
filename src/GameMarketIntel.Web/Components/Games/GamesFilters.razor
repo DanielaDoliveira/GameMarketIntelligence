@@ -1,0 +1,153 @@
+
+
+<section class="filters"
+         aria-labelledby="filters-heading">
+
+    <div class="filters__heading">
+        <div>
+            <h2 id="filters-heading">
+                Filters
+            </h2>
+
+            <p>
+                Different filter categories are combined using
+                <strong>AND</strong>.
+            </p>
+        </div>
+
+        @if (HasActiveFilters)
+        {
+            <AppButton Variant="AppButtonVariant.Ghost"
+                       Disabled="@IsLoading"
+                       OnClick="OnClearAll">
+                Clear all
+            </AppButton>
+        }
+    </div>
+
+    <div class="filters__controls">
+        <div class="form-field">
+            <label for="genre-filter">
+                Genre
+            </label>
+
+            <select id="genre-filter"
+                    value="@SelectedGenreValue"
+                    disabled="@(IsLoading || !ReferenceDataLoaded)"
+                    @onchange="OnGenreChanged">
+                <option value="">
+                    All genres
+                </option>
+
+                @foreach (var genre in Genres)
+                {
+                    <option value="@genre.Id">
+                        @genre.Name
+                    </option>
+                }
+            </select>
+        </div>
+
+        <div class="form-field">
+            <label for="platform-filter">
+                Platform
+            </label>
+
+            <select id="platform-filter"
+                    value="@SelectedPlatformValue"
+                    disabled="@(IsLoading || !ReferenceDataLoaded)"
+                    @onchange="OnPlatformChanged">
+                <option value="">
+                    All platforms
+                </option>
+
+                @foreach (var platform in Platforms)
+                {
+                    <option value="@platform.Id">
+                        @platform.Name
+                    </option>
+                }
+            </select>
+        </div>
+
+        <div class="form-field">
+            <label for="release-year-filter">
+                Release year
+            </label>
+
+            <input id="release-year-filter"
+                   type="number"
+                   min="1950"
+                   max="@CurrentYear"
+                   value="@ReleaseYearValue"
+                   placeholder="Any year"
+                   disabled="@IsLoading"
+                   @onchange="OnReleaseYearChanged" />
+        </div>
+    </div>
+
+    @if (HasActiveFilters)
+    {
+        <div class="active-filters"
+             aria-label="Active filters">
+
+            <span class="active-filters__label">
+                Active filters
+            </span>
+
+            <div class="active-filters__items">
+                @if (!string.IsNullOrWhiteSpace(SearchTerm))
+                {
+                    <button type="button"
+                            class="filter-chip"
+                            disabled="@IsLoading"
+                            aria-label="Remove game name search"
+                            @onclick="OnRemoveSearch">
+                        “@SearchTerm”
+
+                        <span aria-hidden="true">×</span>
+                    </button>
+                }
+
+                @if (SelectedGenreId.HasValue)
+                {
+                    <button type="button"
+                            class="filter-chip"
+                            disabled="@IsLoading"
+                            aria-label="Remove genre filter"
+                            @onclick="OnRemoveGenre">
+                        @SelectedGenreName
+
+                        <span aria-hidden="true">×</span>
+                    </button>
+                }
+
+                @if (SelectedPlatformId.HasValue)
+                {
+                    <button type="button"
+                            class="filter-chip"
+                            disabled="@IsLoading"
+                            aria-label="Remove platform filter"
+                            @onclick="OnRemovePlatform">
+                        @SelectedPlatformName
+
+                        <span aria-hidden="true">×</span>
+                    </button>
+                }
+
+                @if (ReleaseYear.HasValue)
+                {
+                    <button type="button"
+                            class="filter-chip"
+                            disabled="@IsLoading"
+                            aria-label="Remove release year filter"
+                            @onclick="OnRemoveReleaseYear">
+                        @ReleaseYear
+
+                        <span aria-hidden="true">×</span>
+                    </button>
+                }
+            </div>
+        </div>
+    }
+</section>
