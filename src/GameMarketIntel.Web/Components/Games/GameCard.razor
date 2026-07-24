@@ -1,0 +1,66 @@
+
+<article class="game-card">
+    <div class="game-card__image">
+        @if (ShouldShowImage)
+        {
+            <img src="@Game.ImageUrl"
+                 alt="Cover art for @Game.Name"
+                 loading="lazy"
+                 @onerror="HandleImageError" />
+        }
+        else
+        {
+            <GameImageFallback />
+        }
+    </div>
+
+    <div class="game-card__body">
+        <div class="game-card__title-row">
+            <h3>@Game.Name</h3>
+
+            @if (Game.ReleaseDate.HasValue)
+            {
+                <span class="game-card__year">
+                    @Game.ReleaseDate.Value.Year
+                </span>
+            }
+        </div>
+
+        @if (Game.Genres.Count > 0)
+        {
+            <div class="game-card__metadata">
+                <span class="game-card__metadata-label">
+                    Genres
+                </span>
+
+                <span>
+                    @FormatCategories(Game.Genres)
+                </span>
+            </div>
+        }
+
+        @if (Game.Platforms.Count > 0)
+        {
+            <div class="game-card__metadata">
+                <span class="game-card__metadata-label">
+                    Platforms
+                </span>
+
+                <span>
+                    @FormatCategories(Game.Platforms)
+                </span>
+            </div>
+        }
+
+        <a class="game-card__details"
+           href="@DetailsUrl">
+            View details
+
+            <svg viewBox="0 0 24 24"
+                 aria-hidden="true">
+                <path d="M5 12h14M14 7l5 5-5 5" />
+            </svg>
+        </a>
+    </div>
+</article>
+

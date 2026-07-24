@@ -16,11 +16,33 @@
 
 <body>
     <div id="app">
-        <svg class="loading-progress">
-            <circle r="40%" cx="50%" cy="50%" />
-            <circle r="40%" cx="50%" cy="50%" />
-        </svg>
-        <div class="loading-progress-text"></div>
+        <div id="app">
+            <main class="startup-screen"
+                  role="status"
+                  aria-live="polite"
+                  aria-label="Loading Game Market Intelligence">
+
+                <div class="startup-screen__brand"
+                     aria-hidden="true">
+                    <span class="startup-screen__mark">GMI</span>
+                </div>
+
+                <div class="startup-screen__content">
+                    <strong class="startup-screen__name">
+                        Game Market Intelligence
+                    </strong>
+
+                    <span class="startup-screen__message">
+                Preparing your market research workspace...
+            </span>
+                </div>
+
+                <div class="startup-screen__signal"
+                     aria-hidden="true">
+                    <span class="startup-screen__signal-line"></span>
+                </div>
+            </main>
+        </div>
     </div>
 
     <div id="blazor-error-ui">

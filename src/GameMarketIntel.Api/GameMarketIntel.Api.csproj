@@ -25,8 +25,4 @@
     <ProjectReference Include="..\GameMarketIntel.Shared\GameMarketIntel.Shared.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Controllers\" />
-  </ItemGroup>
-
 </Project>

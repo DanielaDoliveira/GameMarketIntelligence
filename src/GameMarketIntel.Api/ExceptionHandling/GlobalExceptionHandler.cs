@@ -21,30 +21,16 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
         var problemDetails = exception switch
         {
             ValidationException validationException =>
-                CreateValidationProblemDetails(
-                    httpContext,
-                    validationException),
+                CreateValidationProblemDetails(httpContext, validationException),
 
             NotFoundException notFoundException =>
-                CreateProblemDetails(
-                    httpContext,
-                    StatusCodes.Status404NotFound,
-                    "Resource not found",
-                    notFoundException.Message),
+                CreateProblemDetails(httpContext, StatusCodes.Status404NotFound, "Resource not found", notFoundException.Message),
 
             ConflictException conflictException =>
-                CreateProblemDetails(
-                    httpContext,
-                    StatusCodes.Status409Conflict,
-                    "Resource conflict",
-                    conflictException.Message),
+                CreateProblemDetails(httpContext, StatusCodes.Status409Conflict, "Resource conflict", conflictException.Message),
 
             _ =>
-                CreateProblemDetails(
-                    httpContext,
-                    StatusCodes.Status500InternalServerError,
-                    "An unexpected error occurred",
-                    "An unexpected error occurred while processing the request.")
+                CreateProblemDetails(httpContext, StatusCodes.Status500InternalServerError, "An unexpected error occurred", "An unexpected error occurred while processing the request.")
         };
 
         LogException(exception, problemDetails.Status);

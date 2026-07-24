@@ -1,0 +1,75 @@
+.feedback-state {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1.25rem;
+    background: var(--color-background);
+    border: 1px solid var(--color-border);
+    border-radius: 0.75rem;
+}
+
+.feedback-state--error {
+    background: var(--color-error-subtle, #fff5f5);
+    border-color: var(--color-error-border, #e5a7a7);
+}
+
+.feedback-state__icon {
+    display: grid;
+    width: 2.75rem;
+    height: 2.75rem;
+    flex: 0 0 auto;
+    place-items: center;
+    color: var(--color-primary);
+    background: var(--color-primary-subtle);
+    border-radius: 50%;
+}
+
+.feedback-state--error .feedback-state__icon {
+    color: var(--color-error, #b23a3a);
+    background: var(--color-error-subtle, #fff0f0);
+}
+
+.feedback-state__icon ::deep svg {
+    width: 1.5rem;
+    height: 1.5rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.75;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.feedback-state__content {
+    display: grid;
+    min-width: 0;
+    gap: 0.625rem;
+}
+
+.feedback-state__content h3 {
+    margin: 0;
+    color: var(--color-text-primary);
+    font-size: 1rem;
+}
+
+.feedback-state__message {
+    max-width: 42rem;
+    color: var(--color-text-secondary);
+    line-height: 1.55;
+}
+
+.feedback-state__message ::deep p {
+    margin: 0;
+}
+
+.feedback-state__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.625rem;
+    margin-top: 0.25rem;
+}
+
+@media (max-width: 35rem) {
+    .feedback-state {
+        flex-direction: column;
+    }
+}

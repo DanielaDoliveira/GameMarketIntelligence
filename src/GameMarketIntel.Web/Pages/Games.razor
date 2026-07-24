@@ -1,110 +1,202 @@
 ﻿@page "/games"
-@using GameMarketIntel.Shared.Contracts.Games.Search
-@using GameMarketIntel.Shared.Contracts.Genres
-@using GameMarketIntel.Shared.Contracts.Platforms
-@using GameMarketIntel.Shared.Requests.Games
-@using GameMarketIntel.Web.Services
-@inject IGameApiService GameApiService
-@inject IGenreApiService GenreApiService
-@inject IPlatformApiService PlatformApiService
+@using GameMarketIntel.Web.Components.Games
 
-<PageTitle>Games</PageTitle>
+<PageTitle>Comparable Games | Game Market Intelligence</PageTitle>
 
-<h1>Games</h1>
+<section class="page-heading">
+    <span class="page-heading__eyebrow">
+        Comparable Games
+    </span>
 
-@if (_isLoading)
-{
-    <p>Loading data...</p>
-}
-else if (_errorMessage is not null)
-{
-    <p>@_errorMessage</p>
-}
-else
-{
-    <h2>Genres</h2>
+    <h1>Explore comparable games</h1>
 
-    @if (_genres.Count == 0)
+    <p class="page-heading__description">
+        Search by name and filter the current dataset by genre,
+        platform, and release year to support early product and
+        market research.
+    </p>
+</section>
+
+<GamesFilters
+    Genres="@_genres"
+    Platforms="@_platforms"
+    SearchTerm="@_searchTerm"
+    SelectedGenreId="@_selectedGenreId"
+    SelectedPlatformId="@_selectedPlatformId"
+    ReleaseYear="@_releaseYear"
+    CurrentYear="@CurrentYear"
+    IsLoading="@_isLoading"
+    ReferenceDataLoaded="@_referenceDataLoaded"
+    OnGenreChanged="@HandleGenreChanged"
+    OnPlatformChanged="@HandlePlatformChanged"
+    OnReleaseYearChanged="@HandleReleaseYearChanged"
+    OnClearAll="@ClearFilters"
+    OnRemoveSearch="@RemoveSearchFilter"
+    OnRemoveGenre="@RemoveGenreFilter"
+    OnRemovePlatform="@RemovePlatformFilter"
+    OnRemoveReleaseYear="@RemoveReleaseYearFilter" />
+
+<section class="results"
+         aria-labelledby="results-heading">
+
+    <div class="results__heading">
+        <div>
+            <h2 id="results-heading">
+                Results
+            </h2>
+
+            <div class="results__status"
+                 aria-live="polite">
+                @ResultsStatusText
+            </div>
+        </div>
+    </div>
+
+    @if (_isInitialLoading)
     {
-        <p>No genres were found.</p>
+        <div class="loading-state">
+            <LoadingIndicator
+                Heading="Searching comparable games..."
+                Message="Loading games, genres, and platforms." />
+
+            <div class="skeleton-grid"
+                 aria-hidden="true">
+
+                @for (var index = 0; index < 6; index++)
+                {
+                    <div class="skeleton-card">
+                        <div class="skeleton-card__image">
+                        </div>
+
+                        <div class="skeleton-card__line skeleton-card__line--title">
+                        </div>
+
+                        <div class="skeleton-card__line">
+                        </div>
+
+                        <div class="skeleton-card__line skeleton-card__line--short">
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+    else if (_errorMessage is not null)
+    {
+        <FeedbackState
+            Heading="We couldn't load comparable games"
+            Variant="FeedbackStateVariant.Error">
+
+            <Icon>
+                <svg viewBox="0 0 24 24">
+                    <circle cx="12"
+                            cy="12"
+                            r="9" />
+
+                    <path d="M12 7.5v5.5M12 16.5h.01" />
+                </svg>
+            </Icon>
+
+            <ChildContent>
+                <p>
+                    @_errorMessage Your current filters have been
+                    preserved.
+                </p>
+            </ChildContent>
+
+            <Actions>
+                <AppButton OnClick="RetryAsync">
+                    Try again
+                </AppButton>
+            </Actions>
+        </FeedbackState>
+    }
+    else if (_gamesResult is null ||
+             _gamesResult.TotalItems == 0)
+    {
+        @if (!HasAnyGameData && !HasActiveFilters)
+        {
+            <FeedbackState
+                Heading="Game data is not available yet">
+
+                <Icon>
+                    <svg viewBox="0 0 24 24">
+                        <ellipse cx="12"
+                                 cy="6"
+                                 rx="7.5"
+                                 ry="3" />
+
+                        <path d="M4.5 6v6c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3V6" />
+
+                        <path d="M4.5 12v6c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3v-6" />
+                    </svg>
+                </Icon>
+
+                <ChildContent>
+                    <p>
+                        We are preparing the first comparable-games
+                        dataset.
+                    </p>
+                </ChildContent>
+
+                <Actions>
+                    <AppButton
+                        Variant="AppButtonVariant.Secondary"
+                        OnClick="RetryAsync">
+                        Try again
+                    </AppButton>
+                </Actions>
+            </FeedbackState>
+        }
+        else
+        {
+            <FeedbackState
+                Heading="No matching games found">
+
+                <Icon>
+                    <svg viewBox="0 0 24 24">
+                        <circle cx="10.5"
+                                cy="10.5"
+                                r="6.5" />
+
+                        <path d="m15.5 15.5 5 5M8 10.5h5" />
+                    </svg>
+                </Icon>
+
+                <ChildContent>
+                    <p>
+                        Try changing your search or removing one or
+                        more filters.
+                    </p>
+                </ChildContent>
+
+                <Actions>
+                    <AppButton OnClick="ClearFilters">
+                        Clear all filters
+                    </AppButton>
+                </Actions>
+            </FeedbackState>
+        }
     }
     else
     {
-        <ul>
-            @foreach (var genre in _genres)
-            {
-                <li>@genre.Name</li>
-            }
-        </ul>
-    }
+        <div class="@ResultsGridCssClass"
+             aria-busy="@_isLoading">
 
-    <h2>Platforms</h2>
-
-    @if (_platforms.Count == 0)
-    {
-        <p>No platforms were found.</p>
-    }
-    else
-    {
-        <ul>
-            @foreach (var platform in _platforms)
-            {
-                <li>@platform.Name</li>
-            }
-        </ul>
-    }
-
-    <h2>Search result</h2>
-
-    @if (_gamesResult is null || _gamesResult.Items.Count == 0)
-    {
-        <p>No games were found.</p>
-    }
-    else
-    {
-        <ul>
             @foreach (var game in _gamesResult.Items)
             {
-                <li>@game.Name</li>
+                <GameCard Game="@game" />
             }
-        </ul>
-    }
-}
+        </div>
 
-@code {
-    private IReadOnlyList<GenreDetails> _genres = [];
-    private IReadOnlyList<PlatformDetails> _platforms = [];
-    private SearchGamesResult? _gamesResult;
-
-    private bool _isLoading = true;
-    private string? _errorMessage;
-
-    protected override async Task OnInitializedAsync()
-    {
-        try
+        @if (_gamesResult.TotalPages > 1)
         {
-            var genresTask =
-                GenreApiService.GetAllAsync();
-
-            var platformsTask =
-                PlatformApiService.GetAllAsync();
-
-            var gamesTask =
-                GameApiService.SearchAsync(new SearchGamesRequest());
-
-            await Task.WhenAll(genresTask, platformsTask, gamesTask);
-
-            _genres = await genresTask;
-            _platforms = await platformsTask;
-            _gamesResult = await gamesTask;
-        }
-        catch (HttpRequestException)
-        {
-            _errorMessage = "The data could not be loaded. Please try again.";
-        }
-        finally
-        {
-            _isLoading = false;
+            <GamesPagination
+                CurrentPage="@_gamesResult.Page"
+                TotalPages="@_gamesResult.TotalPages"
+                IsLoading="@_isLoading"
+                OnPrevious="@GoToPreviousPage"
+                OnNext="@GoToNextPage" />
         }
     }
-}
+</section>

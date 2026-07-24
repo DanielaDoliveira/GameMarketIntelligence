@@ -1,0 +1,45 @@
+<nav class="games-pagination" aria-label="Comparable games pages">
+
+    <button type="button"
+            class="button button--secondary games-pagination__button"
+            disabled="@IsPreviousDisabled"
+            @onclick="OnPrevious">
+        <span aria-hidden="true">←</span>
+
+        <span>Previous</span>
+    </button>
+
+    <span class="games-pagination__status" aria-live="polite">
+        Page @CurrentPage of @TotalPages
+    </span>
+
+    <button type="button"
+            class="button button--secondary games-pagination__button"
+            disabled="@IsNextDisabled"
+            @onclick="OnNext">
+        <span>Next</span>
+
+        <span aria-hidden="true">→</span>
+    </button>
+</nav>
+
+@code {
+    [Parameter]
+    public int CurrentPage { get; set; }
+
+    [Parameter]
+    public int TotalPages { get; set; }
+
+    [Parameter]
+    public bool IsLoading { get; set; }
+
+    [Parameter]
+    public EventCallback OnPrevious { get; set; }
+
+    [Parameter]
+    public EventCallback OnNext { get; set; }
+
+    private bool IsPreviousDisabled => IsLoading || CurrentPage <= 1;
+
+    private bool IsNextDisabled => IsLoading || TotalPages <= 0 || CurrentPage >= TotalPages;
+}

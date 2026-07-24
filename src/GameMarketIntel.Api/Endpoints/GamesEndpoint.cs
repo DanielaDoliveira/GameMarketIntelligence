@@ -5,32 +5,15 @@ namespace GameMarketIntel.Api.Endpoints;
 
 public static class GamesEndpoints
 {
-    public static IEndpointRouteBuilder MapGameEndpoints(
-        this IEndpointRouteBuilder endpoints)
+    public static IEndpointRouteBuilder MapGameEndpoints(this IEndpointRouteBuilder endpoints)
     {
         #region Search and filter games
+        
         endpoints.MapGet("/api/games", 
-            async (
-                string? search,
-                Guid? genreId, 
-                Guid? platformId,
-                int? releaseYear, 
-                int? page, 
-                int? pageSize, 
-                IGameSearchService gameSearchService,
-                CancellationToken cancellationToken) 
-                =>
+            async (string? search, Guid? genreId, Guid? platformId, int? releaseYear, int? page, int? pageSize, IGameSearchService gameSearchService, CancellationToken cancellationToken) =>
             {
-                var query = new SearchGamesQuery(
-                    search,
-                    genreId,
-                    platformId,
-                    releaseYear,
-                    page ?? 1,
-                    pageSize ?? 20);
-
+                var query = new SearchGamesQuery(search, genreId, platformId, releaseYear, page ?? 1, pageSize ?? 20);
                 var result = await gameSearchService.SearchAsync( query, cancellationToken);
-
                 return Results.Ok(result);
 
             })

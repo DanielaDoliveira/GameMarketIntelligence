@@ -7,11 +7,13 @@ Instead of competing with official game websites, digital stores, review platfor
 ```text
 Project Status: Active Development — Early Stages
 Current Delivery Focus: Milestone 2 — Comparable Games Read Experience
+Current Delivery: First responsive frontend increment completed
 ```
-```text
-website: https://agreeable-ground-00051ce10.7.azurestaticapps.net/ 
 
+```text
+Website: https://agreeable-ground-00051ce10.7.azurestaticapps.net/
 ```
+
 ## Product Vision
 
 GameMarketIntel helps producers move from a game idea to an informed decision.
@@ -49,16 +51,35 @@ GameMarketIntel aims to reduce the time required to organize this first research
 
 ## Current Increment
 
-The current milestone delivers the first complete Comparable Games read experience:
+Milestone 2 remains in progress and is delivered through smaller, reviewable increments.
 
-- partial-name search;
-- genre and platform filters;
-- OR semantics within a filter category;
-- AND semantics between filter categories;
-- responsive Blazor WebAssembly interface;
-- game summaries and basic details;
-- loading, result, empty, error, and not-found states;
-- frontend-to-API integration.
+The first responsive frontend increment is complete and includes:
+
+- environment-based connection between the Blazor WebAssembly frontend and the API;
+- responsive application shell;
+- expanded and compact desktop navigation;
+- temporary mobile navigation drawer;
+- Overview, Comparable Games, Data Sources, and route-not-found pages;
+- contextual partial-name search in the application header;
+- one optional genre filter supported by the current API contract;
+- one optional platform filter supported by the current API contract;
+- optional release-year filtering;
+- AND semantics between supplied filter categories;
+- removable active-filter chips and clear-all behavior;
+- paginated search requests and pagination controls;
+- search, filter, and page state preserved in the URL;
+- browser back-and-forward navigation synchronized with the interface;
+- branded initial loading and in-application query loading;
+- no-data, no-results, request-error, and route-not-found states;
+- reusable button, feedback, loading, card, image-fallback, filter, and pagination components;
+- separation of Razor markup, C# code-behind, and isolated CSS where it improves maintainability;
+- successful local build, automated test execution, deployment, and browser validation with the current empty production dataset.
+
+The milestone goal has not been redefined by this delivery. Remaining Definition of Done items continue to be tracked in the implementation roadmap.
+
+The current production database does not yet contain the representative external game dataset. Genre options, platform options, populated result cards, and multi-page behavior therefore still require final data-dependent validation after the external-source evaluation and ingestion work.
+
+Multiple genre and platform selection remains part of the planned product evolution. It will require an API contract extension and will be implemented in a later delivery after representative data is available.
 
 Commercial metrics are intentionally deferred to a dedicated post-Comparable-Games vertical.
 
@@ -112,5 +133,7 @@ The project favors small, complete vertical increments and records exploratory i
 ## Current Database Position
 
 Neon PostgreSQL remains the single operational database for the MVP.
+
+The production database is currently empty while the project prepares the external-source evaluation and ingestion flow.
 
 A separate architecture exploration records a possible post-MVP recent-and-historical data-tiering strategy. That exploration is not an approved decision and does not change the current implementation.

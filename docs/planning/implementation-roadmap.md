@@ -110,7 +110,9 @@ Deliver the first complete Comparable Games read experience, including searchabl
 
 The increment should allow a game producer or small-studio decision-maker to discover comparable games through name, genre, platform, and release-year criteria.
 
-### Current Backend Progress
+### Current Milestone Progress
+
+#### Backend Delivery
 
 Completed:
 
@@ -162,10 +164,48 @@ Completed:
 * PostgreSQL integration tests for filtering, pagination, genre listing, and platform listing;
 * 108 automated tests passing across the solution.
 
-Pending:
+#### First Frontend Delivery
 
-* responsive frontend implementation;
-* Blazor WebAssembly integration with the API.
+Completed:
+
+* environment-based API configuration for development and production;
+* Blazor WebAssembly `HttpClient` integration with the deployed API;
+* `GameApiService`, `GenreApiService`, and `PlatformApiService`;
+* responsive application shell;
+* persistent and collapsible desktop sidebar;
+* expanded and compact desktop navigation states;
+* temporary mobile navigation drawer with overlay and Escape-key support;
+* responsive header with contextual Comparable Games search;
+* Overview, Comparable Games, Data Sources, and route-not-found pages;
+* initial Comparable Games filter panel;
+* one optional genre selection supported by the current API contract;
+* one optional platform selection supported by the current API contract;
+* optional release-year selection;
+* removable active-filter chips;
+* clear-all behavior;
+* result-count status feedback;
+* pagination controls;
+* search, filter, and page state persisted in the query string;
+* browser history synchronization for back and forward navigation;
+* branded Blazor startup loading experience;
+* query-loading feedback and skeleton cards;
+* no-data, no-results, request-error, and route-not-found states;
+* reusable `AppButton`, `FeedbackState`, `LoadingIndicator`, `GameCard`, `GameImageFallback`, `GamesFilters`, and `GamesPagination` components;
+* Blazor CSS isolation and responsive mobile-first styling;
+* reduced-motion handling;
+* separation of Razor markup, C# code-behind, and isolated CSS where it improves maintainability;
+* deployed Azure Static Web Apps frontend communicating with the Render API and Neon database;
+* successful build, automated tests, and manual browser validation with the current empty production dataset.
+
+Current delivery limitations:
+
+* the production database is empty;
+* populated genre and platform options have not yet received production-data validation;
+* result cards and multi-page pagination have not yet received representative production-data validation;
+* the basic game-details frontend destination remains pending;
+* multiple genre and platform selection remains deferred to a later API and frontend delivery.
+
+The completed frontend delivery does not redefine the Milestone 2 goal or Definition of Done. Milestone 2 remains in progress until all required items are completed and verified.
 
 ### Backend Scope
 
@@ -355,31 +395,37 @@ The `GameMarketIntel.Exceptions` project remains independent from:
 
 #### Application Shell
 
+Implemented in the first frontend delivery:
+
 * responsive application shell;
 * persistent and collapsible desktop sidebar;
 * temporary mobile navigation drawer;
 * visible menu button;
 * header with centered contextual search;
 * lightweight responsive footer;
-* consistent shell across result, detail, loading, error, and not-found pages.
+* consistent shell across loading, no-results, no-data, error, and not-found states.
+
+The shell is prepared for the future game-details destination, which remains pending.
 
 #### Comparable Games Experience
 
-The first frontend implementation must support the current API contract:
+Implemented against the current API contract:
 
 * contextual partial-name search;
 * one optional genre filter;
 * one optional platform filter;
-* optional release-year filter when included in the interface;
+* optional release-year filter;
 * active-filter presentation;
-* filter removal;
+* individual filter removal;
 * clear-all-filters action;
 * result count;
-* vertically stacked mobile results;
-* responsive desktop result composition;
+* responsive mobile and desktop result composition;
+* pagination controls;
+* URL-preserved search, filters, and page state;
+* browser-history synchronization;
 * connection between Blazor WebAssembly and the API.
 
-Multiple genre and platform selections remain a planned frontend evolution and require an API contract extension before implementation.
+Multiple genre and platform selections remain a planned product evolution and require an API contract extension before implementation.
 
 #### Experience States
 
@@ -492,9 +538,13 @@ Implemented coverage includes:
 * genre-listing HTTP endpoint;
 * platform-listing HTTP endpoint.
 
-Remaining test areas for Milestone 2:
+Remaining validation and test areas for Milestone 2:
 
-* frontend component and behavior tests where practical.
+* frontend component or behavior tests where practical;
+* populated genre and platform filter behavior with representative data;
+* populated result-card behavior with representative data;
+* multi-page pagination behavior with representative data;
+* basic game-details frontend behavior after its destination is implemented.
 
 ### Out of Scope for This Milestone
 
@@ -627,7 +677,7 @@ Expand the validated Comparable Games experience with more specialized research 
 * developer filtering when available;
 * sorting;
 * pagination optimization;
-* URL-preserved filter state;
+* advanced URL state for future filter contracts;
 * saved searches;
 * query-performance review;
 * source and reliability presentation;
@@ -722,20 +772,32 @@ Machine learning must not be introduced before the project has:
 
 ## Current Delivery Focus
 
-The current delivery focus is:
+The current delivery focus remains:
 
 ```text
-Begin responsive frontend implementation
-    ↓
-Build the Comparable Games search experience
-    ↓
-Connect filters to genre and platform endpoints
-    ↓
-Build responsive frontend
-    ↓
-Connect Blazor WebAssembly to the API
+Milestone 2 — Comparable Games Read Experience
 ```
 
-The immediate technical follow-up is the responsive Blazor WebAssembly frontend and its integration with the completed read endpoints.
+The first responsive frontend delivery is complete:
 
-The next product-facing delivery is the responsive Comparable Games frontend integrated with the deployed API.
+```text
+Responsive application shell
++
+contextual search and initial filters
++
+URL-preserved query state
++
+complete feedback states
++
+deployed frontend-to-API integration
++
+structural frontend refactoring
+```
+
+The milestone itself remains in progress.
+
+Immediate follow-up work should be selected from the remaining Definition of Done items without redefining the milestone goal. The basic game-details frontend destination remains pending.
+
+Data-dependent validation for populated genre and platform options, result cards, and multi-page pagination will be completed when representative game data becomes available through the external-source evaluation and ingestion work.
+
+Multiple genre and platform selection remains planned for a later advanced-exploration delivery after the API contract and representative dataset support it.

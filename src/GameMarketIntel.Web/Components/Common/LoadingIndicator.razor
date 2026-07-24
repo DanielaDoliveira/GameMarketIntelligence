@@ -1,0 +1,72 @@
+<div class="@ContainerCssClass"
+     role="@Role"
+     aria-live="@AriaLive">
+
+    <div class="loading-indicator__symbol"
+         aria-hidden="true">
+        <svg viewBox="0 0 48 48">
+            <circle class="loading-indicator__orbit"
+                    cx="24"
+                    cy="24"
+                    r="15" />
+
+            <circle class="loading-indicator__dot loading-indicator__dot--one"
+                    cx="24"
+                    cy="9"
+                    r="3" />
+
+            <circle class="loading-indicator__dot loading-indicator__dot--two"
+                    cx="37"
+                    cy="31"
+                    r="3" />
+
+            <circle class="loading-indicator__dot loading-indicator__dot--three"
+                    cx="11"
+                    cy="31"
+                    r="3" />
+        </svg>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Message))
+    {
+        <div class="loading-indicator__content">
+            @if (!string.IsNullOrWhiteSpace(Heading))
+            {
+                <h3>@Heading</h3>
+            }
+
+            <p>@Message</p>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string? Heading { get; set; }
+
+    [Parameter]
+    public string? Message { get; set; }
+
+    [Parameter]
+    public bool IsCentered { get; set; }
+
+    [Parameter]
+    public bool IsCompact { get; set; }
+
+    [Parameter]
+    public string Role { get; set; } = "status";
+
+    [Parameter]
+    public string AriaLive { get; set; } = "polite";
+
+    private string ContainerCssClass =>
+        string.Join(
+            " ",
+            "loading-indicator",
+            IsCentered
+                ? "loading-indicator--centered"
+                : null,
+            IsCompact
+                ? "loading-indicator--compact"
+                : null);
+}

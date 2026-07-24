@@ -14,8 +14,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 var connectionString =
     builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? throw new InvalidOperationException(
-        "A connection string 'DefaultConnection' não foi configurada.");
+    ?? throw new InvalidOperationException( "A connection string 'DefaultConnection' não foi configurada.");
 
 builder.Services.AddDbContext<GameMarketIntelDbContext>(options =>
     options.UseNpgsql(connectionString));
@@ -46,7 +45,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy(
         FrontendCorsPolicy,
-        policy =>
+ policy =>
         {
             policy
                 .WithOrigins(allowedOrigins)

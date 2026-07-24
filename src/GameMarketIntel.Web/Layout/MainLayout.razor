@@ -1,16 +1,101 @@
 ﻿@inherits LayoutComponentBase
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
 
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+<div class="@ShellCssClass"@onkeydown="HandleKeyDown">
+
+    <header class="application-header">
+        <div class="application-header__left">
+            <button type="button"
+                    class="icon-button application-header__menu-button application-header__menu-button--mobile"
+                    aria-label="@MobileMenuButtonLabel"
+                    aria-expanded="@IsMobileDrawerOpen"
+                    aria-controls="application-navigation"
+                    @onclick="ToggleMobileDrawer">
+                @if (IsMobileDrawerOpen)
+                {
+                    <svg viewBox="0 0 24 24"aria-hidden="true">
+                        <path d="M6 6 18 18M18 6 6 18" />
+                    </svg>
+                }
+                else
+                {
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M4 7H20M4 12H20M4 17H20" />
+                    </svg>
+                }
+            </button>
+
+            <button type="button"
+                    class="icon-button application-header__menu-button application-header__menu-button--desktop"
+                    aria-label="@DesktopMenuButtonLabel"
+                    aria-expanded="@(!IsDesktopSidebarCollapsed)"
+                    aria-controls="application-navigation"
+                    @onclick="ToggleDesktopSidebar">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4 7H20M4 12H20M4 17H20" />
+                </svg>
+            </button>
+
+            <a class="product-identity" href="/" aria-label="Game Market Intelligence home">
+                <span class="product-identity__mark" aria-hidden="true">
+                    GM
+                </span>
+
+                <span class="product-identity__name"> Game Market Intelligence </span>
+            </a>
         </div>
 
-        <article class="content px-4">
-            @Body
-        </article>
+        <div class="application-header__center">
+            <form class="header-search"role="search" @onsubmit="SubmitSearch" @onsubmit:preventDefault>
+
+                <label class="visually-hidden" for="comparable-games-search">Search comparable games</label>
+
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="11" cy="11" r="6.5" />
+
+                    <path d="M16 16 21 21" />
+                </svg>
+
+                <input id="comparable-games-search"
+                       name="search"
+                       type="search"
+                       placeholder="Search comparable games..."
+                       autocomplete="off"
+                       @bind="_searchText"
+                       @bind:event="oninput" />
+            </form>
+        </div>
+
+        <div class="application-header__right"aria-hidden="true"></div>
+    </header>
+
+    <aside id="application-navigation"class="application-sidebar"aria-label="Primary navigation">
+        <NavMenu IsCompact="@IsDesktopSidebarCollapsed" OnNavigate="CloseMobileDrawer" />
+    </aside>
+
+    <main class="application-main">
+        <div class="application-content"> @Body </div>
+
+        <footer class="application-footer"> <span>Game Market Intelligence</span>
+
+            <nav aria-label="Footer navigation">
+                <a href="/">About</a>
+
+                <a href="/sources">Data Sources</a>
+
+                <a href="https://github.com/" target="_blank" rel="noopener noreferrer"> GitHub
+
+                    <span class="visually-hidden">opens in a new tab</span>
+                </a>
+            </nav>
+        </footer>
     </main>
+
+    @if (IsMobileDrawerOpen)
+    {
+        <button type="button"
+               class="navigation-overlay"
+                aria-label="Close navigation"
+                @onclick="CloseMobileDrawer">
+        </button>
+    }
 </div>
