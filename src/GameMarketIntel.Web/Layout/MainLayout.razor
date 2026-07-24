@@ -1,12 +1,6 @@
 ﻿@inherits LayoutComponentBase
-@implements IDisposable
 
-@using Microsoft.AspNetCore.Components.Routing
-
-@inject NavigationManager NavigationManager
-
-<div class="@ShellCssClass"
-     @onkeydown="HandleKeyDown">
+<div class="@ShellCssClass"@onkeydown="HandleKeyDown">
 
     <header class="application-header">
         <div class="application-header__left">
@@ -18,15 +12,13 @@
                     @onclick="ToggleMobileDrawer">
                 @if (IsMobileDrawerOpen)
                 {
-                    <svg viewBox="0 0 24 24"
-                         aria-hidden="true">
+                    <svg viewBox="0 0 24 24"aria-hidden="true">
                         <path d="M6 6 18 18M18 6 6 18" />
                     </svg>
                 }
                 else
                 {
-                    <svg viewBox="0 0 24 24"
-                         aria-hidden="true">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
                         <path d="M4 7H20M4 12H20M4 17H20" />
                     </svg>
                 }
@@ -38,42 +30,27 @@
                     aria-expanded="@(!IsDesktopSidebarCollapsed)"
                     aria-controls="application-navigation"
                     @onclick="ToggleDesktopSidebar">
-                <svg viewBox="0 0 24 24"
-                     aria-hidden="true">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M4 7H20M4 12H20M4 17H20" />
                 </svg>
             </button>
 
-            <a class="product-identity"
-               href="/"
-               aria-label="Game Market Intelligence home">
-                <span class="product-identity__mark"
-                      aria-hidden="true">
+            <a class="product-identity" href="/" aria-label="Game Market Intelligence home">
+                <span class="product-identity__mark" aria-hidden="true">
                     GM
                 </span>
 
-                <span class="product-identity__name">
-                    Game Market Intelligence
-                </span>
+                <span class="product-identity__name"> Game Market Intelligence </span>
             </a>
         </div>
 
         <div class="application-header__center">
-            <form class="header-search"
-                  role="search"
-                  @onsubmit="SubmitSearch"
-                  @onsubmit:preventDefault>
+            <form class="header-search"role="search" @onsubmit="SubmitSearch" @onsubmit:preventDefault>
 
-                <label class="visually-hidden"
-                       for="comparable-games-search">
-                    Search comparable games
-                </label>
+                <label class="visually-hidden" for="comparable-games-search">Search comparable games</label>
 
-                <svg viewBox="0 0 24 24"
-                     aria-hidden="true">
-                    <circle cx="11"
-                            cy="11"
-                            r="6.5" />
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="11" cy="11" r="6.5" />
 
                     <path d="M16 16 21 21" />
                 </svg>
@@ -88,41 +65,26 @@
             </form>
         </div>
 
-        <div class="application-header__right"
-             aria-hidden="true">
-        </div>
+        <div class="application-header__right"aria-hidden="true"></div>
     </header>
 
-    <aside id="application-navigation"
-           class="application-sidebar"
-           aria-label="Primary navigation">
-        <NavMenu IsCompact="@IsDesktopSidebarCollapsed"
-                 OnNavigate="CloseMobileDrawer" />
+    <aside id="application-navigation"class="application-sidebar"aria-label="Primary navigation">
+        <NavMenu IsCompact="@IsDesktopSidebarCollapsed" OnNavigate="CloseMobileDrawer" />
     </aside>
 
     <main class="application-main">
-        <div class="application-content">
-            @Body
-        </div>
+        <div class="application-content"> @Body </div>
 
-        <footer class="application-footer">
-            <span>Game Market Intelligence</span>
+        <footer class="application-footer"> <span>Game Market Intelligence</span>
 
             <nav aria-label="Footer navigation">
                 <a href="/">About</a>
 
-                <a href="/sources">
-                    Data Sources
-                </a>
+                <a href="/sources">Data Sources</a>
 
-                <a href="https://github.com/"
-                   target="_blank"
-                   rel="noopener noreferrer">
-                    GitHub
+                <a href="https://github.com/" target="_blank" rel="noopener noreferrer"> GitHub
 
-                    <span class="visually-hidden">
-                        opens in a new tab
-                    </span>
+                    <span class="visually-hidden">opens in a new tab</span>
                 </a>
             </nav>
         </footer>
@@ -131,130 +93,9 @@
     @if (IsMobileDrawerOpen)
     {
         <button type="button"
-                class="navigation-overlay"
+               class="navigation-overlay"
                 aria-label="Close navigation"
                 @onclick="CloseMobileDrawer">
         </button>
     }
 </div>
-
-@code {
-    private bool IsDesktopSidebarCollapsed { get; set; }
-
-    private bool IsMobileDrawerOpen { get; set; }
-
-    private string _searchText = string.Empty;
-
-    private string ShellCssClass =>
-        string.Join(
-            " ",
-            "application-shell",
-            IsDesktopSidebarCollapsed
-                ? "application-shell--sidebar-collapsed"
-                : null,
-            IsMobileDrawerOpen
-                ? "application-shell--drawer-open"
-                : null);
-
-    private string MobileMenuButtonLabel =>
-        IsMobileDrawerOpen
-            ? "Close navigation"
-            : "Open navigation";
-
-    private string DesktopMenuButtonLabel =>
-        IsDesktopSidebarCollapsed
-            ? "Expand navigation"
-            : "Collapse navigation";
-
-    protected override void OnInitialized()
-    {
-        SynchronizeSearchWithUrl();
-
-        NavigationManager.LocationChanged +=
-            HandleLocationChanged;
-    }
-    private void SubmitSearch()
-    {
-        var currentUri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
-
-        var normalizedSearch = string.IsNullOrWhiteSpace(_searchText) ? null : _searchText.Trim();
-
-        if (!currentUri.AbsolutePath.Equals("/games", StringComparison.OrdinalIgnoreCase))
-        {
-            if (normalizedSearch is null)
-            {
-                NavigationManager.NavigateTo("/games");
-
-                return;
-            }
-
-            var encodedSearch = Uri.EscapeDataString(normalizedSearch);
-
-            NavigationManager.NavigateTo($"/games?search={encodedSearch}");
-
-            return;
-        }
-
-        var query = System.Web.HttpUtility.ParseQueryString(currentUri.Query);
-
-        query.Remove("page");
-
-        if (normalizedSearch is null)
-        {
-            query.Remove("search");
-        }
-        else
-        {
-            query["search"] = normalizedSearch;
-        }
-
-        var queryString = query.ToString();
-
-        var targetUri = string.IsNullOrWhiteSpace(queryString) ? "/games" : $"/games?{queryString}";
-
-        NavigationManager.NavigateTo(targetUri);
-    }
-
-    private void HandleLocationChanged(object? sender, LocationChangedEventArgs args)
-    {
-        SynchronizeSearchWithUrl();
-        _ = InvokeAsync(StateHasChanged);
-    }
-
-    private void SynchronizeSearchWithUrl()
-    {
-        var currentUri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
-
-        var queryParameters = System.Web.HttpUtility.ParseQueryString(currentUri.Query);
-
-        _searchText = queryParameters["search"] ?? string.Empty;
-    }
-
-    private void ToggleMobileDrawer()
-    {
-        IsMobileDrawerOpen = !IsMobileDrawerOpen;
-    }
-
-    private void ToggleDesktopSidebar()
-    {
-        IsDesktopSidebarCollapsed = !IsDesktopSidebarCollapsed;
-    }
-
-    private void CloseMobileDrawer()
-    {
-        IsMobileDrawerOpen = false;
-    }
-
-    private void HandleKeyDown(KeyboardEventArgs args)
-    {
-        if (args.Key == "Escape")
-        {
-            CloseMobileDrawer();
-        }
-    }
-
-    public void Dispose()
-    {
-        NavigationManager.LocationChanged -= HandleLocationChanged;
-    }
-}
