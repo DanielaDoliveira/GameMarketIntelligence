@@ -11,6 +11,8 @@
 @inject IGameApiService GameApiService
 @inject IGenreApiService GenreApiService
 @inject IPlatformApiService PlatformApiService
+@inject NavigationManager NavigationManager
+
 
 <PageTitle>Comparable Games | Game Market Intelligence</PageTitle>
 
@@ -22,8 +24,9 @@
     <h1>Explore comparable games</h1>
 
     <p class="page-heading__description">
-        Filter the current dataset by genre, platform, and release year
-        to support early product and market research.
+        Search by name and filter the current dataset by genre,
+        platform, and release year to support early product and
+        market research.
     </p>
 </section>
 
@@ -120,6 +123,21 @@
             </span>
 
             <div class="active-filters__items">
+                
+                @if (!string.IsNullOrWhiteSpace(_searchTerm))
+                {
+                    <button type="button"
+                            class="filter-chip"
+                            disabled="@_isLoading"
+                            aria-label="Remove game name search"
+                            @onclick="RemoveSearchFilter">
+                        “@_searchTerm”
+
+                        <span aria-hidden="true">
+                            ×
+                        </span>
+                    </button>
+                }
                 @if (_selectedGenreId.HasValue)
                 {
                     <button type="button"
@@ -332,6 +350,12 @@
 </section>
 
 @code {
+    
+    [Parameter] [SupplyParameterFromQuery(Name = "search")]
+    public string? Search { get; set; }
+    private string? _searchTerm;
+    private string? _lastAppliedSearch;
+    private bool _pageInitialized;
     private const int DefaultPage = 1;
     private const int DefaultPageSize = 20;
 
@@ -363,6 +387,7 @@
     private string? _errorMessage;
 
     private bool HasActiveFilters =>
+        !string.IsNullOrWhiteSpace(_searchTerm) ||
         _selectedGenreId.HasValue ||
         _selectedPlatformId.HasValue ||
         _releaseYear.HasValue;
@@ -370,6 +395,8 @@
     private bool HasAnyGameData =>
         !_hasCompletedUnfilteredSearch ||
         (_gamesResult?.TotalItems ?? 0) > 0;
+    
+    
 
     private string SelectedGenreValue =>
         _selectedGenreId?.ToString() ??
@@ -435,11 +462,32 @@
             ? "results-grid results-grid--loading"
             : "results-grid";
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnParametersSetAsync()
     {
-        await LoadInitialDataAsync();
-    }
+        var normalizedSearch = string.IsNullOrWhiteSpace(Search) ? null : Search.Trim();
 
+        if (!_pageInitialized)
+        {
+            _pageInitialized = true;
+            _searchTerm = normalizedSearch;
+            _lastAppliedSearch = normalizedSearch;
+
+            await LoadInitialDataAsync();
+
+            return;
+        }
+
+        if (string.Equals(_lastAppliedSearch, normalizedSearch,StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        _searchTerm = normalizedSearch;
+        _lastAppliedSearch = normalizedSearch;
+        _currentPage = DefaultPage;
+
+        await RefreshResultsAsync();
+    }
     private async Task LoadInitialDataAsync()
     {
         _isInitialLoading = true;
@@ -505,7 +553,8 @@
     private Task<SearchGamesResult> SearchGamesAsync()
     {
         var request = new SearchGamesRequest
-        {
+        {      
+            Search = _searchTerm,
             GenreId = _selectedGenreId,
             PlatformId = _selectedPlatformId,
             ReleaseYear = _releaseYear,
@@ -564,14 +613,21 @@
 
         await ResetPageAndRefreshAsync();
     }
-
     private async Task ClearFiltersAsync()
     {
         _selectedGenreId = null;
         _selectedPlatformId = null;
         _releaseYear = null;
+        _currentPage = DefaultPage;
 
-        await ResetPageAndRefreshAsync();
+        if (!string.IsNullOrWhiteSpace(_searchTerm))
+        {
+            NavigateWithSearch(null);
+
+            return;
+        }
+
+        await RefreshResultsAsync();
     }
 
     private async Task ResetPageAndRefreshAsync()
@@ -649,4 +705,23 @@
             ? year
             : null;
     }
+    private void RemoveSearchFilter()
+    {
+        NavigateWithSearch(null);
+    }
+    private void NavigateWithSearch(string? search)
+    {
+        if (string.IsNullOrWhiteSpace(search))
+        {
+            NavigationManager.NavigateTo("/games");
+
+            return;
+        }
+
+        var normalizedSearch = search.Trim();
+        var targetUri = $"/games?search={Uri.EscapeDataString(normalizedSearch)}";
+
+        NavigationManager.NavigateTo(targetUri);
+    }
+    
 }

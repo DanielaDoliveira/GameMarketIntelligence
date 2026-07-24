@@ -161,13 +161,8 @@
     color: var(--color-text-muted);
 }
 
-.header-search--disabled {
-    opacity: 0.72;
-}
 
-.header-search--disabled input {
-    cursor: not-allowed;
-}
+
 
 .application-sidebar {
     position: fixed;
