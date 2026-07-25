@@ -2,6 +2,7 @@ using GameMarketIntel.Shared.Contracts.Games.Search;
 using GameMarketIntel.Shared.Contracts.Genres;
 using GameMarketIntel.Shared.Contracts.Platforms;
 using GameMarketIntel.Shared.Requests.Games;
+using GameMarketIntel.Web.Components.Games;
 using GameMarketIntel.Web.Services;
 using Microsoft.AspNetCore.Components;
 
@@ -76,7 +77,6 @@ public partial class Games
     private bool _hasCompletedUnfilteredSearch;
 
     private string? _errorMessage;
-
     private bool HasActiveFilters =>
         !string.IsNullOrWhiteSpace(_searchTerm) ||
         _selectedGenreId.HasValue ||
@@ -289,43 +289,28 @@ public partial class Games
 
         return GameApiService.SearchAsync(request);
     }
-
-    private void HandleGenreChanged(
-        ChangeEventArgs args)
+    private void HandleSearchSubmitted(GamesFiltersSubmission submission)
     {
-        var genreId =
-            TryParseGuid(
-                args.Value?.ToString());
-
-        NavigateWithQueryChanges(
-            ("genreId", genreId?.ToString()),
-            ("page", null));
+        NavigateWithQueryChanges(("search", NormalizeSearch(submission.SearchTerm)),
+            (
+                "genreId",
+                submission.GenreId?.ToString()
+            ),
+            (
+                "platformId",
+                submission.PlatformId?.ToString()
+            ),
+            (
+                "releaseYear",
+                submission.ReleaseYear?.ToString()
+            ),
+            (
+                "page",
+                null
+            ));
     }
-
-    private void HandlePlatformChanged(
-        ChangeEventArgs args)
-    {
-        var platformId =
-            TryParseGuid(
-                args.Value?.ToString());
-
-        NavigateWithQueryChanges(
-            ("platformId", platformId?.ToString()),
-            ("page", null));
-    }
-
-    private void HandleReleaseYearChanged(
-        ChangeEventArgs args)
-    {
-        var releaseYear =
-            TryParseReleaseYear(
-                args.Value?.ToString());
-
-        NavigateWithQueryChanges(
-            ("releaseYear", releaseYear?.ToString()),
-            ("page", null));
-    }
-
+  
+    
     private void ClearFilters()
     {
         NavigationManager.NavigateTo("/games");
@@ -456,31 +441,7 @@ public partial class Games
         return releaseYear is >= 1950 &&
                releaseYear <= CurrentYear;
     }
-
-    private int? TryParseReleaseYear(
-        string? value)
-    {
-        if (!int.TryParse(
-                value,
-                out var year))
-        {
-            return null;
-        }
-
-        return IsValidReleaseYear(year)
-            ? year
-            : null;
-    }
-
-    private static Guid? TryParseGuid(
-        string? value)
-    {
-        return Guid.TryParse(
-            value,
-            out var id)
-                ? id
-                : null;
-    }
+    
 
     private static string? NormalizeSearch(
         string? search)
@@ -489,4 +450,5 @@ public partial class Games
             ? null
             : search.Trim();
     }
+ 
 }

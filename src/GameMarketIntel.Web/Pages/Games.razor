@@ -25,17 +25,14 @@
     SelectedPlatformId="@_selectedPlatformId"
     ReleaseYear="@_releaseYear"
     CurrentYear="@CurrentYear"
-    IsLoading="@_isLoading"
+    IsLoading="@(_isInitialLoading || _isLoading)"
     ReferenceDataLoaded="@_referenceDataLoaded"
-    OnGenreChanged="@HandleGenreChanged"
-    OnPlatformChanged="@HandlePlatformChanged"
-    OnReleaseYearChanged="@HandleReleaseYearChanged"
+    OnSearchSubmitted="@HandleSearchSubmitted"
     OnClearAll="@ClearFilters"
     OnRemoveSearch="@RemoveSearchFilter"
     OnRemoveGenre="@RemoveGenreFilter"
     OnRemovePlatform="@RemovePlatformFilter"
     OnRemoveReleaseYear="@RemoveReleaseYearFilter" />
-
 <section class="results"
          aria-labelledby="results-heading">
 
