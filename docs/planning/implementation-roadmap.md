@@ -185,7 +185,7 @@ Completed:
 * clear-all behavior;
 * result-count status feedback;
 * pagination controls;
-* search, filter, and page state persisted in the query string;
+* submitted search, filter, and page state persisted in the query string;
 * browser history synchronization for back and forward navigation;
 * branded Blazor startup loading experience;
 * query-loading feedback and skeleton cards;
@@ -196,7 +196,10 @@ Completed:
 * separation of Razor markup, C# code-behind, and isolated CSS where it improves maintainability;
 * deployed Azure Static Web Apps frontend communicating with the Render API and Neon database;
 * successful build, automated tests, and manual browser validation with the current empty production dataset.
-
+* explicit Search button for the Comparable Games filter form;
+* unified submission of game name, genre, platform, and release year;
+* Enter-key submission preserved through semantic form behavior;
+* complete filter form disabled during initial and query loading;
 Current delivery limitations:
 
 * the production database is empty;

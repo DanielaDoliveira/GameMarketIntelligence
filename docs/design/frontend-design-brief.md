@@ -66,13 +66,16 @@ Implemented:
 * responsive Blazor WebAssembly application shell;
 * expanded and compact desktop navigation;
 * temporary mobile navigation drawer with overlay and Escape-key support;
-* contextual Comparable Games search in the header;
+* explicit Comparable Games search and filter form;
+* visible `Search` button with Enter-key submission support;
+* one optional partial game-name criterion;
 * one optional genre filter;
 * one optional platform filter;
-* optional release-year filter;
+* one optional release-year filter;
+* unified submission of all populated search criteria;
 * removable active-filter chips and clear-all behavior;
 * pagination controls;
-* search, filter, and page state stored in the URL;
+* applied search, filter, and page state stored in the URL;
 * synchronization with browser back and forward navigation;
 * branded initial loading and query-loading states;
 * no-data, no-results, request-error, and route-not-found states;
@@ -134,7 +137,7 @@ Initial desktop structure:
 Application Header
 ├── Menu button
 ├── Product identity
-├── Search or page context
+├── Page context
 └── Secondary actions
 
 Page Layout
@@ -169,7 +172,7 @@ Initial mobile structure:
 ```text
 Application Header
 ├── Menu button
-├── Search or page context
+├── Page context
 └── Optional secondary action
 
 Main Content
@@ -232,7 +235,7 @@ Application shell
 
 Each region must have a distinct responsibility.
 
-The header provides product identity, contextual search, and limited secondary actions.
+The header provides product identity, navigation controls, page context, and limited secondary actions.
 
 The sidebar provides application navigation.
 
@@ -259,7 +262,7 @@ Its responsibilities are:
 
 * expose the navigation menu control;
 * preserve product identity;
-* provide access to the current search experience;
+* provide page context and limited application-level actions;
 * reserve limited space for future secondary actions.
 
 The header must not duplicate navigation options already available in the sidebar.
@@ -273,7 +276,7 @@ Left
 → menu button and product identity
 
 Center
-→ contextual search field
+→ page context or reserved flexible space
 
 Right
 → optional secondary action
@@ -282,12 +285,12 @@ Right
 Recommended structure:
 
 ```text
-[ Menu ] [ GameMarketIntel ]   [ Search comparable games... ]   [ Action ]
+[ Menu ] [ Game Market Intelligence ]   [ Page context ]   [ Action ]
 ```
 
-The search field should occupy the central region and receive most available horizontal space.
+The central region should remain flexible and may expose page context when that improves orientation.
 
-The product identity should remain visible on the left without competing with search.
+The product identity should remain visible on the left without competing with the active page content.
 
 The right region should remain minimal during the first increment.
 
@@ -303,69 +306,59 @@ No placeholder avatar or unnecessary action should be introduced before a real n
 
 ### Mobile Header
 
-On mobile, the header should use a compact search-centered composition.
+On mobile, the header should use a compact navigation-and-identity composition.
 
 Recommended structure:
 
 ```text
-[ Menu ]   [ Search comparable games... ]   [ Compact action ]
+[ Menu ]   [ Product mark or page context ]   [ Compact action ]
 ```
 
-The search field should remain the dominant element.
+The menu control and current page context should remain easy to identify.
 
 The full product name does not need to remain visible when horizontal space is limited.
 
-A compact product mark may appear when it does not reduce search usability.
+A compact product mark may appear when it does not reduce navigation or page-context clarity.
 
 The mobile header should preserve:
 
 * a visible menu button;
-* a comfortable search target;
+* a comfortable navigation target;
 * sufficient spacing between controls;
 * clear focus and active states;
 * support for touch and keyboard interaction.
 
 ## Search Placement
 
-For the first frontend increment, Comparable Games search should appear in the center of the application header.
+For the current Comparable Games implementation, the game-name search is
+part of the page filter form.
 
-The Comparable Games page must not repeat the same primary search field inside the main content.
+The form groups:
 
-The main content should contain:
+* partial game name;
+* genre;
+* platform;
+* release year;
+* the explicit `Search` action.
 
-* page title;
-* genre filter;
-* platform filter;
-* optional release-year filter;
-* active-filter presentation;
-* result count;
-* results or feedback states.
+Keeping these controls together communicates that they form one query and
+that populated criteria are applied at the same time.
 
-Recommended structure:
+The application header remains responsible for product identity, navigation,
+and limited contextual actions.
 
-```text
-Header
-└── Search comparable games
-
-Comparable Games page
-├── Page title
-├── Genre, platform, and optional year filters
-├── Active-filter context
-├── Result count
-└── Results
-```
-
-This prevents duplicate search controls and gives the application a clear visual focus.
+A future global or cross-module search may use the header, but it must not be
+introduced until its product scope and result behavior are defined.
 
 ## Search Scope
 
-During the first increment, header search is contextual.
+During the current Comparable Games implementation, the game-name search is scoped to the Comparable Games page and is part of its unified filter form.
 
-On the Comparable Games page, it searches games by partial name.
+It searches games by partial name and may be combined with genre, platform, and release year.
 
-It is not yet a global application search.
+It is not a global application search.
 
-Future versions may expand the same search position to include:
+Future versions may introduce a separate global or cross-module search for:
 
 * games;
 * genres;
@@ -373,7 +366,7 @@ Future versions may expand the same search position to include:
 * data sources;
 * market indicators.
 
-Any future expansion to global search must clearly communicate the type and scope of returned results.
+Any future global-search capability must clearly communicate its scope, supported entity types, and result behavior.
 
 ## Footer Pattern
 
@@ -408,13 +401,13 @@ The footer must remain visually secondary and must not compete with the research
 
 The initial application-shell decision is:
 
-> Use a persistent header with a centered contextual search field, adaptive lateral navigation, a responsive main-content area, and a lightweight footer.
+> Use a persistent header for navigation, product identity, and page context; adaptive lateral navigation; a responsive main-content area; and a lightweight footer.
 
 This pattern was selected because it:
 
-* gives search a prominent and stable location;
-* avoids duplicating search controls;
-* separates navigation from search;
+* keeps navigation and product identity stable across pages;
+* keeps page-specific query controls close to their results;
+* avoids splitting one search workflow across the header and page body;
 * supports desktop and mobile layouts;
 * preserves space for future analytical content;
 * maintains consistent visual structure across pages.
@@ -835,22 +828,17 @@ This control is not part of the first frontend delivery.
 
 ## Search and Filter Layout
 
-The primary Comparable Games search field must appear in the center of the application header.
-
-The page body must not repeat the same name-search field.
+The Comparable Games page must present game name, genre, platform, release year, and the explicit `Search` action as one unified form.
 
 Initial page structure:
 
 ```text
-Header
-└── [ Search comparable games... ]
-
 Comparable Games
 
-[ Genre ] [ Platform ] [ Release year ]
+[ Game name ] [ Genre ] [ Platform ] [ Release year ] [ Search ]
 
 Active filters
-[Action ×] [PC ×] [2020 ×] [Clear all]
+[Zelda ×] [Action ×] [PC ×] [2020 ×] [Clear all]
 
 12 games found
 
@@ -862,8 +850,8 @@ Pagination
 
 On mobile:
 
-* the search field should occupy the dominant header area;
-* filters may open in a temporary panel, drawer, or bottom sheet;
+* the unified filter form should stack progressively on narrow screens;
+* the Search action should remain clearly visible and touch-friendly;
 * active filters should remain visible;
 * result count should appear before results;
 * controls must remain comfortable for touch interaction;
@@ -880,29 +868,63 @@ On desktop:
 
 The exact filter-panel presentation will be validated in wireframes.
 
-## Search Behavior
+## Search and Filter Submission Behavior
 
-The first implementation uses explicit form submission from the header search.
+The Comparable Games query controls behave as a single semantic form.
 
-This avoids sending an API request after every individual keystroke and gives the user control over when a query is applied.
+Users may populate any combination of:
+
+* partial game name;
+* genre;
+* platform;
+* release year.
+
+All populated values are applied together when the user selects the visible
+`Search` button or presses Enter.
+
+Individual filter controls do not trigger independent navigation.
+
+This avoids competing query-string updates and ensures that all criteria
+prepared by the user are submitted as a single search operation.
 
 Current behavior:
 
 ```text
-User types
+User populates any combination of query controls
     ↓
-User submits the search
+User selects Search or presses Enter
+    ↓
+All populated values are submitted together
     ↓
 Page returns to page 1
     ↓
-Latest search and existing filters are written to the URL
+Applied values are written to the page URL
     ↓
 The Comparable Games request is executed
+
 ```
 
-A debounced search interaction may be evaluated later if product usage demonstrates that it improves the research workflow.
+After submission:
 
-The current search and filters must remain preserved during loading and recoverable error states.
+* populated values are included in the page query string;
+* empty values are omitted from the page query string;
+* pagination returns to page `1`;
+* the URL remains the source of truth for applied filters;
+* different populated filter categories use AND semantics.
+
+During initial data loading and query loading, the complete form is disabled.
+
+This prevents users from submitting or editing values while the page is
+loading incomplete or changing state.
+
+The implementation uses explicit submission instead of sending an API
+request after every individual keystroke or control change.
+
+A debounced search interaction may be evaluated later if product usage
+demonstrates that it improves the research workflow.
+
+The current search and filters must remain preserved during loading and
+recoverable error states.
 
 ## Pagination Behavior
 
@@ -915,7 +937,7 @@ The API returns:
 
 The frontend should:
 
-* return to page `1` when a filter changes;
+* return to page `1` when a new search is submitted;
 * disable previous-page navigation on page `1`;
 * disable next-page navigation on the final page;
 * preserve active search and filters when changing pages;
