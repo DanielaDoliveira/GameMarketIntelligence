@@ -1,17 +1,42 @@
-namespace GameMarketIntel.Collector.Workers
-{
-    public class Worker(ILogger<Worker> logger) : BackgroundService
+using GameMarketIntel.Collector.Igdb.Authentication;
+
+namespace GameMarketIntel.Collector.Workers;
+
+    public sealed class Worker(
+       IIgdbAuthenticationService authenticationService,
+       IHostApplicationLifetime applicationLifetime,
+       ILogger<Worker> logger
+        ) : BackgroundService
     {
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            while (!stoppingToken.IsCancellationRequested)
+            try
             {
-                if (logger.IsEnabled(LogLevel.Information))
-                {
-                    logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
-                }
-                await Task.Delay(1000, stoppingToken);
+                logger.LogInformation("Starting IGDB authentication proof of concept");
+                var tokenResponse = await authenticationService.GetAccessTokenAsync(stoppingToken);
+                if(string.IsNullOrWhiteSpace(tokenResponse.AccessToken))
+                    throw new InvalidOperationException("Twitch returned an empty access token");
+                logger.LogInformation(
+                    """
+                    IGDB authentication succeeded.
+                    Token type: {TokenType}
+                    Expires in: {ExpiresIn} seconds
+                    """,
+                    tokenResponse.TokenType,
+                    tokenResponse.ExpiresIn);;
+                    
+            }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+                logger.LogInformation("IGDB authentication proof of concept was cancelled.");
+            }
+            catch (Exception exception)
+            {
+                logger.LogError(exception, "IGDB authentication proof of concept failed.");
+            }
+            finally
+            {
+                applicationLifetime.StopApplication();
             }
         }
     }
-}
