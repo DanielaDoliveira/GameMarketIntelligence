@@ -36,13 +36,13 @@ public sealed class Worker(
                 340742
             };
 
-            var games = await igdbClient.GetGamesByIdsAsync(
+            var games = await igdbClient.GetGamesWithParentAsync(
                 tokenResponse.AccessToken,
-                gameIds,
+                _options.SampleSize,
                 stoppingToken);
-            
-            
-            logger.LogInformation("Starting controlled IGDB games proof of concept.");
+
+            logger.LogInformation(
+                "Starting IGDB parent-game relationship proof of concept.");
             logger.LogInformation(
                 "IGDB returned {GameCount} games.",
                 games.Count);

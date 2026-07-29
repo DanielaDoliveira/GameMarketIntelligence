@@ -19,9 +19,10 @@ The Collector currently performs a one-time execution that:
 
 1. Requests an OAuth access token from Twitch.
 2. Calls the IGDB `/v4/games` endpoint.
-3. Retrieves either:
-   - a configurable sample of recently updated game records; or
-   - a controlled collection of games selected by IGDB identifiers.
+3. Retrieves one of the following:
+   - a configurable sample of recently updated game records;
+   - a controlled collection of games selected by IGDB identifiers;
+   - a sample of records where `parent_game` is populated.
 4. Deserializes the response into IGDB-specific contracts.
 5. Writes selected fields to the application log.
 6. Stops the application after the execution finishes.
@@ -97,6 +98,7 @@ The current execution flow is:
 Host starts
 → Worker ExecuteAsync starts
 → authentication service obtains a token
+→ Worker chooses an IGDB inspection operation
 → IGDB client fetches the requested games
 → Worker formats the results for inspection
 → application shutdown is requested
@@ -128,15 +130,21 @@ Observed game types include:
 
 ```text
 Main Game
+Expansion
 Bundle
+Standalone Expansion
+Mod
+Remaster
+Expanded Game
+Port
 ```
 
 The presence of `game_type` is relevant because the games endpoint may contain
 different kinds of products or related content.
 
 Observed examples show that `game_type` alone is not sufficient to determine
-whether a record represents an original game, an edition, a bundle, or another
-related version.
+whether a record represents an original game, an edition, a bundle, a remaster,
+a port, an expansion, or another related version.
 
 The final inclusion rules for the Game Market Intelligence catalogue have not
 yet been defined.
@@ -164,6 +172,15 @@ Aeon Wars: Maschinen Crisis
 - First release date: null
 ```
 
+The parent-game sample also included:
+
+```text
+Doom 3: Phobos
+- Game type: Mod
+- Game status: Early Access
+- Parent game: Doom 3
+```
+
 These examples show that `game_status` can provide useful information for
 unreleased or in-development records, but its absence remains common and must be
 preserved as unknown.
@@ -176,8 +193,8 @@ game records.
 This confirms that relationship fields may be absent and that the Collector
 contracts must preserve their nullability.
 
-The controlled sample also confirmed that `version_parent` can relate an edition
-to another game record.
+The controlled sample confirmed that `version_parent` can relate an edition to
+another game record.
 
 Observed example:
 
@@ -209,9 +226,89 @@ Although the name contains `Complete Edition`, IGDB classifies this record as a
 bundle and does not provide `version_parent` or `parent_game` in the current
 response.
 
-These observations show that relationship fields can be either absent or
-populated depending on the record, and that catalogue rules must not infer
-relationships only from the game name.
+A separate sample filtered by:
+
+```text
+where parent_game != null;
+```
+
+returned ten records where `parent_game` was populated and `version_parent` was
+null.
+
+Observed `game_type` values in this sample included:
+
+- `Mod`
+- `Remaster`
+- `Port`
+- `Expanded Game`
+- `Expansion`
+- `Standalone Expansion`
+
+Observed examples:
+
+```text
+Doom 3: Phobos
+- Game type: Mod
+- Parent game: Doom 3
+- Version parent: null
+```
+
+```text
+Grand Theft Auto: Vice City - The Definitive Edition
+- Game type: Remaster
+- Parent game: Grand Theft Auto: Vice City
+- Version parent: null
+```
+
+```text
+Eggconsole Zodiac PC-8801
+- Game type: Port
+- Parent game: Space Adventure Zodiac
+- Version parent: null
+```
+
+```text
+Guild Wars 2: Heart of Thorns
+- Game type: Expansion
+- Parent game: Guild Wars 2
+- Version parent: null
+```
+
+```text
+Jagged Alliance 2: Unfinished Business
+- Game type: Standalone Expansion
+- Parent game: Jagged Alliance 2
+- Version parent: null
+```
+
+```text
+Wadanohara and the Great Blue Sea -Reboot-
+- Game type: Expanded Game
+- Parent game: Wadanohara and the Great Blue Sea
+- Version parent: null
+```
+
+These observations suggest that `parent_game` is used as a broader relationship
+to a source or originating game for several kinds of related records.
+
+However, the current sample is not sufficient to define a universal rule that
+every record of these types will always use `parent_game`.
+
+The observations also show that names containing `Edition` can be represented in
+different ways:
+
+```text
+Kitaria Fables: Deluxe Edition
+→ Main Game + version_parent
+
+Grand Theft Auto: Vice City - The Definitive Edition
+→ Remaster + parent_game
+
+Hook: Complete Edition
+→ Bundle + no version_parent or parent_game
+```
+
+Therefore, catalogue rules must not infer relationships only from the game name.
 
 The following fields must be evaluated together:
 
@@ -222,8 +319,8 @@ The following fields must be evaluated together:
 - other relationship fields that may be evaluated later
 
 Additional controlled examples of editions, ports, remakes, remasters,
-expansions, DLCs, and bundles are still required before defining reconciliation
-or catalogue-inclusion rules.
+expansions, DLCs, bundles, and mods are still required before defining
+reconciliation or catalogue-inclusion rules.
 
 ### Platforms
 
@@ -262,6 +359,9 @@ Kitaria Fables: Deluxe Edition
 This suggests that related versions or editions may not inherit the same
 platform coverage as their parent record.
 
+The parent-game sample also showed platform differences between a related record
+and its source game, including ports and remasters.
+
 The relationship is represented by IGDB identifiers and names.
 
 Platform reconciliation with the internal Game Market Intelligence taxonomy has
@@ -287,6 +387,8 @@ Observed examples include:
 - Visual Novel
 - Platform
 - Hack and slash
+- Shooter
+- Fighting
 
 A single game may contain multiple genres.
 
@@ -324,6 +426,10 @@ Observed examples include:
 - Party
 - Sandbox
 - Kids
+- Horror
+- Comedy
+- Business
+- Romance
 
 Themes are distinct from genres and may be valuable for comparable-game
 research.
@@ -369,6 +475,9 @@ Observed examples related to mechanics or gameplay include:
 - ragdoll physics
 - online multiplayer
 - character customization
+- gliding
+- martial arts
+- special attacks
 
 Observed examples related to distribution, technical support, localization,
 accessibility, or historical context include:
@@ -385,6 +494,9 @@ accessibility, or historical context include:
 - custom volume controls
 - Twitch integration
 - available on - Crunchyroll Game Vault
+- original soundtrack release
+- PAX East 2015
+- PAX South 2017
 
 This indicates that keywords do not all represent the same semantic category.
 
@@ -460,22 +572,55 @@ identifier:
 340742 - Hook: Complete Edition
 ```
 
-This confirms that the Collector can currently support two distinct inspection
-modes:
+This confirms that the Collector can currently support a controlled inspection
+mode with repeatable records selected by known identifiers.
+
+This mode is useful for comparing specific classifications, relationships,
+nullability, and field behavior across repeated executions.
+
+### Sample with `parent_game`
+
+A third client operation was added to retrieve records where `parent_game` is
+populated.
+
+The request uses a filter equivalent to:
 
 ```text
-Recently updated sample
-→ dynamic records ordered by updated_at descending
-
-Controlled identifier sample
-→ repeatable records selected by known identifiers
+where parent_game != null;
+sort updated_at desc;
 ```
 
-The recently updated sample is useful for observing current changes in the IGDB
-catalogue.
+The execution returned ten records, all with:
 
-The controlled sample is useful for comparing specific classifications,
-relationships, nullability, and field behavior across repeated executions.
+```text
+Parent game: populated
+Version parent: null
+```
+
+The sample included:
+
+- mods;
+- remasters;
+- ports;
+- expanded games;
+- expansions;
+- standalone expansions.
+
+This mode is useful for investigating how IGDB represents relationships between
+a related record and an originating game.
+
+The current sample supports a provisional distinction:
+
+```text
+version_parent
+→ observed for a version or edition relationship
+
+parent_game
+→ observed for several broader source-game relationships
+```
+
+This distinction remains provisional and must be tested with more controlled
+examples.
 
 ## Current architectural boundaries
 
@@ -491,7 +636,8 @@ Responsible for:
 - handling HTTP response failures;
 - deserializing the response into IGDB contracts;
 - retrieving a recently updated sample;
-- retrieving a controlled set of games by IGDB identifiers.
+- retrieving a controlled set of games by IGDB identifiers;
+- retrieving records where `parent_game` is populated.
 
 The client currently exposes separate operations for:
 
@@ -501,6 +647,9 @@ GetGamesSampleAsync
 
 GetGamesByIdsAsync
 → retrieves a controlled collection of identifiers
+
+GetGamesWithParentAsync
+→ retrieves records where parent_game is populated
 ```
 
 These operations represent different retrieval intentions while sharing common
@@ -532,6 +681,7 @@ A future structure may separate concrete tasks into jobs, such as:
 
 - inspecting recently updated IGDB games;
 - inspecting controlled game identifiers;
+- inspecting records with parent relationships;
 - importing recently updated games;
 - refreshing external metadata;
 - reconciling records across sources.
@@ -572,7 +722,8 @@ The current proof of concept confirms that:
 - Twitch OAuth authentication works.
 - The IGDB games endpoint can be queried successfully.
 - Related platform, genre, theme, and keyword data can be expanded.
-- The client can retrieve both dynamic and controlled samples.
+- The client can retrieve recently updated, controlled, and parent-related
+  samples.
 - The source contains useful data for comparable-game research.
 - Several fields are nullable.
 - Related resource schemas are not completely uniform.
@@ -584,10 +735,15 @@ The current proof of concept confirms that:
 - A record name containing `Edition` does not reliably determine its IGDB game
   type or relationships.
 - A record classified as `Bundle` may have no `version_parent` or `parent_game`.
+- `parent_game` was observed for mods, remasters, ports, expanded games,
+  expansions, and standalone expansions.
+- In the current `parent_game` sample, `version_parent` was null for every
+  returned record.
 - `game_type`, `version_parent`, and `parent_game` must be evaluated together.
 - Catalogue and reconciliation rules must not be based only on names.
 - Missing `game_status` must remain unknown.
-- Explicit Alpha and Beta statuses can appear without release dates.
+- Explicit Alpha, Beta, and Early Access statuses can appear with missing or
+  independent release-date information.
 - Game types and parent relationships require further evaluation before domain
   or persistence decisions.
 - Real-source inspection is necessary before defining the final mapping.
@@ -599,23 +755,28 @@ The current proof of concept confirms that:
 The following points still require investigation:
 
 1. Continue evaluating controlled examples for main games, editions, remakes,
-   remasters, expansions, DLCs, bundles, and ports. Initial edition and bundle
-   examples have been inspected.
-2. Compare `version_parent` and `parent_game` behavior using records where each
-   relationship is populated.
-3. Determine whether additional IGDB relationship fields are needed to interpret
-   editions, remakes, remasters, expansions, DLCs, bundles, and ports.
-4. Evaluate release-date coverage and platform-specific release information.
-5. Evaluate covers, screenshots, involved companies, franchises, and alternative
+   remasters, expansions, DLCs, bundles, ports, and mods. Initial edition,
+   bundle, remaster, port, mod, expansion, standalone-expansion, and
+   expanded-game examples have been inspected.
+2. Compare `version_parent` and `parent_game` behavior using controlled records
+   where each relationship is populated.
+3. Find and inspect DLC examples with `parent_game`.
+4. Find and inspect remake examples.
+5. Clarify the practical distinction among `Expansion`, `Standalone Expansion`,
+   and `Expanded Game`.
+6. Determine whether additional IGDB relationship fields are needed to interpret
+   editions, remakes, remasters, expansions, DLCs, bundles, ports, and mods.
+7. Evaluate release-date coverage and platform-specific release information.
+8. Evaluate covers, screenshots, involved companies, franchises, and alternative
    names.
-6. Measure nullability and field coverage using a larger sample.
-7. Compare metadata completeness between parent records and related editions or
-   versions.
-8. Study rate limits and an appropriate synchronization strategy.
-9. Define which external fields are candidates for the MVP.
-10. Define which findings affect product decisions and which require an ADR.
-11. Define the mapping boundary between IGDB contracts and the internal model.
-12. Define the future boundary between the Worker, jobs, import services,
+9. Measure nullability and field coverage using a larger sample.
+10. Compare metadata completeness between parent records and related editions or
+    versions.
+11. Study rate limits and an appropriate synchronization strategy.
+12. Define which external fields are candidates for the MVP.
+13. Define which findings affect product decisions and which require an ADR.
+14. Define the mapping boundary between IGDB contracts and the internal model.
+15. Define the future boundary between the Worker, jobs, import services,
     mappers, and repositories.
-13. Evaluate attribution and source-identification requirements in the user
+16. Evaluate attribution and source-identification requirements in the user
     interface.

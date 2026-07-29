@@ -101,6 +101,39 @@ public sealed class IgdbClient(HttpClient httpClient, IOptions<IgdbPocOptions> o
 
     }
 
+    public async Task<IReadOnlyList<IgdbGameSample>> GetGamesWithParentAsync(string accessToken, int sampleSize, CancellationToken cancellationToken = default)
+    {
+        using var request = CreateGamesRequest(
+            accessToken,
+            $"""
+             fields
+                 id,
+                 name,
+                 first_release_date,
+                 updated_at,
+                 game_type.id,
+                 game_type.type,
+                 game_status.id,
+                 game_status.status,
+                 version_parent.id,
+                 version_parent.name,
+                 parent_game.id,
+                 parent_game.name,
+                 platforms.id,
+                 platforms.name,
+                 genres.id,
+                 genres.name,
+                 themes.id,
+                 themes.name,
+                 keywords.id,
+                 keywords.name;
+             where parent_game != null;
+             sort updated_at desc;
+             limit {sampleSize};
+             """);
+        return await SendGamesRequestAsync(request, cancellationToken);
+    }
+
     private HttpRequestMessage CreateGamesRequest(string accessToken, string query)
     {
         var request = new HttpRequestMessage(HttpMethod.Post, "https://api.igdb.com/v4/games");
