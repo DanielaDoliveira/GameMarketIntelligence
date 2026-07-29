@@ -49,7 +49,19 @@ public sealed class IgdbClient(
 
         using var response = await httpClient.SendAsync(request, cancellationToken);
 
-        response.EnsureSuccessStatusCode();
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
+
+            throw new HttpRequestException(
+                $"""
+                 IGDB request failed.
+                 Status code: {(int)response.StatusCode} ({response.StatusCode})
+                 Response: {errorContent}
+                 """,
+                inner: null,
+                response.StatusCode);
+        }
 
         var games = await response.Content.ReadFromJsonAsync<List<IgdbGameSample>>(cancellationToken);
 
