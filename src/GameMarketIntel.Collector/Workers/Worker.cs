@@ -1,5 +1,6 @@
 using GameMarketIntel.Collector.Igdb.Authentication;
 using GameMarketIntel.Collector.Igdb.Client;
+using GameMarketIntel.Collector.Igdb.Contracts;
 using GameMarketIntel.Collector.Igdb.Poc;
 using Microsoft.Extensions.Options;
 
@@ -20,27 +21,20 @@ public sealed class Worker(
     {
         try
         {
-            logger.LogInformation(
-                "Starting IGDB games sample proof of concept.");
+            logger.LogInformation("Starting IGDB games sample proof of concept.");
 
-            var tokenResponse =
-                await authenticationService.GetAccessTokenAsync(
-                    stoppingToken);
+            var tokenResponse = await authenticationService.GetAccessTokenAsync(stoppingToken);
 
             if (string.IsNullOrWhiteSpace(tokenResponse.AccessToken))
-            {
-                throw new InvalidOperationException(
-                    "Twitch returned an empty access token.");
-            }
+                throw new InvalidOperationException("Twitch returned an empty access token.");
+            
 
             var games = await igdbClient.GetGamesSampleAsync(
                 tokenResponse.AccessToken,
                 _options.SampleSize,
                 stoppingToken);
 
-            logger.LogInformation(
-                "IGDB returned {GameCount} games.",
-                games.Count);
+            logger.LogInformation("IGDB returned {GameCount} games.", games.Count);
 
             foreach (var game in games)
             {
@@ -49,26 +43,38 @@ public sealed class Worker(
                     Game:
                     Id: {GameId}
                     Name: {GameName}
+                    Game type: {GameType}
+                    Game status: {GameStatus}
+                    Version parent: {VersionParent}
+                    Parent game: {ParentGame}
+                    Platforms: {Platforms}
+                    Genres: {Genres}
+                    Themes: {Themes}
+                    Keywords: {Keywords}
                     First release date: {FirstReleaseDate}
                     Updated at: {UpdatedAt}
                     """,
                     game.Id,
                     game.Name,
+                    FormatGameType(game.GameType),
+                    FormatGameStatus(game.GameStatus),
+                    FormatReference(game.VersionParent),
+                    FormatReference(game.ParentGame),
+                    FormatReferences(game.Platforms),
+                    FormatReferences(game.Genres),
+                    FormatReferences(game.Themes),
+                    FormatReferences(game.Keywords),
                     ConvertUnixTimestamp(game.FirstReleaseDate),
                     ConvertUnixTimestamp(game.UpdatedAt));
             }
         }
-        catch (OperationCanceledException)
-            when (stoppingToken.IsCancellationRequested)
+        catch (OperationCanceledException)when (stoppingToken.IsCancellationRequested)
         {
-            logger.LogInformation(
-                "IGDB games sample proof of concept was cancelled.");
+            logger.LogInformation("IGDB games sample proof of concept was cancelled.");
         }
         catch (Exception exception)
         {
-            logger.LogError(
-                exception,
-                "IGDB games sample proof of concept failed.");
+            logger.LogError(exception, "IGDB games sample proof of concept failed.");
         }
         finally
         {
@@ -76,10 +82,27 @@ public sealed class Worker(
         }
     }
 
+    private static string FormatReference(IgdbNamedReference? reference)
+    {
+        return reference is null ? "(null)" : $"{reference.Id} - {reference.Name}";
+    }
+
+    private static string FormatReferences(IReadOnlyList<IgdbNamedReference> references)
+    {
+        return references.Count == 0 ? "(none)" : string.Join(", ", references.Select(reference => $"{reference.Id} - {reference.Name}"));
+    }
+
     private static DateTimeOffset? ConvertUnixTimestamp(long? value)
     {
-        return value.HasValue
-            ? DateTimeOffset.FromUnixTimeSeconds(value.Value)
-            : null;
+        return value.HasValue ? DateTimeOffset.FromUnixTimeSeconds(value.Value) : null;
+    }
+    private static string FormatGameType(IgdbGameTypeReference? gameType)
+    {
+        return gameType is null ? "(null)" : $"{gameType.Id} - {gameType.Type}";
+    }
+
+    private static string FormatGameStatus(IgdbGameStatusReference? gameStatus)
+    {
+        return gameStatus is null ? "(null)" : $"{gameStatus.Id} - {gameStatus.Status}";
     }
 }
