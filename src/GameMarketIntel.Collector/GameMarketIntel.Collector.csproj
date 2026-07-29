@@ -16,9 +16,4 @@
     <ProjectReference Include="..\GameMarketIntel.Application\GameMarketIntel.Application.csproj" />
     <ProjectReference Include="..\GameMarketIntel.Infrastructure\GameMarketIntel.Infrastructure.csproj" />
   </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Igdb\Client\" />
-    <Folder Include="Igdb\Contracts\" />
-  </ItemGroup>
 </Project>
