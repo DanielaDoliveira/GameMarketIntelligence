@@ -29,13 +29,23 @@ public sealed class Worker(
                 throw new InvalidOperationException("Twitch returned an empty access token.");
             
 
-            var games = await igdbClient.GetGamesSampleAsync(
+            var gameIds = new long[]
+            {
+                144542,
+                166686,
+                340742
+            };
+
+            var games = await igdbClient.GetGamesByIdsAsync(
                 tokenResponse.AccessToken,
-                _options.SampleSize,
+                gameIds,
                 stoppingToken);
-
-            logger.LogInformation("IGDB returned {GameCount} games.", games.Count);
-
+            
+            
+            logger.LogInformation("Starting controlled IGDB games proof of concept.");
+            logger.LogInformation(
+                "IGDB returned {GameCount} games.",
+                games.Count);
             foreach (var game in games)
             {
                 logger.LogInformation(
