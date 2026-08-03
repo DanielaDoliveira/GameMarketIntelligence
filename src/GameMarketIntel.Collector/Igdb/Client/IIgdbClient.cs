@@ -17,4 +17,11 @@ public interface IIgdbClient
         string accessToken,
         int sampleSize,
         CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<IgdbGameSample>> GetGamesByTypeAsync(
+        string accessToken,
+        long gameTypeId,
+        int sampleSize,
+        CancellationToken cancellationToken = default
+    );
 }
