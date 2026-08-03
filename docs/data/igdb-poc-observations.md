@@ -22,7 +22,9 @@ The Collector currently performs a one-time execution that:
 3. Retrieves one of the following:
    - a configurable sample of recently updated game records;
    - a controlled collection of games selected by IGDB identifiers;
-   - a sample of records where `parent_game` is populated.
+   - a sample of records where `parent_game` is populated;
+   - a sample filtered by `game_type` for DLCs;
+   - a sample filtered by `game_type` for remakes.
 4. Deserializes the response into IGDB-specific contracts.
 5. Writes selected fields to the application log.
 6. Stops the application after the execution finishes.
@@ -321,6 +323,179 @@ The following fields must be evaluated together:
 Additional controlled examples of editions, ports, remakes, remasters,
 expansions, DLCs, bundles, and mods are still required before defining
 reconciliation or catalogue-inclusion rules.
+
+
+### DLC observations
+
+A sample filtered by:
+
+```text
+where game_type = 1;
+```
+
+returned ten records classified as `DLC`.
+
+Observed coverage in this sample:
+
+| Field | Coverage |
+|---|---:|
+| `game_type = DLC` | 10/10 |
+| `parent_game` | 10/10 |
+| `version_parent` | 0/10 |
+| `game_status` | 0/10 |
+| `platforms` | 10/10 |
+| `genres` | 9/10 |
+| `themes` | 8/10 |
+| `keywords` | 3/10 |
+| `first_release_date` | 10/10 |
+
+Observed examples:
+
+```text
+The Callisto Protocol: Final Transmission
+- Game type: DLC
+- Parent game: The Callisto Protocol
+- Version parent: null
+```
+
+```text
+Hearthstone: Ashes of Outland - Trial by Felfire
+- Game type: DLC
+- Parent game: Hearthstone: Ashes of Outland
+- Version parent: null
+```
+
+```text
+Invincible Vs.: Universa - Additional Fighter
+- Game type: DLC
+- Parent game: Invincible Vs.
+- Genres: none
+- Themes: none
+- Keywords: none
+```
+
+In this sample, `parent_game` consistently identified the base product, while
+`version_parent` was always null.
+
+The sample also showed that a DLC record can remain useful even when editorial
+metadata such as genres, themes, or keywords is missing. Those fields must
+therefore remain optional in the ingestion boundary.
+
+Keyword coverage was substantially lower than platform and release-date
+coverage. Some returned keywords were also technical or storefront-related,
+such as `steam achievements` and `steam families`. Keywords should not be
+treated as a uniform editorial taxonomy.
+
+The query was sorted by `updated_at desc`, so this result is suitable for
+structural inspection but not sufficient for statistically representative
+coverage measurements.
+
+### Remake observations
+
+A sample filtered by:
+
+```text
+where game_type = 8;
+```
+
+returned ten records classified as `Remake`.
+
+Observed coverage in this sample:
+
+| Field | Coverage |
+|---|---:|
+| `game_type = Remake` | 10/10 |
+| `parent_game` | 10/10 |
+| `version_parent` | 0/10 |
+| `game_status` | 0/10 |
+| `platforms` | 10/10 |
+| `genres` | 10/10 |
+| `themes` | 10/10 |
+| `keywords` | 9/10 |
+| `first_release_date` | 10/10 |
+
+Observed examples:
+
+```text
+Resident Evil 4
+- Game type: Remake
+- Parent game: Resident Evil 4
+- Version parent: null
+```
+
+```text
+The Last of Us Part I
+- Game type: Remake
+- Parent game: The Last of Us
+- Version parent: null
+```
+
+```text
+Black Mesa
+- Game type: Remake
+- Parent game: Half-Life
+- Keywords include: mod origin, fangame
+```
+
+```text
+GoldenEye 007
+- Remake IGDB ID: 1647
+- Parent game IGDB ID: 1638
+- Both records use the same name
+```
+
+```text
+The Catapult
+- Remake IGDB ID: 247118
+- Parent game IGDB ID: 316516
+- Both records use the same name
+```
+
+The remake sample showed the same relationship pattern observed for DLCs:
+`parent_game` was populated in every record and `version_parent` was always
+null. The meaning of the relationship therefore depends on evaluating
+`game_type` together with `parent_game`.
+
+The same-name examples confirm that names cannot be used as product identity.
+External identifiers and explicit source relationships must be preserved.
+
+The `Black Mesa` example also shows that the current source classification may
+coexist with historical or contextual keywords. The Collector should preserve
+the source-provided classification and provenance rather than attempting to
+correct or reinterpret it during extraction.
+
+As with the DLC query, sorting by `updated_at desc` introduces recency bias and
+does not replace a larger coverage and nullability study.
+
+### DLC and remake comparison
+
+| Observation | DLC sample | Remake sample |
+|---|---:|---:|
+| Records | 10 | 10 |
+| `parent_game` populated | 10/10 | 10/10 |
+| `version_parent` populated | 0/10 | 0/10 |
+| `game_status` populated | 0/10 | 0/10 |
+| Platforms present | 10/10 | 10/10 |
+| Genres present | 9/10 | 10/10 |
+| Themes present | 8/10 | 10/10 |
+| Keywords present | 3/10 | 9/10 |
+| First release date present | 10/10 | 10/10 |
+
+These samples support the following provisional interpretation:
+
+```text
+game_type
+→ what kind of product the record represents
+
+parent_game
+→ which originating or base product the record is related to
+
+version_parent
+→ an edition or version relationship observed separately
+```
+
+This interpretation remains provisional and must not be converted into a
+universal domain rule before broader controlled and coverage tests are complete.
 
 ### Platforms
 
@@ -736,9 +911,19 @@ The current proof of concept confirms that:
   type or relationships.
 - A record classified as `Bundle` may have no `version_parent` or `parent_game`.
 - `parent_game` was observed for mods, remasters, ports, expanded games,
-  expansions, and standalone expansions.
-- In the current `parent_game` sample, `version_parent` was null for every
-  returned record.
+  expansions, standalone expansions, DLCs, and remakes.
+- In the current `parent_game`, DLC, and remake samples, `version_parent` was
+  null for every returned record.
+- In the controlled DLC sample, all ten records used `parent_game` to identify
+  the base product.
+- In the controlled remake sample, all ten records used `parent_game` to identify
+  the original product.
+- DLC and remake records may share the same relationship field while requiring
+  different interpretation through `game_type`.
+- Same-name remake and original records can have different IGDB identifiers, so
+  names must not be treated as identity.
+- DLC and remake metadata coverage differs by field and sample; platforms and
+  release dates were complete in both, while keyword coverage varied strongly.
 - `game_type`, `version_parent`, and `parent_game` must be evaluated together.
 - Catalogue and reconciliation rules must not be based only on names.
 - Missing `game_status` must remain unknown.
@@ -754,29 +939,26 @@ The current proof of concept confirms that:
 
 The following points still require investigation:
 
-1. Continue evaluating controlled examples for main games, editions, remakes,
-   remasters, expansions, DLCs, bundles, ports, and mods. Initial edition,
-   bundle, remaster, port, mod, expansion, standalone-expansion, and
-   expanded-game examples have been inspected.
-2. Compare `version_parent` and `parent_game` behavior using controlled records
-   where each relationship is populated.
-3. Find and inspect DLC examples with `parent_game`.
-4. Find and inspect remake examples.
-5. Clarify the practical distinction among `Expansion`, `Standalone Expansion`,
+1. Deepen the practical distinctions among product types and relationships,
+   especially editions, remasters, ports, expansions, standalone expansions,
+   expanded games, bundles, mods, DLCs, and remakes.
+2. Compare `version_parent` and `parent_game` behavior using additional controlled
+   records and determine whether other relationship fields are needed.
+3. Clarify the practical distinction among `Expansion`, `Standalone Expansion`,
    and `Expanded Game`.
-6. Determine whether additional IGDB relationship fields are needed to interpret
-   editions, remakes, remasters, expansions, DLCs, bundles, ports, and mods.
-7. Evaluate release-date coverage and platform-specific release information.
-8. Evaluate covers, screenshots, involved companies, franchises, and alternative
-   names.
-9. Measure nullability and field coverage using a larger sample.
-10. Compare metadata completeness between parent records and related editions or
-    versions.
-11. Study rate limits and an appropriate synchronization strategy.
-12. Define which external fields are candidates for the MVP.
-13. Define which findings affect product decisions and which require an ADR.
-14. Define the mapping boundary between IGDB contracts and the internal model.
-15. Define the future boundary between the Worker, jobs, import services,
+4. Evaluate release-date coverage and platform-specific release information.
+5. Evaluate covers, screenshots, involved companies, franchises, alternative
+   names, and other complementary MVP fields.
+6. Measure nullability and field coverage using a larger and less recency-biased
+   sample.
+7. Compare metadata completeness between parent records and related products.
+8. Validate pagination, rate limits, token behavior, retries, and an appropriate
+   synchronization strategy.
+9. Define which external fields are candidates for the MVP.
+10. Consolidate the proof-of-concept approval criteria.
+11. Define which findings affect product decisions and which require an ADR.
+12. Define the mapping boundary between IGDB contracts and the internal model.
+13. Define the future boundary between the Worker, jobs, import services,
     mappers, and repositories.
-16. Evaluate attribution and source-identification requirements in the user
+14. Evaluate attribution and source-identification requirements in the user
     interface.

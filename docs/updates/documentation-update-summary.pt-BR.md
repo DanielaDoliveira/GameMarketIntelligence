@@ -1,59 +1,49 @@
 # Resumo da Atualização da Documentação
 
-> Atualizado em: 27 de julho de 2026
+> Atualizado em: 29 de julho de 2026
 
 ## Objetivo
 
-Registrar as alterações documentais concluídas após o benchmarking de fontes externas e o primeiro marco do frontend.
+Registrar as alterações de sequência dos milestones e de documentação aprovadas durante a PoC da IGDB.
 
-## Principais atualizações
+## Principais decisões
 
-- Adicionada documentação bilíngue usando a convenção `.en-US.md` e `.pt-BR.md`.
-- Consolidado o benchmark de fontes e removida a premissa desatualizada de que o MVP precisava obrigatoriamente de três fontes gerais.
-- Confirmado o conjunto selecionado:
-  - IGDB como catálogo geral principal;
-  - Wikidata para reconciliação e enriquecimento;
-  - Steam como fonte oficial especializada.
-- Classificada a SteamDB como referência externa para pesquisa manual, sem ingestão.
-- Registrados os motivos para não selecionar RAWG, MobyGames, Nintendo, Microsoft/Xbox, PlayStation e marketplaces gerais para ingestão no MVP.
-- Atualizada a direção de domínio de Comparable Games para preservar proveniência, referências externas, confiança da reconciliação, conflitos e observações temporais.
-- Reforçado o gate de migration: nenhuma migration importante antes do mapping de campos, permissões, regras de reconciliação, revisão do domínio e pequena prova de conceito de ingestão.
-- Atualizado o roadmap para refletir o foco atual em source-to-field mapping e desenho da ingestão.
-- Atualizado o brief do frontend para refletir:
-  - botão visível `Search`;
-  - envio unificado do formulário;
-  - estado aplicado preservado na URL;
-  - navegação responsiva;
-  - componentes reutilizáveis;
-  - validação ainda pendente com dados representativos.
-- Removidas explicações repetidas e mantida cada documentação focada em sua responsabilidade.
+- A estratégia multifonte do produto permanece inalterada.
+- IGDB, Wikidata e Steam continuam planejadas com papéis distintos.
+- A entrega passa a ser explicitamente incremental:
+  - Milestone 2 entrega o MVP vertical com IGDB;
+  - Milestone 3 entrega Wikidata, Steam e reconciliação multifonte.
+- O Milestone 2 inclui um spike documental leve de compatibilidade multifonte antes da aprovação de domínio e persistência.
+- As PoCs completas de Wikidata e Steam ficam para o Milestone 3, mantendo pesquisa, decisões e implementação próximas no tempo.
+- A PoC da IGDB deve ser concluída antes de remodelagem significativa ou migrations.
+- O Worker permanecerá um coordenador pequeno; Jobs, clients, mappers, serviços de importação e repositórios terão responsabilidades especializadas.
+- O modelo canônico de `Game` não pode virar um modelo de resposta da IGDB.
+- Identidade canônica, identidades externas, proveniência e contratos específicos por fonte devem ser preservados.
+- O primeiro deploy do Worker faz parte da entrega do Milestone 2.
+- O processo de desenvolvimento será documentado como workflow de produto orientado por evidências.
 
-## Estrutura atual
+## Direção atualizada
 
-| Área | Responsabilidade |
-|---|---|
-| `docs/data` | Regras de avaliação, benchmark, seleção e análises detalhadas |
-| `docs/design` | Direção visual e de interação do frontend |
-| `docs/development` | Fluxo de versionamento e entrega |
-| `docs/domain` | Base de domínio e regras de modelagem |
-| `docs/planning` | Marcos de implementação e próximos passos |
-| `docs/product` | Visão, proposta de valor, necessidades dos producers e escopo |
-| `docs/updates` | Resumos de alterações documentais |
+### Milestone 2
 
-## Direção atual do projeto
+- concluir PoC IGDB;
+- executar spike multifonte;
+- aprovar fronteira independente da fonte;
+- refatorar e implementar Collector;
+- persistir dados representativos;
+- fazer deploy do Worker;
+- validar API e frontend;
+- entregar primeiro MVP funcional com dados reais.
 
-A etapa de pesquisa de fontes está concluída.
+### Milestone 3
 
-O próximo trabalho documental e técnico deve definir:
-
-1. qual pergunta de producer cada fonte atende;
-2. campos permitidos e necessários;
-3. regras de proveniência e confiabilidade;
-4. modelos de referências externas e reconciliação;
-5. frequência de coleta, retries, checkpoints e idempotência;
-6. mudanças de domínio;
-7. migrations somente após aprovação do modelo.
+- executar PoC Wikidata;
+- executar PoC Steam;
+- definir observações comuns;
+- implementar reconciliação e confiança;
+- adicionar as duas fontes;
+- apresentar convergências e divergências.
 
 ## Regra de manutenção
 
-Sempre que uma decisão documentada mudar, as duas versões de idioma devem ser atualizadas no mesmo pull request.
+Atualizar as duas versões de idioma no mesmo pull request sempre que uma decisão documentada mudar.
