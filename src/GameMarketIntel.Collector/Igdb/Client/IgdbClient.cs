@@ -202,7 +202,9 @@ public sealed class IgdbClient(HttpClient httpClient, IOptions<IgdbPocOptions> o
                  themes.id,
                  themes.name,
                  keywords.id,
-                 keywords.name;
+                 keywords.name,
+                 bundles.id,
+                 bundles.name;
              where game_type = {gameTypeId};
              sort updated_at desc;
              limit {sampleSize};
@@ -246,6 +248,46 @@ public sealed class IgdbClient(HttpClient httpClient, IOptions<IgdbPocOptions> o
         var gameTypes = await response.Content.ReadFromJsonAsync<List<IgdbGameTypeReference>>(cancellationToken);
 
         return gameTypes ?? [];
+    }
+
+    public async Task<IReadOnlyList<IgdbGameSample>>
+        GetGamesIncludedInBundleAsync(
+            string accessToken,
+            long bundleId,
+            CancellationToken cancellationToken = default)
+    {
+        using var request = CreateGamesRequest(
+            accessToken,
+            $"""
+             fields
+                 id,
+                 name,
+                 first_release_date,
+                 updated_at,
+
+                 game_type.id,
+                 game_type.type,
+
+                 version_parent.id,
+                 version_parent.name,
+
+                 parent_game.id,
+                 parent_game.name,
+
+                 bundles.id,
+                 bundles.name,
+
+                 platforms.id,
+                 platforms.name;
+
+             where bundles = {bundleId};
+             sort id asc;
+             limit 50;
+             """);
+
+        return await SendGamesRequestAsync(
+            request,
+            cancellationToken);
     }
 
     private HttpRequestMessage CreateGamesRequest(string accessToken, string query)

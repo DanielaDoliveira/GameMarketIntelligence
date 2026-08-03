@@ -48,4 +48,6 @@ public sealed class IgdbGameSample
 
     [JsonPropertyName("websites")]
     public IReadOnlyList<IgdbWebsiteReference> Websites { get; set; } = [];
+    [JsonPropertyName("bundles")]
+    public IReadOnlyList<IgdbNamedReference> Bundles { get; set; } = [];
 }

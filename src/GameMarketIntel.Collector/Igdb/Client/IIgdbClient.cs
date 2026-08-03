@@ -29,5 +29,8 @@ public interface IIgdbClient
         string accessToken,
         CancellationToken cancellationToken = default
         );
-    
+    Task<IReadOnlyList<IgdbGameSample>> GetGamesIncludedInBundleAsync(
+        string accessToken,
+        long bundleId,
+        CancellationToken cancellationToken = default);
 }

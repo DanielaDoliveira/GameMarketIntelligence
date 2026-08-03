@@ -17,7 +17,7 @@ public sealed class Worker(
         try
         {
             logger.LogInformation(
-                "Starting IGDB commercial-eligibility proof of concept.");
+                "Starting IGDB bundle-composition proof of concept.");
 
             var tokenResponse =
                 await authenticationService.GetAccessTokenAsync(stoppingToken);
@@ -28,55 +28,54 @@ public sealed class Worker(
                     "Twitch returned an empty access token.");
             }
 
-            var gameIds = new long[]
-            {
-                294763, // Mario Party: Love Land
-                6739,   // Black Mesa
-                132181  // Resident Evil 4 Remake
-            };
+            const long bundleId = 90628;
 
-            var games = await igdbClient.GetGamesByIdsAsync(
-                tokenResponse.AccessToken,
-                gameIds,
-                stoppingToken);
+            var games =
+                await igdbClient.GetGamesIncludedInBundleAsync(
+                    tokenResponse.AccessToken,
+                    bundleId,
+                    stoppingToken);
 
             logger.LogInformation(
-                "IGDB returned {GameCount} controlled records.",
-                games.Count);
+                "IGDB returned {GameCount} records included in bundle {BundleId}.",
+                games.Count,
+                bundleId);
 
             foreach (var game in games)
             {
                 logger.LogInformation(
                     """
-                    Game:
+                    Included record:
                     Id: {GameId}
                     Name: {GameName}
                     Game type: {GameType}
+                    Version parent: {VersionParent}
                     Parent game: {ParentGame}
-                    Companies: {Companies}
-                    External games: {ExternalGames}
-                    Websites: {Websites}
+                    Bundles: {Bundles}
+                    Platforms: {Platforms}
+                    First release date: {FirstReleaseDate}
                     """,
                     game.Id,
                     game.Name,
                     FormatGameType(game.GameType),
+                    FormatReference(game.VersionParent),
                     FormatReference(game.ParentGame),
-                    FormatInvolvedCompanies(game.InvolvedCompanies),
-                    FormatExternalGames(game.ExternalGames),
-                    FormatWebsites(game.Websites));
+                    FormatReferences(game.Bundles),
+                    FormatReferences(game.Platforms),
+                    ConvertUnixTimestamp(game.FirstReleaseDate));
             }
         }
         catch (OperationCanceledException)
             when (stoppingToken.IsCancellationRequested)
         {
             logger.LogInformation(
-                "IGDB commercial-eligibility proof of concept was cancelled.");
+                "IGDB bundle-composition proof of concept was cancelled.");
         }
         catch (Exception exception)
         {
             logger.LogError(
                 exception,
-                "IGDB commercial-eligibility proof of concept failed.");
+                "IGDB bundle-composition proof of concept failed.");
         }
         finally
         {
@@ -92,6 +91,18 @@ public sealed class Worker(
             : $"{reference.Id} - {reference.Name}";
     }
 
+    private static string FormatReferences(
+        IReadOnlyList<IgdbNamedReference> references)
+    {
+        return references.Count == 0
+            ? "(none)"
+            : string.Join(
+                ", ",
+                references.Select(
+                    reference =>
+                        $"{reference.Id} - {reference.Name}"));
+    }
+
     private static string FormatGameType(
         IgdbGameTypeReference? gameType)
     {
@@ -100,53 +111,11 @@ public sealed class Worker(
             : $"{gameType.Id} - {gameType.Type}";
     }
 
-    private static string FormatInvolvedCompanies(
-        IReadOnlyList<IgdbInvolvedCompanyReference> companies)
+    private static DateTimeOffset? ConvertUnixTimestamp(
+        long? value)
     {
-        if (companies.Count == 0)
-        {
-            return "(none)";
-        }
-
-        return string.Join(
-            ", ",
-            companies.Select(company =>
-                $"{FormatReference(company.Company)} " +
-                $"[Developer: {company.Developer}, " +
-                $"Publisher: {company.Publisher}, " +
-                $"Porting: {company.Porting}, " +
-                $"Supporting: {company.Supporting}]"));
-    }
-
-    private static string FormatExternalGames(
-        IReadOnlyList<IgdbExternalGameReference> externalGames)
-    {
-        if (externalGames.Count == 0)
-        {
-            return "(none)";
-        }
-
-        return string.Join(
-            ", ",
-            externalGames.Select(externalGame =>
-                $"{externalGame.Source?.Name ?? "(unknown source)"} " +
-                $"- {externalGame.ExternalId ?? "(no id)"} " +
-                $"- {externalGame.Url ?? "(no url)"}"));
-    }
-
-    private static string FormatWebsites(
-        IReadOnlyList<IgdbWebsiteReference> websites)
-    {
-        if (websites.Count == 0)
-        {
-            return "(none)";
-        }
-
-        return string.Join(
-            ", ",
-            websites.Select(website =>
-                $"{website.Type?.Type ?? "(unknown type)"} " +
-                $"- Trusted: {website.Trusted} " +
-                $"- {website.Url}"));
+        return value.HasValue
+            ? DateTimeOffset.FromUnixTimeSeconds(value.Value)
+            : null;
     }
 }

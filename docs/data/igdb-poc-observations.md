@@ -24,7 +24,11 @@ The Collector currently performs a one-time execution that:
    - a controlled collection of games selected by IGDB identifiers;
    - a sample of records where `parent_game` is populated;
    - a sample filtered by `game_type` for DLCs;
-   - a sample filtered by `game_type` for remakes.
+   - a sample filtered by `game_type` for remakes;
+   - samples filtered by additional `game_type` values;
+   - the complete IGDB `game_types` reference list;
+   - a controlled sample comparing commercial and community-origin products
+     through company, external-distribution, and website evidence.
 4. Deserializes the response into IGDB-specific contracts.
 5. Writes selected fields to the application log.
 6. Stops the application after the execution finishes.
@@ -47,6 +51,13 @@ The current queries retrieve:
 - `genres`
 - `themes`
 - `keywords`
+- `involved_companies`
+- `external_games`
+- `websites`
+
+The company, external-game, and website fields were added for a controlled
+investigation of catalogue-eligibility signals. They remain source evidence and
+do not independently prove commercial authorization.
 
 ## Technical observations
 
@@ -128,14 +139,35 @@ all records contain these values.
 
 ### Game type
 
-Observed game types include:
+The `/v4/game_types` endpoint returned the following complete reference list:
 
 ```text
-Main Game
+0  - Main Game
+1  - DLC
+2  - Expansion
+3  - Bundle
+4  - Standalone Expansion
+5  - Mod
+6  - Episode
+7  - Season
+8  - Remake
+9  - Remaster
+10 - Expanded Game
+11 - Port
+12 - Fork
+13 - Pack / Addon
+14 - Update
+```
+
+Types directly inspected so far include:
+
+```text
+DLC
 Expansion
 Bundle
 Standalone Expansion
 Mod
+Remake
 Remaster
 Expanded Game
 Port
@@ -497,6 +529,348 @@ version_parent
 This interpretation remains provisional and must not be converted into a
 universal domain rule before broader controlled and coverage tests are complete.
 
+### Commercial catalogue eligibility signals
+
+A controlled sample compared three records with different production and
+distribution contexts:
+
+```text
+6739   - Black Mesa
+132181 - Resident Evil 4
+294763 - Mario Party: Love Land
+```
+
+The query expanded:
+
+- `involved_companies`
+- `external_games`
+- `websites`
+
+#### Black Mesa
+
+Observed evidence:
+
+```text
+Game type: Remake
+Parent game: Half-Life
+Developer and publisher: Crowbar Collective
+External distribution: Steam
+Trusted website link: Steam
+```
+
+Black Mesa has a community and mod origin, but the current IGDB record contains
+clear evidence of a separately distributed market product.
+
+This example shows that historical mod origin does not necessarily describe the
+current commercial status of a product.
+
+#### Resident Evil 4
+
+Observed evidence:
+
+```text
+Game type: Remake
+Parent game: Resident Evil 4
+Developer: Capcom Development Division 1
+Supporting company: M-TWO
+Publisher: Capcom
+External distribution: Microsoft, Steam, PlayStation Store, App Store, and
+other retail references
+```
+
+This record provides strong and redundant evidence of an official market
+product.
+
+#### Mario Party: Love Land
+
+Observed evidence:
+
+```text
+Game type: Mod
+Parent game: Mario Party 3
+Developer: narwhal88
+Publisher field: Mario Party Legacy
+External games: none
+Website: project website, trusted = false
+```
+
+This case demonstrates that an IGDB company marked as `publisher` does not by
+itself prove that the product is commercially published or authorized by the
+holder of third-party intellectual property.
+
+Likewise, a website typed as `Official Website` means that it is presented as
+the official site of that project. It does not prove that the project is an
+officially licensed product.
+
+#### Interpretation of `trusted`
+
+The `trusted` field belongs to an IGDB website reference.
+
+For the current proof of concept, it is treated as source-provided confidence in
+the website link or its classification. It must not be interpreted as proof
+that:
+
+- a game is commercially distributed;
+- a product is legally authorized;
+- third-party intellectual property is licensed;
+- a publisher is the rights holder.
+
+The field may later help decide which links are displayed or emphasized, but it
+does not determine catalogue eligibility.
+
+#### Storefront evidence
+
+Recognized storefronts are strong positive evidence for modern distribution,
+but they cannot be required for all catalogue records.
+
+Many historically commercial games were distributed through cartridges,
+arcades, disks, CD-ROMs, or physical retail before digital storefronts existed.
+Some have never received a digital re-release.
+
+Therefore:
+
+```text
+recognized digital storefront present
+→ useful positive evidence
+
+recognized digital storefront absent
+→ not evidence that the game was non-commercial
+```
+
+#### Provisional MVP catalogue rule
+
+To keep the first implementation functional and simple, the provisional rule
+is:
+
+```text
+game_type = Mod
+→ do not expose the record in the general application search
+
+game_type != Mod
+→ allow the record to continue through the normal pipeline
+```
+
+The IGDB identifier for `Mod` is `5`.
+
+This rule intentionally does not use:
+
+- website `trusted`;
+- storefront presence;
+- the existence of a developer;
+- the existence of a publisher.
+
+Those fields remain useful metadata but are not sufficiently reliable as
+standalone authorization or commercial-eligibility tests.
+
+The rule is deliberately conservative and imperfect. Known limitations include:
+
+- a commercially released product still classified as `Mod` may be excluded;
+- a fan game incorrectly classified as `Remake`, `Port`, `Fork`, or another type
+  may pass the initial filter;
+- the rule is not a legal assessment of any product.
+
+These limitations are accepted for the MVP. A future increment may introduce a
+separate community-signal layer, editorial review, stronger authorization
+evidence, or explicit exceptions. No such layer is part of the current
+increment.
+
+### Remaining game-type observations
+
+A controlled sample retrieved three records for each of the remaining types:
+
+```text
+6  - Episode
+7  - Season
+12 - Fork
+13 - Pack / Addon
+14 - Update
+```
+
+Across all fifteen returned records:
+
+| Type | Records | `parent_game` populated | `version_parent` populated |
+|---|---:|---:|---:|
+| Episode | 3 | 3/3 | 0/3 |
+| Season | 3 | 3/3 | 0/3 |
+| Fork | 3 | 3/3 | 0/3 |
+| Pack / Addon | 3 | 3/3 | 0/3 |
+| Update | 3 | 3/3 | 0/3 |
+
+#### Episode
+
+Observed examples:
+
+```text
+Sam & Max: Beyond Time and Space - Episode 5: What's New Beelzebub?
+- Game type: Episode
+- Parent game: Sam & Max: Beyond Time and Space
+- Version parent: null
+```
+
+```text
+Hector: Badge of Carnage! - Episode 1
+- Game type: Episode
+- Parent game: Hector: Badge of Carnage!
+- Version parent: null
+```
+
+In the observed sample, `parent_game` identified the broader game or episodic
+series to which the individual episode belongs.
+
+#### Season
+
+Observed examples:
+
+```text
+Sea of Thieves: Season 1
+- Game type: Season
+- Parent game: Sea of Thieves
+- Version parent: null
+```
+
+```text
+Mortal Kombat 1: Invasions - Season of The Spectre
+- Game type: Season
+- Parent game: Mortal Kombat 1
+- Version parent: null
+```
+
+In the observed sample, `parent_game` identified the game to which the season
+belongs.
+
+#### Fork
+
+Observed examples:
+
+```text
+Predecessor
+- Game type: Fork
+- Parent game: Paragon
+- Version parent: null
+```
+
+```text
+The Ur-Quan Masters
+- Game type: Fork
+- Parent game: Star Control II
+- Version parent: null
+```
+
+```text
+Paragon: The Overprime
+- Game type: Fork
+- Parent game: Paragon
+- Version parent: null
+```
+
+The Fork sample shows that `parent_game` is not limited to downloadable or
+supplementary content. It can also identify the originating product from which a
+separate project was derived.
+
+#### Pack / Addon
+
+Observed examples:
+
+```text
+Resident Evil 2: Extra DLC Pack
+- Game type: Pack / Addon
+- Parent game: Resident Evil 2
+- Version parent: null
+```
+
+```text
+Invincible Vs.: Titan - Streetwear Skin
+- Game type: Pack / Addon
+- Parent game: Invincible Vs.
+- Version parent: null
+```
+
+In the observed sample, `parent_game` identified the game that receives the
+pack, skin, or addon.
+
+#### Update
+
+Observed examples:
+
+```text
+Hollow Knight: Silksong - Sea of Sorrow
+- Game type: Update
+- Parent game: Hollow Knight: Silksong
+- Version parent: null
+- First release date: 2026-12-31
+```
+
+```text
+Sekiro: Shadows Die Twice - Game of the Year Edition
+- Game type: Update
+- Parent game: Sekiro: Shadows Die Twice
+- Version parent: null
+```
+
+```text
+Hearthstone: Book of Mercenaries
+- Game type: Update
+- Parent game: Hearthstone
+- Version parent: null
+```
+
+The Sekiro example reinforces that a title suffix such as `Game of the Year
+Edition` cannot be used to infer a version relationship. IGDB classified the
+record as `Update` and related it through `parent_game`.
+
+The Hollow Knight: Silksong - Sea of Sorrow example also confirms that IGDB may
+return records whose `first_release_date` is later than the Collector execution
+date.
+
+#### Consolidated relationship interpretation
+
+The combined controlled observations now support the following provisional
+interpretation:
+
+```text
+game_type
+→ describes the nature of the source record
+
+parent_game
+→ identifies an originating, base, receiving, or contextual product
+
+version_parent
+→ identifies a more specific edition or version relationship when provided
+```
+
+The concrete meaning of `parent_game` depends on `game_type`.
+
+Examples:
+
+```text
+DLC
+→ content related to a base game
+
+Remake
+→ recreation of an earlier product
+
+Fork
+→ project derived from another product
+
+Season
+→ season associated with a game
+
+Update
+→ update or updated content associated with a base product
+```
+
+`version_parent` showed substantially lower coverage than `parent_game` in the
+observed samples. It must be treated as complementary evidence, not as a
+requirement for identifying related products.
+
+Its absence means only that the source did not provide a relationship through
+that field. It must not be interpreted as proof that no version relationship
+exists.
+
+`Bundle` remains a notable exception because observed bundle records may contain
+neither `parent_game` nor `version_parent`. Bundle composition likely depends on
+other source fields that have not yet been evaluated.
+
 ### Platforms
 
 A game may contain multiple platforms.
@@ -797,6 +1171,76 @@ parent_game
 This distinction remains provisional and must be tested with more controlled
 examples.
 
+## Future-release admission rule
+
+The proof of concept confirmed that IGDB can return records whose
+`first_release_date` is later than the Collector execution date.
+
+For the MVP, the provisional admission rule is:
+
+```text
+first_release_date > Collector execution date
+→ do not persist the full game in the active catalogue during that execution
+
+first_release_date <= Collector execution date
+→ allow the record to continue through the normal pipeline
+
+first_release_date = null
+→ preserve as unknown; do not treat as a future release
+```
+
+This rule exists to avoid storing and exposing unreleased products before they
+become relevant to the current market-analysis catalogue.
+
+The filter must be applied in the import pipeline before persistence. The
+frontend remains a presentation boundary and must not be the only place where
+future records are excluded.
+
+### Synchronization implication
+
+A future-dated record can be imported later only if a later Worker execution
+retrieves it again.
+
+Therefore, a production synchronization strategy must not rely exclusively on:
+
+```text
+updated_at > last successful synchronization
+```
+
+A release date becoming current does not necessarily modify the IGDB
+`updated_at` value.
+
+If the Collector discards a future record and later queries only records updated
+after the previous cursor, that game may never be seen again.
+
+The MVP synchronization strategy must include a recurring release-window query,
+for example:
+
+```text
+periodically query games whose first_release_date falls within
+a recent overlapping window ending at the execution date
+```
+
+The exact window remains to be defined after pagination, rate-limit, and
+synchronization tests. It should overlap previous executions so that a missed or
+failed run does not permanently lose eligible releases.
+
+A practical future flow is:
+
+```text
+future release encountered
+→ skip active-catalogue persistence in the current execution
+
+later recurring release-window query retrieves the record again
+→ release date is now current or past
+→ import normally
+```
+
+For the current proof of concept, no pending-release marker or full future-game
+record needs to be persisted. This remains safe only if the later synchronization
+strategy explicitly re-queries release windows and does not depend solely on
+`updated_at`.
+
 ## Current architectural boundaries
 
 ### `IgdbClient`
@@ -825,6 +1269,12 @@ GetGamesByIdsAsync
 
 GetGamesWithParentAsync
 → retrieves records where parent_game is populated
+
+GetGamesByTypeAsync
+→ retrieves a controlled sample for one game_type
+
+GetGameTypesAsync
+→ retrieves the IGDB game-type reference list
 ```
 
 These operations represent different retrieval intentions while sharing common
@@ -931,6 +1381,30 @@ The current proof of concept confirms that:
   independent release-date information.
 - Game types and parent relationships require further evaluation before domain
   or persistence decisions.
+- Company, external-game, website, and storefront evidence is useful context,
+  but no inspected field independently proves authorization or commercial
+  eligibility.
+- The `trusted` website flag must not be used as proof that a game is officially
+  licensed or commercially distributed.
+- Digital-store presence must not be required because it would exclude
+  historically commercial games released before digital storefronts.
+- For the MVP, records classified as `game_type = Mod` will not be exposed in
+  the general application search.
+- The Mod exclusion is a provisional catalogue rule with known false-positive
+  and false-negative risks; it is not a legal determination.
+- Episode, Season, Fork, Pack / Addon, and Update samples all used
+  `parent_game` in the observed records and did not use `version_parent`.
+- `version_parent` has shown low coverage and must remain complementary rather
+  than mandatory relationship evidence.
+- `parent_game` is a broad source relationship whose meaning depends on
+  `game_type`.
+- Bundle composition remains unresolved because observed bundles may have
+  neither `parent_game` nor `version_parent`.
+- Future-dated records must not be persisted in the active catalogue during the
+  current execution.
+- A future synchronization strategy must re-query overlapping release-date
+  windows; relying only on `updated_at` could permanently miss previously
+  skipped future releases.
 - Real-source inspection is necessary before defining the final mapping.
 - The Worker should coordinate execution, while future jobs, mappers, import
   services, and repositories should contain specialized responsibilities.
@@ -939,26 +1413,32 @@ The current proof of concept confirms that:
 
 The following points still require investigation:
 
-1. Deepen the practical distinctions among product types and relationships,
+1. Evaluate bundle-composition fields and determine how bundles identify their
+   included products.
+2. Deepen the practical distinctions among product types and relationships,
    especially editions, remasters, ports, expansions, standalone expansions,
-   expanded games, bundles, mods, DLCs, and remakes.
-2. Compare `version_parent` and `parent_game` behavior using additional controlled
+   expanded games, bundles, DLCs, remakes, and the remaining types.
+3. Compare `version_parent` and `parent_game` behavior using additional controlled
    records and determine whether other relationship fields are needed.
-3. Clarify the practical distinction among `Expansion`, `Standalone Expansion`,
+4. Clarify the practical distinction among `Expansion`, `Standalone Expansion`,
    and `Expanded Game`.
-4. Evaluate release-date coverage and platform-specific release information.
-5. Evaluate covers, screenshots, involved companies, franchises, alternative
+5. Evaluate release-date coverage and platform-specific release information.
+6. Evaluate covers, screenshots, involved companies, franchises, alternative
    names, and other complementary MVP fields.
-6. Measure nullability and field coverage using a larger and less recency-biased
+7. Measure nullability and field coverage using a larger and less recency-biased
    sample.
-7. Compare metadata completeness between parent records and related products.
-8. Validate pagination, rate limits, token behavior, retries, and an appropriate
-   synchronization strategy.
-9. Define which external fields are candidates for the MVP.
-10. Consolidate the proof-of-concept approval criteria.
-11. Define which findings affect product decisions and which require an ADR.
-12. Define the mapping boundary between IGDB contracts and the internal model.
-13. Define the future boundary between the Worker, jobs, import services,
+8. Compare metadata completeness between parent records and related products.
+9. Validate pagination, rate limits, token behavior, retries, and an appropriate
+   synchronization strategy, including an overlapping release-date window for
+   previously skipped future releases.
+10. Define which external fields are candidates for the MVP.
+11. Consolidate the proof-of-concept approval criteria.
+12. Define which findings affect product decisions and which require an ADR.
+13. Define the mapping boundary between IGDB contracts and the internal model.
+14. Define the future boundary between the Worker, jobs, import services,
     mappers, and repositories.
-14. Evaluate attribution and source-identification requirements in the user
+15. Evaluate attribution and source-identification requirements in the user
     interface.
+16. Revisit commercial and community-origin classification in a future
+    increment only after the simple Mod exclusion has been validated in the
+    working MVP.
