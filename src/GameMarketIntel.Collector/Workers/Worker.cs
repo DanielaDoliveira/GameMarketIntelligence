@@ -1,28 +1,23 @@
 using GameMarketIntel.Collector.Igdb.Authentication;
 using GameMarketIntel.Collector.Igdb.Client;
 using GameMarketIntel.Collector.Igdb.Contracts;
-using GameMarketIntel.Collector.Igdb.Poc;
-using Microsoft.Extensions.Options;
 
 namespace GameMarketIntel.Collector.Workers;
 
 public sealed class Worker(
     IIgdbAuthenticationService authenticationService,
     IIgdbClient igdbClient,
-    IOptions<IgdbPocOptions> options,
     IHostApplicationLifetime applicationLifetime,
     ILogger<Worker> logger)
     : BackgroundService
 {
-    private readonly IgdbPocOptions _options = options.Value;
-
     protected override async Task ExecuteAsync(
         CancellationToken stoppingToken)
     {
         try
         {
             logger.LogInformation(
-                "Starting IGDB DLC relationship proof of concept.");
+                "Starting IGDB commercial-eligibility proof of concept.");
 
             var tokenResponse =
                 await authenticationService.GetAccessTokenAsync(stoppingToken);
@@ -33,17 +28,20 @@ public sealed class Worker(
                     "Twitch returned an empty access token.");
             }
 
-            const long remakeGameTypeId = 8;
+            var gameIds = new long[]
+            {
+                294763, // Mario Party: Love Land
+                6739,   // Black Mesa
+                132181  // Resident Evil 4 Remake
+            };
 
-
-            var games = await igdbClient.GetGamesByTypeAsync(
+            var games = await igdbClient.GetGamesByIdsAsync(
                 tokenResponse.AccessToken,
-                remakeGameTypeId,
-                _options.SampleSize,
+                gameIds,
                 stoppingToken);
 
             logger.LogInformation(
-                "IGDB returned {GameCount} remake records.",
+                "IGDB returned {GameCount} controlled records.",
                 games.Count);
 
             foreach (var game in games)
@@ -54,41 +52,31 @@ public sealed class Worker(
                     Id: {GameId}
                     Name: {GameName}
                     Game type: {GameType}
-                    Game status: {GameStatus}
-                    Version parent: {VersionParent}
                     Parent game: {ParentGame}
-                    Platforms: {Platforms}
-                    Genres: {Genres}
-                    Themes: {Themes}
-                    Keywords: {Keywords}
-                    First release date: {FirstReleaseDate}
-                    Updated at: {UpdatedAt}
+                    Companies: {Companies}
+                    External games: {ExternalGames}
+                    Websites: {Websites}
                     """,
                     game.Id,
                     game.Name,
                     FormatGameType(game.GameType),
-                    FormatGameStatus(game.GameStatus),
-                    FormatReference(game.VersionParent),
                     FormatReference(game.ParentGame),
-                    FormatReferences(game.Platforms),
-                    FormatReferences(game.Genres),
-                    FormatReferences(game.Themes),
-                    FormatReferences(game.Keywords),
-                    ConvertUnixTimestamp(game.FirstReleaseDate),
-                    ConvertUnixTimestamp(game.UpdatedAt));
+                    FormatInvolvedCompanies(game.InvolvedCompanies),
+                    FormatExternalGames(game.ExternalGames),
+                    FormatWebsites(game.Websites));
             }
         }
         catch (OperationCanceledException)
             when (stoppingToken.IsCancellationRequested)
         {
             logger.LogInformation(
-                "IGDB DLC relationship proof of concept was cancelled.");
+                "IGDB commercial-eligibility proof of concept was cancelled.");
         }
         catch (Exception exception)
         {
             logger.LogError(
                 exception,
-                "IGDB DLC relationship proof of concept failed.");
+                "IGDB commercial-eligibility proof of concept failed.");
         }
         finally
         {
@@ -104,25 +92,6 @@ public sealed class Worker(
             : $"{reference.Id} - {reference.Name}";
     }
 
-    private static string FormatReferences(
-        IReadOnlyList<IgdbNamedReference> references)
-    {
-        return references.Count == 0
-            ? "(none)"
-            : string.Join(
-                ", ",
-                references.Select(
-                    reference => $"{reference.Id} - {reference.Name}"));
-    }
-
-    private static DateTimeOffset? ConvertUnixTimestamp(
-        long? value)
-    {
-        return value.HasValue
-            ? DateTimeOffset.FromUnixTimeSeconds(value.Value)
-            : null;
-    }
-
     private static string FormatGameType(
         IgdbGameTypeReference? gameType)
     {
@@ -131,11 +100,53 @@ public sealed class Worker(
             : $"{gameType.Id} - {gameType.Type}";
     }
 
-    private static string FormatGameStatus(
-        IgdbGameStatusReference? gameStatus)
+    private static string FormatInvolvedCompanies(
+        IReadOnlyList<IgdbInvolvedCompanyReference> companies)
     {
-        return gameStatus is null
-            ? "(null)"
-            : $"{gameStatus.Id} - {gameStatus.Status}";
+        if (companies.Count == 0)
+        {
+            return "(none)";
+        }
+
+        return string.Join(
+            ", ",
+            companies.Select(company =>
+                $"{FormatReference(company.Company)} " +
+                $"[Developer: {company.Developer}, " +
+                $"Publisher: {company.Publisher}, " +
+                $"Porting: {company.Porting}, " +
+                $"Supporting: {company.Supporting}]"));
+    }
+
+    private static string FormatExternalGames(
+        IReadOnlyList<IgdbExternalGameReference> externalGames)
+    {
+        if (externalGames.Count == 0)
+        {
+            return "(none)";
+        }
+
+        return string.Join(
+            ", ",
+            externalGames.Select(externalGame =>
+                $"{externalGame.Source?.Name ?? "(unknown source)"} " +
+                $"- {externalGame.ExternalId ?? "(no id)"} " +
+                $"- {externalGame.Url ?? "(no url)"}"));
+    }
+
+    private static string FormatWebsites(
+        IReadOnlyList<IgdbWebsiteReference> websites)
+    {
+        if (websites.Count == 0)
+        {
+            return "(none)";
+        }
+
+        return string.Join(
+            ", ",
+            websites.Select(website =>
+                $"{website.Type?.Type ?? "(unknown type)"} " +
+                $"- Trusted: {website.Trusted} " +
+                $"- {website.Url}"));
     }
 }

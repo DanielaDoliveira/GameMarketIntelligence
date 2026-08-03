@@ -65,10 +65,18 @@ public sealed class IgdbClient(HttpClient httpClient, IOptions<IgdbPocOptions> o
         return games ?? [];
     }
 
-    public async Task<IReadOnlyList<IgdbGameSample>> GetGamesByIdsAsync(string accessToken, IReadOnlyCollection<long> gameIds, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<IgdbGameSample>> GetGamesByIdsAsync(
+        string accessToken,
+        IReadOnlyCollection<long> gameIds,
+        CancellationToken cancellationToken = default)
     {
-        if (gameIds.Count == 0) return [];
+        if (gameIds.Count == 0)
+        {
+            return [];
+        }
+
         var formattedIds = string.Join(",", gameIds);
+
         using var request = CreateGamesRequest(
             accessToken,
             $"""
@@ -77,28 +85,62 @@ public sealed class IgdbClient(HttpClient httpClient, IOptions<IgdbPocOptions> o
                  name,
                  first_release_date,
                  updated_at,
+
                  game_type.id,
                  game_type.type,
+
                  game_status.id,
                  game_status.status,
+
                  version_parent.id,
                  version_parent.name,
+
                  parent_game.id,
                  parent_game.name,
+
                  platforms.id,
                  platforms.name,
+
                  genres.id,
                  genres.name,
+
                  themes.id,
                  themes.name,
+
                  keywords.id,
-                 keywords.name;
+                 keywords.name,
+
+                 involved_companies.id,
+                 involved_companies.company.id,
+                 involved_companies.company.name,
+                 involved_companies.developer,
+                 involved_companies.publisher,
+                 involved_companies.porting,
+                 involved_companies.supporting,
+
+                 external_games.id,
+                 external_games.name,
+                 external_games.uid,
+                 external_games.url,
+                 external_games.external_game_source.id,
+                 external_games.external_game_source.name,
+                 external_games.platform.id,
+                 external_games.platform.name,
+
+                 websites.id,
+                 websites.url,
+                 websites.trusted,
+                 websites.type.id,
+                 websites.type.type;
+
              where id = ({formattedIds});
              sort id asc;
              limit {gameIds.Count};
              """);
-        return await SendGamesRequestAsync(request, cancellationToken);
 
+        return await SendGamesRequestAsync(
+            request,
+            cancellationToken);
     }
 
     public async Task<IReadOnlyList<IgdbGameSample>> GetGamesWithParentAsync(string accessToken, int sampleSize, CancellationToken cancellationToken = default)
@@ -167,6 +209,43 @@ public sealed class IgdbClient(HttpClient httpClient, IOptions<IgdbPocOptions> o
              """);
 
         return await SendGamesRequestAsync(request, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<IgdbGameTypeReference>> GetGameTypesAsync(string accessToken, CancellationToken cancellationToken = default)
+    {
+        using var request = new HttpRequestMessage(
+            HttpMethod.Post,
+            "https://api.igdb.com/v4/game_types"
+            );
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        request.Headers.Add("Client-ID", _options.ClientId);
+        request.Content = new StringContent(
+            """
+            fields
+                id,
+                type;
+            sort id asc;
+            limit 500;
+            """);
+        
+        using var response = await httpClient.SendAsync(request, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
+
+            throw new HttpRequestException(
+                $"""
+                 IGDB game-types request failed.
+                 Status code: {(int)response.StatusCode} ({response.StatusCode})
+                 Response: {errorContent}
+                 """,
+                inner: null,
+                response.StatusCode
+                );
+        }
+        var gameTypes = await response.Content.ReadFromJsonAsync<List<IgdbGameTypeReference>>(cancellationToken);
+
+        return gameTypes ?? [];
     }
 
     private HttpRequestMessage CreateGamesRequest(string accessToken, string query)
