@@ -1171,6 +1171,149 @@ parent_game
 This distinction remains provisional and must be tested with more controlled
 examples.
 
+## Bundle composition observations
+
+A controlled sample of five records classified as `Bundle` was inspected with
+the fields:
+
+- `parent_game`
+- `version_parent`
+- `bundles`
+
+Observed coverage:
+
+| Field | Coverage |
+|---|---:|
+| `game_type = Bundle` | 5/5 |
+| `parent_game` | 0/5 |
+| `version_parent` | 2/5 |
+| `bundles` | 1/5 |
+
+Observed examples:
+
+```text
+Diablo III: Battle Chest
+- Game type: Bundle
+- Parent game: null
+- Version parent: null
+- Bundles: none
+```
+
+```text
+Diablo III: Reaper of Souls - Ultimate Evil Edition
+- Game type: Bundle
+- Parent game: null
+- Version parent: Diablo III
+- Bundles: Diablo III: Eternal Collection
+```
+
+```text
+Midway's Greatest Arcade Hits
+- Game type: Bundle
+- Parent game: null
+- Version parent: null
+- Bundles: none
+```
+
+```text
+Burnout Paradise: The Ultimate Box
+- Game type: Bundle
+- Parent game: null
+- Version parent: Burnout Paradise
+- Bundles: none
+```
+
+```text
+Fatal Fury: City of the Wolves - Season Pass 2
+- Game type: Bundle
+- Parent game: null
+- Version parent: null
+- Bundles: none
+```
+
+These observations confirm that Bundle records do not use `parent_game`
+consistently and may or may not use `version_parent`.
+
+The `bundles` field also does not list the contents of the current Bundle record.
+Instead, the observed result suggested that it identifies bundles that contain
+the current record.
+
+### Controlled inverse bundle query
+
+To verify the direction of the relationship, the Collector queried games with:
+
+```text
+where bundles = 90628;
+```
+
+where:
+
+```text
+90628 - Diablo III: Eternal Collection
+```
+
+The query returned two records:
+
+```text
+Diablo III: Rise of the Necromancer
+- Game type: DLC
+- Parent game: Diablo III
+- Bundles: Diablo III: Eternal Collection
+```
+
+```text
+Diablo III: Reaper of Souls - Ultimate Evil Edition
+- Game type: Bundle
+- Version parent: Diablo III
+- Bundles: Diablo III: Eternal Collection
+```
+
+This confirms the observed direction:
+
+```text
+component record
+→ bundles contains the bundles that include that record
+```
+
+It does not mean:
+
+```text
+bundle record
+→ bundles contains the products included in that bundle
+```
+
+Therefore, to reconstruct the composition of a bundle, the Collector must query
+games whose `bundles` relationship contains the target bundle identifier.
+
+The test also confirms that a bundle may contain components with different
+`game_type` values. In the inspected example, the containing bundle referenced:
+
+- one `DLC`;
+- one nested `Bundle`.
+
+The import model must not assume that bundle components are always Main Games.
+
+### Consolidated bundle interpretation
+
+The current evidence supports the following provisional interpretation:
+
+```text
+parent_game
+→ broad relationship to an originating, base, receiving, or contextual product
+
+version_parent
+→ specific edition or version relationship when provided
+
+bundles
+→ bundles that contain the current record
+```
+
+Bundle composition is therefore represented through an inverse lookup rather
+than through a forward collection on the Bundle record itself.
+
+This closes the basic `game_type` and relationship investigation for the current
+proof-of-concept scope.
+
 ## Future-release admission rule
 
 The proof of concept confirmed that IGDB can return records whose
@@ -1398,8 +1541,16 @@ The current proof of concept confirms that:
   than mandatory relationship evidence.
 - `parent_game` is a broad source relationship whose meaning depends on
   `game_type`.
-- Bundle composition remains unresolved because observed bundles may have
-  neither `parent_game` nor `version_parent`.
+- Observed Bundle records did not use `parent_game` and only some used
+  `version_parent`.
+- The `bundles` field is an inverse relationship: it identifies bundles that
+  contain the current record.
+- Bundle composition must be reconstructed by querying records whose `bundles`
+  relationship contains the target bundle identifier.
+- A bundle may contain components with different `game_type` values, including
+  DLCs and nested Bundles.
+- The basic `game_type` and relationship investigation is complete for the
+  current proof-of-concept scope.
 - Future-dated records must not be persisted in the active catalogue during the
   current execution.
 - A future synchronization strategy must re-query overlapping release-date
@@ -1413,8 +1564,8 @@ The current proof of concept confirms that:
 
 The following points still require investigation:
 
-1. Evaluate bundle-composition fields and determine how bundles identify their
-   included products.
+1. Evaluate release-date coverage, precision, regions, and platform-specific
+   release information.
 2. Deepen the practical distinctions among product types and relationships,
    especially editions, remasters, ports, expansions, standalone expansions,
    expanded games, bundles, DLCs, remakes, and the remaining types.
@@ -1422,23 +1573,22 @@ The following points still require investigation:
    records and determine whether other relationship fields are needed.
 4. Clarify the practical distinction among `Expansion`, `Standalone Expansion`,
    and `Expanded Game`.
-5. Evaluate release-date coverage and platform-specific release information.
-6. Evaluate covers, screenshots, involved companies, franchises, alternative
+5. Evaluate covers, screenshots, involved companies, franchises, alternative
    names, and other complementary MVP fields.
-7. Measure nullability and field coverage using a larger and less recency-biased
+6. Measure nullability and field coverage using a larger and less recency-biased
    sample.
-8. Compare metadata completeness between parent records and related products.
-9. Validate pagination, rate limits, token behavior, retries, and an appropriate
+7. Compare metadata completeness between parent records and related products.
+8. Validate pagination, rate limits, token behavior, retries, and an appropriate
    synchronization strategy, including an overlapping release-date window for
    previously skipped future releases.
-10. Define which external fields are candidates for the MVP.
-11. Consolidate the proof-of-concept approval criteria.
-12. Define which findings affect product decisions and which require an ADR.
-13. Define the mapping boundary between IGDB contracts and the internal model.
-14. Define the future boundary between the Worker, jobs, import services,
+9. Define which external fields are candidates for the MVP.
+10. Consolidate the proof-of-concept approval criteria.
+11. Define which findings affect product decisions and which require an ADR.
+12. Define the mapping boundary between IGDB contracts and the internal model.
+13. Define the future boundary between the Worker, jobs, import services,
     mappers, and repositories.
-15. Evaluate attribution and source-identification requirements in the user
+14. Evaluate attribution and source-identification requirements in the user
     interface.
-16. Revisit commercial and community-origin classification in a future
+15. Revisit commercial and community-origin classification in a future
     increment only after the simple Mod exclusion has been validated in the
     working MVP.
