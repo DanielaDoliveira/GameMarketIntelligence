@@ -27,6 +27,8 @@ The Collector currently performs a one-time execution that:
    - a sample filtered by `game_type` for remakes;
    - samples filtered by additional `game_type` values;
    - the complete IGDB `game_types` reference list;
+   - a controlled release-date sample comparing first release, platform,
+     region, precision, and later releases;
    - a controlled sample comparing commercial and community-origin products
      through company, external-distribution, and website evidence.
 4. Deserializes the response into IGDB-specific contracts.
@@ -42,6 +44,12 @@ The current queries retrieve:
 - `id`
 - `name`
 - `first_release_date`
+- `release_dates.date`
+- `release_dates.human`
+- `release_dates.date_format`
+- `release_dates.platform`
+- `release_dates.region`
+- `release_dates.status`
 - `updated_at`
 - `game_type`
 - `game_status`
@@ -130,6 +138,9 @@ Some fields may be absent from a game record.
 Observed nullable fields include:
 
 - `first_release_date`
+- `release_dates`
+- release-date component fields such as `day`
+- `release_dates.status`
 - `game_status`
 - `version_parent`
 - `parent_game`
@@ -916,6 +927,297 @@ The relationship is represented by IGDB identifiers and names.
 Platform reconciliation with the internal Game Market Intelligence taxonomy has
 not yet been defined.
 
+### Release dates
+
+The controlled release-date investigation evaluated:
+
+- `first_release_date` as the source-provided first known release of a product;
+- detailed `release_dates` occurrences;
+- the platform and region attached to each occurrence;
+- date precision and nullable components;
+- status nullability;
+- later platform releases and regional releases;
+- completeness differences between `platforms` and `release_dates`.
+
+The controlled sample included:
+
+```text
+144542 - Kitaria Fables
+974    - Resident Evil 4
+126    - Diablo III
+```
+
+#### Kitaria Fables
+
+Observed evidence:
+
+```text
+First release date: 2021-09-01
+
+Nintendo Switch - Europe    - 2021-09-01
+Nintendo Switch - Worldwide - 2021-09-02
+PC              - Worldwide - 2021-09-02
+PlayStation 4   - Worldwide - 2021-09-02
+PlayStation 5   - Worldwide - 2021-09-02
+Xbox One        - Worldwide - 2021-09-02
+Xbox Series X|S - Worldwide - 2021-09-02
+```
+
+The first known release was a regional Nintendo Switch release one day before
+the worldwide occurrences. This demonstrates that `first_release_date` is not
+necessarily a worldwide release date.
+
+It also confirms that one product can contain more than one occurrence for the
+same platform when region or date differs.
+
+#### Resident Evil 4
+
+Observed evidence:
+
+```text
+Platforms: 13
+Detailed release dates: 3
+Detailed platform: Nintendo GameCube only
+Regions: North America, Japan, and Europe
+```
+
+Although the game record lists thirteen platforms, its detailed
+`release_dates` collection contains only the three regional Nintendo GameCube
+occurrences. Dates for the numerous later ports are absent from the inspected
+record.
+
+Therefore:
+
+```text
+platform is present in game.platforms
+does not imply
+a detailed release date exists for that platform
+```
+
+The absence of a detailed occurrence must mean only that the source did not
+provide that date on the inspected record. It must not be interpreted as proof
+that the product was not released for the platform.
+
+The console rendered the source timestamp as `01/11/2005` under the current
+locale, while the source's human-readable value was `Jan 11, 2005`. This is a
+presentation ambiguity, not a source-date contradiction. Logs and user-facing
+dates must use an explicit, unambiguous format or localized date formatting.
+
+#### Diablo III
+
+Observed evidence distinguishes the original market appearance from later
+platform releases:
+
+```text
+2012 - PC and Mac - Worldwide
+2013 - PlayStation 3 and Xbox 360 - regional occurrences
+2014 - PlayStation 4 and Xbox One - regional occurrences
+```
+
+The `first_release_date` remains the 2012 PC/Mac release. The later console
+occurrences do not change that general first-release value.
+
+This confirms that:
+
+```text
+first_release_date
+→ when this product first appeared according to IGDB
+
+release_dates
+→ known occurrences for this product, contextualized by platform and region
+```
+
+A platform-specific historical query cannot rely only on
+`first_release_date`.
+
+#### Cross-sample observations
+
+The controlled sample supports the following conclusions:
+
+- `release_dates` can contain multiple occurrences for one product;
+- platform and region contextualize an occurrence;
+- the same platform can have different regional dates;
+- a region can be `worldwide` or a specific IGDB region;
+- `release_dates.status` was null throughout this controlled sample;
+- the `day` component was null even when `date` and `date_format` indicated
+  daily precision;
+- source order must not be assumed to be chronological;
+- the detailed collection can be incomplete;
+- `platforms` and `release_dates` are related but non-equivalent collections;
+- `first_release_date` appears to represent the first known occurrence, but it
+  must be preserved as a source-provided field rather than blindly recalculated
+  from an incomplete detailed collection.
+
+#### Product identity and release-history ownership
+
+Release occurrences belong exclusively to the IGDB product record from which
+they were retrieved.
+
+Relations such as `parent_game` and `version_parent` preserve product
+parentage, but they do not authorize release histories to be merged or
+inherited.
+
+The domain decision is:
+
+> Original games, ports, remakes, remasters, editions, bundles, and other
+> source records represented as distinct products retain their own release
+> dates, platforms, regions, provenance, and market context.
+
+For example, the original *The Legend of Zelda: The Wind Waker* and *The
+Legend of Zelda: The Wind Waker HD* are related works but separate market
+products. Regional releases of the original may make it relevant to more than
+one year. The HD product's 2013 launch belongs only to the HD product and must
+not be added to the original's release history.
+
+This distinction is essential for producer-oriented analysis. A remaster or
+new edition competes for the audience, installed base, attention, and market
+conditions of its own release period and platforms. A future separately
+marketed version would likewise be another product if represented by the source
+as a distinct record.
+
+A later catalogue distribution of the original product can be a new
+availability or release occurrence for that original product when the source
+explicitly represents it as such. It still must not inherit occurrences from a
+related remake or remaster.
+
+Names must not be used to merge histories. Same-name originals and remakes can
+have different IGDB identifiers, and differently named editions can still be
+related. `Source + ExternalId` remains the safe identity of a record within the
+source.
+
+#### MVP release-year filter semantics
+
+For the MVP, `Release year` is a complementary dimension of the general
+comparable-games search. It is not a dedicated release-strategy section and
+must not be presented as a complete recommendation of the best launch window.
+
+The filter answers:
+
+> Which products have at least one known release occurrence in the selected
+> year?
+
+Conceptually:
+
+```text
+ReleaseYear = selected year
+→ a known release occurrence owned by this product matches the year
+→ the product is included
+```
+
+The filter may match regional, worldwide, original, or later platform
+occurrences, provided that the occurrence belongs to the product being
+returned. Multiple occurrences in the same year do not create duplicate game
+results.
+
+`first_release_date` remains useful as source-provided evidence of the product's
+first known release. It must not be treated as the only temporal field, because
+that would omit later regional and platform occurrences. It also must not be
+used to invent platform or region context that the aggregate field does not
+contain.
+
+The safe provisional matching rule is:
+
+```text
+year-only query
+→ match any detailed release occurrence in that year
+   OR the source-provided first_release_date in that year
+
+platform + year query
+→ match one detailed occurrence that contains both the selected platform
+   and the selected year
+→ do not fall back to first_release_date for the platform association
+
+platform + year + region query
+→ match one detailed occurrence that satisfies all three dimensions
+→ do not combine dimensions from separate occurrences
+```
+
+The year-only use of `first_release_date` is evidence of a known first release,
+even if the detailed collection is empty or incomplete. It does not prove a
+release for any particular platform or region.
+
+When a platform is known through `game.platforms` but no detailed date exists
+for it, the application must distinguish:
+
+```text
+not associated with this platform
+
+from
+
+associated with this platform, but its platform release date is unavailable
+in the source
+```
+
+When the user applies a temporal filter, products without sufficient temporal
+evidence are omitted from that filtered result. The interface must explain that
+games with missing release-date data may be absent.
+
+#### User-interface implications
+
+Release evidence should be presented without implying completeness.
+
+For a result matched by a selected year, the interface may summarize the
+occurrences that caused the match, for example:
+
+```text
+2003 - GameCube - EU, NA
+```
+
+Region can be represented by a compact badge or abbreviation and an accessible
+full name. A globe is appropriate for `Worldwide`. Regional groups such as
+Europe, Asia, and North America should not rely only on national flags because
+they do not map cleanly to one country.
+
+Possible representations include:
+
+```text
+Worldwide    → globe + accessible label
+Europe       → EU + accessible label
+North America→ NA + accessible label
+Japan        → JP + accessible label
+Australia    → AU + accessible label
+Asia         → AS + accessible label
+```
+
+The exact visual design remains a frontend decision. Regardless of design,
+region labels must remain understandable without relying only on color, icon,
+or abbreviation.
+
+User-facing copy should communicate the source limitation, for example:
+
+> Results include products with a known release in the selected year. Products
+> without release-date data may be omitted.
+
+For an unfiltered product whose platform is known but whose contextual date is
+not, the interface may state:
+
+> Platform release date unavailable in the source.
+
+#### Provisional internal concepts
+
+The evidence supports keeping these concepts separate in later domain design:
+
+```text
+Game.FirstReleaseDate
+→ optional, source-provided first known release of the product
+
+Game.Platforms
+→ platforms associated with the product, including platforms for which no
+  detailed date is available
+
+GameRelease
+→ a known occurrence owned by one product and contextualized by date,
+  platform, region, precision, status, and provenance where available
+```
+
+These are mapping and domain directions, not authorization to create migrations
+or a final persistence model during the proof of concept.
+
+The first MVP can expose release year as an optional general-search filter. A
+future strategic release-window feature would require broader and more complete
+data, contextual platform and region analysis, product similarity, and
+eventually market-response evidence such as sales, interest, or engagement.
+
 ### Genres
 
 Genres provide broad classifications.
@@ -1400,6 +1702,8 @@ Responsible for:
 - retrieving a recently updated sample;
 - retrieving a controlled set of games by IGDB identifiers;
 - retrieving records where `parent_game` is populated.
+- searching games by name for controlled identifier discovery;
+- retrieving expanded release-date data for controlled game identifiers.
 
 The client currently exposes separate operations for:
 
@@ -1418,6 +1722,9 @@ GetGamesByTypeAsync
 
 GetGameTypesAsync
 → retrieves the IGDB game-type reference list
+
+SearchGamesByNameAsync
+→ supports temporary controlled discovery of identifiers by name
 ```
 
 These operations represent different retrieval intentions while sharing common
@@ -1551,6 +1858,38 @@ The current proof of concept confirms that:
   DLCs and nested Bundles.
 - The basic `game_type` and relationship investigation is complete for the
   current proof-of-concept scope.
+- `first_release_date` is the source-provided first known release of the
+  product; it is not necessarily worldwide or specific to a selected platform.
+- Detailed `release_dates` represent known occurrences contextualized by
+  platform and region, but the collection can be incomplete.
+- The presence of a platform in `game.platforms` does not guarantee that a
+  detailed release date exists for that platform.
+- `platforms` and `release_dates` must remain separate, non-equivalent
+  collections.
+- The source order of release occurrences must not be treated as chronological.
+- Date precision and component fields remain nullable; a missing component must
+  not be replaced with invented precision.
+- The MVP `Release year` filter should match known release occurrences owned by
+  the returned product, with `first_release_date` also serving as general
+  source-provided evidence for year-only matching.
+- A combined platform-and-year filter requires one detailed occurrence that
+  satisfies both dimensions; `first_release_date` must not be used as a
+  platform-specific fallback.
+- When region is also selected, platform, year, and region must be satisfied by
+  the same occurrence rather than assembled from separate releases.
+- Missing contextual dates must be disclosed as unavailable in the source, not
+  interpreted as evidence that the platform release did not occur.
+- Release histories must never be inherited or merged across distinct product
+  records, including originals, remakes, remasters, ports, editions, bundles,
+  and other related products.
+- Parent relationships provide context between products but do not change
+  ownership of release occurrences.
+- The release-year capability belongs initially in the general comparable-games
+  filters; current source completeness does not support a dedicated launch-window
+  recommendation feature.
+- Region may be exposed as an accessible compact badge or abbreviation, with a
+  globe for worldwide occurrences, without relying exclusively on national
+  flags.
 - Future-dated records must not be persisted in the active catalogue during the
   current execution.
 - A future synchronization strategy must re-query overlapping release-date
@@ -1564,31 +1903,35 @@ The current proof of concept confirms that:
 
 The following points still require investigation:
 
-1. Evaluate release-date coverage, precision, regions, and platform-specific
-   release information.
-2. Deepen the practical distinctions among product types and relationships,
+1. Measure release-date completeness and nullability in a larger,
+   less-biased sample, including coverage by product type, platform, region,
+   precision, and historical period.
+2. Validate the provisional release-year matching semantics against additional
+   originals, regional launches, ports, remakes, remasters, and editions without
+   merging distinct product histories.
+3. Deepen the practical distinctions among product types and relationships,
    especially editions, remasters, ports, expansions, standalone expansions,
    expanded games, bundles, DLCs, remakes, and the remaining types.
-3. Compare `version_parent` and `parent_game` behavior using additional controlled
+4. Compare `version_parent` and `parent_game` behavior using additional controlled
    records and determine whether other relationship fields are needed.
-4. Clarify the practical distinction among `Expansion`, `Standalone Expansion`,
+5. Clarify the practical distinction among `Expansion`, `Standalone Expansion`,
    and `Expanded Game`.
-5. Evaluate covers, screenshots, involved companies, franchises, alternative
+6. Evaluate covers, screenshots, involved companies, franchises, alternative
    names, and other complementary MVP fields.
-6. Measure nullability and field coverage using a larger and less recency-biased
+7. Measure nullability and field coverage using a larger and less recency-biased
    sample.
-7. Compare metadata completeness between parent records and related products.
-8. Validate pagination, rate limits, token behavior, retries, and an appropriate
+8. Compare metadata completeness between parent records and related products.
+9. Validate pagination, rate limits, token behavior, retries, and an appropriate
    synchronization strategy, including an overlapping release-date window for
    previously skipped future releases.
-9. Define which external fields are candidates for the MVP.
-10. Consolidate the proof-of-concept approval criteria.
-11. Define which findings affect product decisions and which require an ADR.
-12. Define the mapping boundary between IGDB contracts and the internal model.
-13. Define the future boundary between the Worker, jobs, import services,
+10. Define which external fields are candidates for the MVP.
+11. Consolidate the proof-of-concept approval criteria.
+12. Define which findings affect product decisions and which require an ADR.
+13. Define the mapping boundary between IGDB contracts and the internal model.
+14. Define the future boundary between the Worker, jobs, import services,
     mappers, and repositories.
-14. Evaluate attribution and source-identification requirements in the user
+15. Evaluate attribution and source-identification requirements in the user
     interface.
-15. Revisit commercial and community-origin classification in a future
+16. Revisit commercial and community-origin classification in a future
     increment only after the simple Mod exclusion has been validated in the
     working MVP.
