@@ -38,4 +38,10 @@ public interface IIgdbClient
         string gameName,
         int resultLimit,
         CancellationToken cancellationToken = default);
+    
+    
+    Task<IReadOnlyList<IgdbGameSample>> GetGamesAlternativeNamesSampleAsync(
+        string accessToken,
+        IReadOnlyCollection<long> gameIds,
+        CancellationToken cancellationToken = default);
 }

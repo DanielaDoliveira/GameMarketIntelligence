@@ -40,6 +40,12 @@ public sealed class IgdbGameSample
     [JsonPropertyName("keywords")]
     public IReadOnlyList<IgdbNamedReference> Keywords { get; set; } = [];
 
+    [JsonPropertyName("alternative_names")]
+    public IReadOnlyList<IgdbAlternativeNameReference> AlternativeNames { get; set; } = [];
+
+    [JsonPropertyName("game_localizations")]
+    public IReadOnlyList<IgdbGameLocalizationReference> GameLocalizations { get; set; } = [];
+
     [JsonPropertyName("involved_companies")]
     public IReadOnlyList<IgdbInvolvedCompanyReference> InvolvedCompanies { get; set; } = [];
 

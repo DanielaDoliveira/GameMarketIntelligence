@@ -367,6 +367,46 @@ public sealed class IgdbClient(HttpClient httpClient, IOptions<IgdbPocOptions> o
             request,
             cancellationToken);
     }
+
+    public async Task<IReadOnlyList<IgdbGameSample>> GetGamesAlternativeNamesSampleAsync(
+        string accessToken,
+        IReadOnlyCollection<long> gameIds,
+        CancellationToken cancellationToken = default)
+    {
+        if (gameIds.Count == 0)
+        {
+            return [];
+        }
+
+        var formattedIds = string.Join(",", gameIds);
+
+        using var request = CreateGamesRequest(
+            accessToken,
+            $"""
+             fields
+                 id,
+                 name,
+
+                 alternative_names.id,
+                 alternative_names.name,
+                 alternative_names.comment,
+
+                 game_localizations.id,
+                 game_localizations.name,
+                 game_localizations.region.id,
+                 game_localizations.region.name,
+                 game_localizations.region.identifier,
+                 game_localizations.region.category;
+
+             where id = ({formattedIds});
+             sort id asc;
+             limit {gameIds.Count};
+             """);
+
+        return await SendGamesRequestAsync(
+            request,
+            cancellationToken);
+    }
     private HttpRequestMessage CreateGamesRequest(string accessToken, string query)
     {
         var request = new HttpRequestMessage(HttpMethod.Post, "https://api.igdb.com/v4/games");
@@ -397,4 +437,5 @@ public sealed class IgdbClient(HttpClient httpClient, IOptions<IgdbPocOptions> o
         var games = await response.Content.ReadFromJsonAsync<List<IgdbGameSample>>(cancellationToken);
         return games ?? [];
     }
+    
 }
