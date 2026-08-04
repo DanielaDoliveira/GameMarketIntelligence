@@ -50,4 +50,6 @@ public sealed class IgdbGameSample
     public IReadOnlyList<IgdbWebsiteReference> Websites { get; set; } = [];
     [JsonPropertyName("bundles")]
     public IReadOnlyList<IgdbNamedReference> Bundles { get; set; } = [];
+    [JsonPropertyName("release_dates")]
+    public IReadOnlyList<IgdbReleaseDateReference> ReleaseDates { get; set; } = [];
 }

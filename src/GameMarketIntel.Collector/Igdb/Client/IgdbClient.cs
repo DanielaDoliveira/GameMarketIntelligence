@@ -131,7 +131,23 @@ public sealed class IgdbClient(HttpClient httpClient, IOptions<IgdbPocOptions> o
                  websites.url,
                  websites.trusted,
                  websites.type.id,
-                 websites.type.type;
+                 websites.type.type,
+                 
+                 release_dates.id,
+                 release_dates.date,
+                 release_dates.human,
+                 release_dates.d,
+                 release_dates.m,
+                 release_dates.y,
+                 release_dates.date_format.id,
+                 release_dates.date_format.format,
+                 release_dates.platform.id,
+                 release_dates.platform.name,
+                 release_dates.release_region.id,
+                 release_dates.release_region.region,
+                 release_dates.status.id,
+                 release_dates.status.name,
+                 release_dates.status.description;
 
              where id = ({formattedIds});
              sort id asc;
@@ -278,7 +294,23 @@ public sealed class IgdbClient(HttpClient httpClient, IOptions<IgdbPocOptions> o
                  bundles.name,
 
                  platforms.id,
-                 platforms.name;
+                 platforms.name,
+
+                 release_dates.id,
+                 release_dates.date,
+                 release_dates.human,
+                 release_dates.d,
+                 release_dates.m,
+                 release_dates.y,
+                 release_dates.date_format.id,
+                 release_dates.date_format.format,
+                 release_dates.platform.id,
+                 release_dates.platform.name,
+                 release_dates.release_region.id,
+                 release_dates.release_region.region,
+                 release_dates.status.id,
+                 release_dates.status.name,
+                 release_dates.status.description;
 
              where bundles = {bundleId};
              sort id asc;
@@ -290,6 +322,51 @@ public sealed class IgdbClient(HttpClient httpClient, IOptions<IgdbPocOptions> o
             cancellationToken);
     }
 
+    public async Task<IReadOnlyList<IgdbGameSample>> SearchGamesByNameAsync(
+        string accessToken,
+        string gameName,
+        int resultLimit,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(gameName))
+        {
+            return [];
+        }
+
+        if (resultLimit <= 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(resultLimit),
+                "The result limit must be greater than zero.");
+        }
+
+        var escapedGameName = gameName
+            .Replace("\\", "\\\\")
+            .Replace("\"", "\\\"");
+
+        using var request = CreateGamesRequest(
+            accessToken,
+            $"""
+             search "{escapedGameName}";
+             fields
+                 id,
+                 name,
+                 first_release_date,
+                 game_type.id,
+                 game_type.type,
+                 version_parent.id,
+                 version_parent.name,
+                 parent_game.id,
+                 parent_game.name,
+                 platforms.id,
+                 platforms.name;
+             limit {resultLimit};
+             """);
+
+        return await SendGamesRequestAsync(
+            request,
+            cancellationToken);
+    }
     private HttpRequestMessage CreateGamesRequest(string accessToken, string query)
     {
         var request = new HttpRequestMessage(HttpMethod.Post, "https://api.igdb.com/v4/games");
