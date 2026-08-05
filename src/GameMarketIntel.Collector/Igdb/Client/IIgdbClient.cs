@@ -44,4 +44,18 @@ public interface IIgdbClient
         string accessToken,
         IReadOnlyCollection<long> gameIds,
         CancellationToken cancellationToken = default);
+    Task<int> CountReleasedGamesAsync(
+        string accessToken,
+        long releaseDateCutoff,
+        CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<IgdbGameSample>> GetReleasedGameAtOffsetAsync(
+        string accessToken,
+        long releaseDateCutoff,
+        int offset,
+        CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<IgdbGameSample>> GetReleasedGamesAtOffsetsAsync(
+        string accessToken,
+        long releaseDateCutoff,
+        IReadOnlyCollection<int> offsets,
+        CancellationToken cancellationToken = default);
 }

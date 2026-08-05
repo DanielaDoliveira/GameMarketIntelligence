@@ -22,6 +22,9 @@ public sealed class IgdbGameSample
     [JsonPropertyName("game_status")]
     public IgdbGameStatusReference? GameStatus { get; set; }
 
+    [JsonPropertyName("version_title")]
+    public string? VersionTitle { get; set; }
+
     [JsonPropertyName("version_parent")]
     public IgdbNamedReference? VersionParent { get; set; }
 

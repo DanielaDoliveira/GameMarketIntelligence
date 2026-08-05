@@ -11,247 +11,352 @@ public sealed class Worker(
     ILogger<Worker> logger)
     : BackgroundService
 {
-   protected override async Task ExecuteAsync(
-    CancellationToken stoppingToken)
-{
-    try
+    private static readonly IReadOnlyList<long> SelectedGameIds =
+    [
+        5722, 8916, 10646, 11845, 15671, 26254, 34755, 35086, 36409,
+        37586, 43038, 48588, 50982, 53080, 75951, 85339, 87336, 88673,
+        94203, 102352, 104269, 110942, 112378, 112780, 115420, 121801,
+        127166, 132372, 136185, 136414, 138954, 147667, 148596, 161412,
+        167238, 168966, 171880, 175803, 178134, 183126, 183605, 198307,
+        200355, 204839, 211968, 212672, 215569, 235524, 235982, 236449,
+        248613, 250264, 257727, 263132, 268601, 269217, 275556, 282139,
+        284455, 284464, 285194, 288072, 293820, 299137, 303375, 306988,
+        313806, 317392, 317584, 318108, 326470, 327816, 328786, 329403,
+        334302, 336294, 337379, 339924, 341133, 347230, 349475, 350477,
+        360889, 361018, 367296, 369479, 370585, 376941, 377320, 378090,
+        379032, 380648, 382347, 385917, 391762, 396823, 397730, 397831,
+        402731, 403794
+    ];
+
+    protected override async Task ExecuteAsync(
+        CancellationToken stoppingToken)
     {
-        logger.LogInformation(
-            "Starting IGDB alternative-name and localization proof of concept.");
+        try
+        {
+            ValidateSelectedGameIds();
 
-        var tokenResponse =
-            await authenticationService.GetAccessTokenAsync(stoppingToken);
+            logger.LogInformation(
+                """
+                Starting IGDB alternative-name analysis:
+                Fixed sample size: {SampleSize}
+                Original release-date cutoff: {ReleaseDateCutoff}
+                Original sample seed: {SampleSeed}
+                Original eligible population: {EligiblePopulation}
+                """,
+                SelectedGameIds.Count,
+                "2026-08-04T00:00:00Z",
+                20260804,
+                278772);
 
-        if (string.IsNullOrWhiteSpace(tokenResponse.AccessToken))
+            var tokenResponse =
+                await authenticationService.GetAccessTokenAsync(stoppingToken);
+
+            if (string.IsNullOrWhiteSpace(tokenResponse.AccessToken))
+            {
+                throw new InvalidOperationException(
+                    "Twitch returned an empty access token.");
+            }
+
+            var games =
+                await igdbClient.GetGamesAlternativeNamesSampleAsync(
+                    tokenResponse.AccessToken,
+                    SelectedGameIds,
+                    stoppingToken);
+
+            ValidateReturnedGames(games);
+            LogGameEvidence(games);
+            LogSummary(games);
+        }
+        catch (OperationCanceledException)
+            when (stoppingToken.IsCancellationRequested)
+        {
+            logger.LogInformation(
+                "IGDB alternative-name analysis was cancelled.");
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(
+                exception,
+                "IGDB alternative-name analysis failed.");
+        }
+        finally
+        {
+            applicationLifetime.StopApplication();
+        }
+    }
+
+    private static void ValidateSelectedGameIds()
+    {
+        if (SelectedGameIds.Count != 100)
         {
             throw new InvalidOperationException(
-                "Twitch returned an empty access token.");
+                $"Expected 100 fixed sample IDs, but found {SelectedGameIds.Count}.");
         }
 
-        long[] gameIds =
-        [
-            // Pokémon: official paired products with international releases
-            37382,  // Pokémon Sword
-            115653, // Pokémon Shield
+        if (SelectedGameIds.Any(gameId => gameId <= 0))
+        {
+            throw new InvalidOperationException(
+                "The fixed sample contains a non-positive game ID.");
+        }
 
-            // Zelda: Japanese title, romanization and historical subtitle
-            1022,   // The Legend of Zelda
-            1029,   // The Legend of Zelda: Ocarina of Time
+        if (SelectedGameIds.Distinct().Count() != SelectedGameIds.Count)
+        {
+            throw new InvalidOperationException(
+                "The fixed sample contains duplicate game IDs.");
+        }
+    }
 
-            // Final Fantasy: canonical and regional-numbering collisions
-            16474,  // Final Fantasy II (original Japanese entry)
-            77234,  // Final Fantasy III (original Japanese entry)
-            16587,  // Final Fantasy IV
-            387,    // Final Fantasy II (North American FF IV)
-            426,    // Final Fantasy III (North American FF VI)
+    private static void ValidateReturnedGames(
+        IReadOnlyList<IgdbGameSample> games)
+    {
+        var duplicateIds = games
+            .GroupBy(game => game.Id)
+            .Where(group => group.Count() > 1)
+            .Select(group => group.Key)
+            .Order()
+            .ToArray();
 
-            // Controls
-            144542, // Kitaria Fables
-            974,    // Resident Evil 4
-            120     // Diablo III
-        ];
+        var returnedIds = games
+            .Select(game => game.Id)
+            .ToHashSet();
 
-        var games =
-            await igdbClient.GetGamesAlternativeNamesSampleAsync(
-                tokenResponse.AccessToken,
-                gameIds,
-                stoppingToken);
+        var missingIds = SelectedGameIds
+            .Where(gameId => !returnedIds.Contains(gameId))
+            .Order()
+            .ToArray();
 
-        logger.LogInformation(
-            "IGDB returned {GameCount} games for the controlled name sample.",
-            games.Count);
+        var selectedIds = SelectedGameIds.ToHashSet();
 
+        var unexpectedIds = returnedIds
+            .Where(gameId => !selectedIds.Contains(gameId))
+            .Order()
+            .ToArray();
+
+        if (duplicateIds.Length == 0 &&
+            missingIds.Length == 0 &&
+            unexpectedIds.Length == 0 &&
+            games.Count == SelectedGameIds.Count)
+        {
+            return;
+        }
+
+        throw new InvalidOperationException(
+            $"""
+             IGDB did not return the fixed sample exactly as requested.
+             Requested games: {SelectedGameIds.Count}
+             Returned games: {games.Count}
+             Missing IDs: {FormatIds(missingIds)}
+             Unexpected IDs: {FormatIds(unexpectedIds)}
+             Duplicate returned IDs: {FormatIds(duplicateIds)}
+             """);
+    }
+
+    private void LogGameEvidence(
+        IReadOnlyList<IgdbGameSample> games)
+    {
         foreach (var game in games.OrderBy(game => game.Id))
         {
             logger.LogInformation(
                 """
-                Game:
-                Id: {GameId}
-                Name: {GameName}
-                Alternative names count: {AlternativeNameCount}
-                Alternative names:
+                IGDB alternative-name evidence:
+                Game ID: {GameId}
+                Primary name: {PrimaryName}
+                Version title: {VersionTitle}
+                Alternative names ({AlternativeNameCount}):
                 {AlternativeNames}
-                Game localizations count: {LocalizationCount}
-                Game localizations:
+                Game localizations ({LocalizationCount}):
                 {GameLocalizations}
                 """,
                 game.Id,
-                game.Name,
+                FormatValue(game.Name),
+                FormatValue(game.VersionTitle),
                 game.AlternativeNames.Count,
                 FormatAlternativeNames(game.AlternativeNames),
                 game.GameLocalizations.Count,
                 FormatGameLocalizations(game.GameLocalizations));
         }
     }
-    catch (OperationCanceledException)
-        when (stoppingToken.IsCancellationRequested)
-    {
-        logger.LogInformation(
-            "IGDB alternative-name and localization proof of concept was cancelled.");
-    }
-    catch (Exception exception)
-    {
-        logger.LogError(
-            exception,
-            "IGDB alternative-name and localization proof of concept failed.");
-    }
-    finally
-    {
-        applicationLifetime.StopApplication();
-    }
-}
 
-    private static string FormatSearchResults(
+    private void LogSummary(
         IReadOnlyList<IgdbGameSample> games)
     {
-        if (games.Count == 0)
-        {
-            return "(none)";
-        }
+        var gamesWithAlternativeNames = games.Count(
+            game => game.AlternativeNames.Count > 0);
 
-        return string.Join(
-            Environment.NewLine,
-            games.Select(game =>
-                $"""
-                 - Id: {game.Id}
-                   Name: {game.Name}
-                   First release date: {ConvertUnixTimestamp(game.FirstReleaseDate)}
-                   Game type: {FormatGameType(game.GameType)}
-                   Platforms: {FormatReferences(game.Platforms)}
-                   Version parent: {FormatReference(game.VersionParent)}
-                   Parent game: {FormatReference(game.ParentGame)}
-                 """));
+        var gamesWithVersionTitle = games.Count(
+            game => !string.IsNullOrWhiteSpace(game.VersionTitle));
+
+        var gamesWithLocalizations = games.Count(
+            game => game.GameLocalizations.Count > 0);
+
+        var alternativeNames = games
+            .SelectMany(game => game.AlternativeNames)
+            .ToArray();
+
+        var localizations = games
+            .SelectMany(game => game.GameLocalizations)
+            .ToArray();
+
+        var alternativeNamesWithComment = alternativeNames.Count(
+            alternativeName =>
+                !string.IsNullOrWhiteSpace(alternativeName.Comment));
+
+        var duplicateAlternativeNamesWithinGames = games.Sum(game =>
+            game.AlternativeNames
+                .Where(alternativeName =>
+                    !string.IsNullOrWhiteSpace(alternativeName.Name))
+                .GroupBy(
+                    alternativeName => NormalizeName(alternativeName.Name),
+                    StringComparer.Ordinal)
+                .Sum(group => Math.Max(0, group.Count() - 1)));
+
+        var alternativeNamesEqualToPrimaryName = games.Sum(game =>
+            game.AlternativeNames.Count(alternativeName =>
+                NormalizeName(alternativeName.Name) ==
+                NormalizeName(game.Name)));
+
+        var crossGameNameCollisions = FindCrossGameNameCollisions(games);
+
+        logger.LogInformation(
+            """
+            IGDB alternative-name analysis completed:
+            Requested fixed IDs: {RequestedGameCount}
+            Returned unique games: {ReturnedGameCount}
+            Games with alternative names: {GamesWithAlternativeNames} ({AlternativeNameCoverage:F2}%)
+            Total alternative names: {TotalAlternativeNames}
+            Alternative names with comment: {AlternativeNamesWithComment} ({CommentCoverage:F2}%)
+            Duplicate alternative-name occurrences within the same game: {DuplicateAlternativeNamesWithinGames}
+            Alternative names equal to their primary name: {AlternativeNamesEqualToPrimaryName}
+            Games with version title: {GamesWithVersionTitle} ({VersionTitleCoverage:F2}%)
+            Games with localizations: {GamesWithLocalizations} ({LocalizationCoverage:F2}%)
+            Total localizations: {TotalLocalizations}
+            Exact normalized names associated with multiple game IDs: {CrossGameCollisionCount}
+            Cross-game collision evidence:
+            {CrossGameCollisions}
+            """,
+            SelectedGameIds.Count,
+            games.Count,
+            gamesWithAlternativeNames,
+            Percentage(gamesWithAlternativeNames, games.Count),
+            alternativeNames.Length,
+            alternativeNamesWithComment,
+            Percentage(alternativeNamesWithComment, alternativeNames.Length),
+            duplicateAlternativeNamesWithinGames,
+            alternativeNamesEqualToPrimaryName,
+            gamesWithVersionTitle,
+            Percentage(gamesWithVersionTitle, games.Count),
+            gamesWithLocalizations,
+            Percentage(gamesWithLocalizations, games.Count),
+            localizations.Length,
+            crossGameNameCollisions.Count,
+            FormatNameCollisions(crossGameNameCollisions));
     }
 
-    private static string FormatReference(
-        IgdbNamedReference? reference)
+    private static IReadOnlyList<NameCollision> FindCrossGameNameCollisions(
+        IReadOnlyList<IgdbGameSample> games)
     {
-        return reference is null
-            ? "(null)"
-            : $"{reference.Id} - {reference.Name}";
+        return games
+            .SelectMany(game =>
+                new[] { game.Name }
+                    .Concat(game.AlternativeNames.Select(name => name.Name))
+                    .Where(name => !string.IsNullOrWhiteSpace(name))
+                    .Select(name => new
+                    {
+                        NormalizedName = NormalizeName(name),
+                        OriginalName = name.Trim(),
+                        game.Id
+                    }))
+            .GroupBy(item => item.NormalizedName, StringComparer.Ordinal)
+            .Select(group => new NameCollision(
+                group.Select(item => item.OriginalName).First(),
+                group.Select(item => item.Id).Distinct().Order().ToArray()))
+            .Where(collision => collision.GameIds.Count > 1)
+            .OrderBy(collision => collision.Name, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
     }
 
-    private static string FormatReferences(
-        IReadOnlyList<IgdbNamedReference> references)
+    private static string FormatNameCollisions(
+        IReadOnlyList<NameCollision> collisions)
     {
-        return references.Count == 0
+        return collisions.Count == 0
             ? "(none)"
             : string.Join(
-                ", ",
-                references.Select(reference =>
-                    $"{reference.Id} - {reference.Name}"));
-    }
-
-    private static string FormatGameType(
-        IgdbGameTypeReference? gameType)
-    {
-        return gameType is null
-            ? "(null)"
-            : $"{gameType.Id} - {gameType.Type}";
-    }
-
-    private static DateTimeOffset? ConvertUnixTimestamp(
-        long? value)
-    {
-        return value.HasValue
-            ? DateTimeOffset.FromUnixTimeSeconds(value.Value)
-            : null;
-    }
-
-    private static string FormatReleaseDates(
-        IReadOnlyList<IgdbReleaseDateReference> releaseDates)
-    {
-        if (releaseDates.Count == 0)
-        {
-            return "(none)";
-        }
-
-        return string.Join(
-            Environment.NewLine,
-            releaseDates.Select(releaseDate =>
-                $"""
-                 - Id: {releaseDate.Id}
-                   Date: {ConvertUnixTimestamp(releaseDate.Date)}
-                   Human: {releaseDate.Human ?? "(null)"}
-                   Components: day={releaseDate.Day?.ToString() ?? "(null)"}, month={releaseDate.Month?.ToString() ?? "(null)"}, year={releaseDate.Year?.ToString() ?? "(null)"}
-                   Format: {FormatDateFormat(releaseDate.DateFormat)}
-                   Platform: {FormatReference(releaseDate.Platform)}
-                   Region: {FormatReleaseRegion(releaseDate.ReleaseRegion)}
-                   Status: {FormatReleaseStatus(releaseDate.Status)}
-                 """));
-    }
-
-    private static string FormatDateFormat(
-        IgdbDateFormatReference? dateFormat)
-    {
-        return dateFormat is null
-            ? "(null)"
-            : $"{dateFormat.Id} - {dateFormat.Format}";
-    }
-
-    private static string FormatReleaseRegion(
-        IgdbReleaseDateRegionReference? region)
-    {
-        return region is null
-            ? "(null)"
-            : $"{region.Id} - {region.Region}";
-    }
-
-    private static string FormatReleaseStatus(
-        IgdbReleaseDateStatusReference? status)
-    {
-        return status is null
-            ? "(null)"
-            : $"{status.Id} - {status.Name}";
+                Environment.NewLine,
+                collisions.Select(collision =>
+                    $"- {collision.Name}: {FormatIds(collision.GameIds)}"));
     }
 
     private static string FormatAlternativeNames(
         IReadOnlyList<IgdbAlternativeNameReference> alternativeNames)
     {
-        if (alternativeNames.Count == 0)
-        {
-            return "(none)";
-        }
-
-        return string.Join(
-            Environment.NewLine,
-            alternativeNames.Select(alternativeName =>
-                $"""
-                 - Id: {alternativeName.Id}
-                   Name: {alternativeName.Name}
-                   Comment: {alternativeName.Comment ?? "(null)"}
-                 """));
+        return alternativeNames.Count == 0
+            ? "(none)"
+            : string.Join(
+                Environment.NewLine,
+                alternativeNames
+                    .OrderBy(alternativeName => alternativeName.Id)
+                    .Select(alternativeName =>
+                        $"- {alternativeName.Id}: " +
+                        $"{FormatValue(alternativeName.Name)}; " +
+                        $"comment={FormatValue(alternativeName.Comment)}"));
     }
 
     private static string FormatGameLocalizations(
         IReadOnlyList<IgdbGameLocalizationReference> localizations)
     {
-        if (localizations.Count == 0)
-        {
-            return "(none)";
-        }
-
-        return string.Join(
-            Environment.NewLine,
-            localizations.Select(localization =>
-                $"""
-                 - Id: {localization.Id}
-                   Name: {localization.Name}
-                   Region: {FormatRegion(localization.Region)}
-                 """));
+        return localizations.Count == 0
+            ? "(none)"
+            : string.Join(
+                Environment.NewLine,
+                localizations
+                    .OrderBy(localization => localization.Id)
+                    .Select(localization =>
+                        $"- {localization.Id}: " +
+                        $"{FormatValue(localization.Name)}; " +
+                        $"region={FormatRegion(localization.Region)}"));
     }
 
     private static string FormatRegion(
         IgdbRegionReference? region)
     {
-        if (region is null)
-        {
-            return "(null)";
-        }
-
-        return
-            $"{region.Id} - {region.Name}; " +
-            $"identifier={region.Identifier ?? "(null)"}; " +
-            $"category={region.Category ?? "(null)"}";
+        return region is null
+            ? "(null)"
+            : $"{region.Id} - {FormatValue(region.Name)}; " +
+              $"identifier={FormatValue(region.Identifier)}; " +
+              $"category={FormatValue(region.Category)}";
     }
+
+    private static string NormalizeName(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value)
+            ? string.Empty
+            : value.Trim().ToUpperInvariant();
+    }
+
+    private static string FormatValue(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value)
+            ? "(null or whitespace)"
+            : value;
+    }
+
+    private static string FormatIds(IEnumerable<long> ids)
+    {
+        var values = ids.Select(id => id.ToString()).ToArray();
+
+        return values.Length == 0
+            ? "(none)"
+            : string.Join(", ", values);
+    }
+
+    private static double Percentage(int value, int total)
+    {
+        return total == 0
+            ? 0
+            : value * 100d / total;
+    }
+
+    private sealed record NameCollision(
+        string Name,
+        IReadOnlyList<long> GameIds);
 }
