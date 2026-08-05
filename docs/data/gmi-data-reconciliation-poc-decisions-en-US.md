@@ -2,7 +2,8 @@
 
 ## 1. Purpose
 
-This document consolidates the decisions that will guide the **Game Market Intelligence (GMI)** MVP before the IGDB proof of concept.
+This document consolidates the decisions that guide the **Game Market Intelligence
+(GMI)** MVP and is updated as the IGDB proof of concept produces evidence.
 
 GMI is not intended to store every possible piece of game data. Its purpose is to select, organize, and present only what genuinely helps producers with early market research, comparable-game discovery, niche exploration, and competitive-context analysis.
 
@@ -12,7 +13,8 @@ GMI is not intended to store every possible piece of game data. Its purpose is t
 
 The MVP will provide:
 
-- search by name and aliases;
+- search by name; aliases may be added only from fields and sources with an
+  approved provenance policy;
 - exploration through keywords;
 - filters for genre, theme, platform, game mode, perspective, multiplayer, and release period;
 - context about involved companies;
@@ -52,14 +54,21 @@ Steam will be a specialized source for Steam-specific facts, such as Steam relea
 
 ### 4.1 Identity and discovery
 
-**Include:** `id`, `name`, `alternative_names`, `game_type`, `version_parent`, `game_status`, `summary`.
+**Include:** `id`, `name`, `game_type`, `version_parent`, `game_status`, `summary`.
 
-**Defer or exclude:** defer `slug`; do not initially import `storyline`.
+**Defer or exclude:** exclude `alternative_names` from the MVP mapping; defer
+`slug`; do not initially import `storyline`.
 
 Rules:
 
 - external identity = `Source + ExternalId`;
 - name alone never supports automatic reconciliation;
+- `alternative_names` must not be used for display, search, identity, or
+  reconciliation in the MVP because the observed values mix regional and
+  linguistic variants with executable names, working titles, and ambiguous
+  aliases without sufficient provenance;
+- evaluate `game_localizations` separately as a more structured candidate for
+  regional names, without assuming that regional structure proves official use;
 - `game_status` is contextual;
 - `summary` supports details, not identity.
 
@@ -152,7 +161,7 @@ GMI will distinguish two intentions:
 ### Find a known game
 
 - name;
-- aliases;
+- approved aliases with sufficient provenance;
 - refinement by platform, period, and type.
 
 ### Explore an idea or niche
@@ -185,7 +194,9 @@ Allowed only with:
 
 ### 6.3 Probable match
 
-Without a strong ID, use composite signals: normalized name, aliases, type, companies, platforms, release period, franchise, collection, and declared relationships.
+Without a strong ID, use composite signals: normalized name, approved aliases
+with sufficient provenance, type, companies, platforms, release period,
+franchise, collection, and declared relationships.
 
 Composite matches create candidates, not automatic merges.
 

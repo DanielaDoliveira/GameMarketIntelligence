@@ -30,7 +30,9 @@ The Collector currently performs a one-time execution that:
    - a controlled release-date sample comparing first release, platform,
      region, precision, and later releases;
    - a controlled sample comparing commercial and community-origin products
-     through company, external-distribution, and website evidence.
+     through company, external-distribution, and website evidence;
+   - a fixed 100-game sample used to inspect `alternative_names`,
+     `version_title`, and `game_localizations`.
 4. Deserializes the response into IGDB-specific contracts.
 5. Writes selected fields to the application log.
 6. Stops the application after the execution finishes.
@@ -43,6 +45,11 @@ The current queries retrieve:
 
 - `id`
 - `name`
+- `alternative_names.name`
+- `alternative_names.comment`
+- `version_title`
+- `game_localizations.name`
+- `game_localizations.region`
 - `first_release_date`
 - `release_dates.date`
 - `release_dates.human`
@@ -1686,6 +1693,126 @@ record needs to be persisted. This remains safe only if the later synchronizatio
 strategy explicitly re-queries release windows and does not depend solely on
 `updated_at`.
 
+## Fixed-sample and alternative-name observations
+
+### Reproducible sample construction
+
+A less recency-biased sample was constructed from games whose
+`first_release_date` was earlier than the fixed cutoff:
+
+```text
+Cutoff: 2026-08-04T00:00:00Z
+Seed: 20260804
+Population recorded for the definitive selection: 278772
+Selected offsets: 100
+Returned games: 100
+Unique game identifiers: 100
+```
+
+The selection operation executed the 100 offset lookups in ten sequential
+batches of ten requests. All ten batches completed and produced one game for
+each selected offset. The offsets are retained as evidence of how the sample
+was produced, but the resulting 100 identifiers are the stable input for later
+field investigations.
+
+A subsequent verification run observed a different population count despite
+using the same release-date cutoff. This confirms that IGDB can add or correct
+records retroactively and that offsets alone do not preserve a sample over
+time. Later investigations therefore query the frozen identifiers directly.
+
+The successful execution demonstrates that the current client and Worker can:
+
+- coordinate sequential batches;
+- complete 100 controlled offset requests;
+- validate one returned record per offset;
+- verify count and identifier uniqueness;
+- freeze the selected identifiers for reproducible follow-up analysis;
+- retrieve the frozen collection directly by identifiers in a later request.
+
+This was not a performance, load, throughput, concurrency, or capacity test.
+No latency targets, timing distribution, rate-limit headroom, retry behavior,
+or production batch size were evaluated. The result is functional evidence
+about controlled batching and sample reproducibility, not evidence that the
+same strategy is suitable for production ingestion.
+
+No records were persisted in the Game Market Intelligence database during this
+experiment. The 100 IGDB responses were held in memory and inspected by the
+proof-of-concept Worker.
+
+### `alternative_names` sample results
+
+The frozen identifiers were queried to compare the main `name` with
+`alternative_names`, `version_title`, and `game_localizations`. The client
+validated that all 100 expected games were returned with no missing,
+unexpected, or duplicate identifiers.
+
+Observed coverage:
+
+| Observation | Result |
+|---|---:|
+| Games with `alternative_names` | 49/100 |
+| Alternative-name records | 67 |
+| Alternative names with `comment` | 65/67 |
+| Games with `version_title` | 2/100 |
+| Games with `game_localizations` | 15/100 |
+| Localization records | 20 |
+| Duplicate alternative name inside one game | 1 |
+| Alternative names equal to the same game's main name | 4 |
+| Exact name collision across different games | 1 |
+
+The cross-game collision was `Game.exe`, associated with IGDB identifiers
+`347230` and `403794`.
+
+The most frequent `alternative_names.comment` categories were:
+
+| Comment category | Count |
+|---|---:|
+| Windows Executable | 32 |
+| Alternative title | 6 |
+| Stylized title | 3 |
+| Japanese title — original | 3 |
+| Acronym | 3 |
+| Working title | 2 |
+| Russian title | 2 |
+| Japanese title — translated | 2 |
+| Japanese title — romanization | 2 |
+| Chinese title — traditional | 2 |
+| Chinese title — simplified | 2 |
+| No comment | 2 |
+| Other observed categories | 6 |
+
+`Windows Executable` accounted for 32 of 67 values, or 47.76% of all
+alternative names in the sample. The field is therefore not a homogeneous
+collection of titles by which a market product is officially known.
+
+The `comment` improves interpretation but does not consistently establish
+language, region, official usage, commercial provenance, or the relationship
+between an alias and a distributable product. Categories such as `Alternative
+title`, working titles, other aliases, and uncommented values remain ambiguous.
+The field also cannot determine whether the underlying game record represents
+an authorized market product, fan game, ROM hack, mod, or other community-origin
+content. Product eligibility must be evaluated at game-record level using
+combined evidence rather than inferred from an alias.
+
+### MVP mapping decision
+
+`alternative_names` is excluded from the MVP mapping and must not be used for:
+
+- public display;
+- title search;
+- identity;
+- automatic reconciliation.
+
+Creating a comment-category allowlist at this stage would imply a level of
+officiality and provenance that the observed data does not support.
+
+`version_title` remains semantically separate and must not be collapsed into a
+generic alias collection. `game_localizations` is a more structured candidate
+for regional titles because it carries an explicit region relationship, but
+its low observed coverage and provenance still require a separate evaluation.
+Regional structure alone must not be treated as proof of official commercial
+use.
+
 ## Current architectural boundaries
 
 ### `IgdbClient`
@@ -1701,6 +1828,8 @@ Responsible for:
 - deserializing the response into IGDB contracts;
 - retrieving a recently updated sample;
 - retrieving a controlled set of games by IGDB identifiers;
+- counting released games and retrieving records through controlled offsets;
+- retrieving the frozen alternative-name sample by IGDB identifiers;
 - retrieving records where `parent_game` is populated.
 - searching games by name for controlled identifier discovery;
 - retrieving expanded release-date data for controlled game identifiers.
@@ -1725,6 +1854,16 @@ GetGameTypesAsync
 
 SearchGamesByNameAsync
 → supports temporary controlled discovery of identifiers by name
+
+GetReleasedGameAtOffsetAsync
+→ retrieves one record at a controlled offset for sample construction
+
+GetReleasedGamesAtOffsetsAsync
+→ coordinates the selected offset lookups
+
+GetGamesAlternativeNamesSampleAsync
+→ retrieves the frozen games with alternative names, version titles, and
+  localization fields
 ```
 
 These operations represent different retrieval intentions while sharing common
@@ -1898,6 +2037,21 @@ The current proof of concept confirms that:
 - Real-source inspection is necessary before defining the final mapping.
 - The Worker should coordinate execution, while future jobs, mappers, import
   services, and repositories should contain specialized responsibilities.
+- The 100-record selection completed 100 sequential offset requests in ten
+  batches of ten and produced 100 unique identifiers.
+- The batching result is functional evidence only; performance, load,
+  concurrency, rate-limit headroom, retries, and production capacity remain
+  untested.
+- Frozen identifiers are required for reproducible follow-up analysis because
+  the eligible IGDB population can change retroactively even with a fixed
+  release-date cutoff.
+- `alternative_names` mixes potentially useful title variants with executable
+  names, working titles, and ambiguous aliases.
+- `alternative_names` is excluded from MVP display, search, identity, and
+  reconciliation.
+- `version_title` must remain separate from alternative names.
+- `game_localizations` requires a separate provenance and coverage evaluation
+  before any regional-title mapping decision.
 
 ## Next investigations
 
@@ -1916,22 +2070,25 @@ The following points still require investigation:
    records and determine whether other relationship fields are needed.
 5. Clarify the practical distinction among `Expansion`, `Standalone Expansion`,
    and `Expanded Game`.
-6. Evaluate covers, screenshots, involved companies, franchises, alternative
-   names, and other complementary MVP fields.
-7. Measure nullability and field coverage using a larger and less recency-biased
+6. Evaluate covers, screenshots, involved companies, franchises, and other
+   complementary MVP fields.
+7. Evaluate `game_localizations` independently, including coverage, region
+   semantics, duplicates, relationship to the main name, and evidence of
+   official use.
+8. Measure nullability and field coverage using a larger and less recency-biased
    sample.
-8. Compare metadata completeness between parent records and related products.
-9. Validate pagination, rate limits, token behavior, retries, and an appropriate
+9. Compare metadata completeness between parent records and related products.
+10. Validate pagination, rate limits, token behavior, retries, and an appropriate
    synchronization strategy, including an overlapping release-date window for
    previously skipped future releases.
-10. Define which external fields are candidates for the MVP.
-11. Consolidate the proof-of-concept approval criteria.
-12. Define which findings affect product decisions and which require an ADR.
-13. Define the mapping boundary between IGDB contracts and the internal model.
-14. Define the future boundary between the Worker, jobs, import services,
+11. Define which external fields are candidates for the MVP.
+12. Consolidate the proof-of-concept approval criteria.
+13. Define which findings affect product decisions and which require an ADR.
+14. Define the mapping boundary between IGDB contracts and the internal model.
+15. Define the future boundary between the Worker, jobs, import services,
     mappers, and repositories.
-15. Evaluate attribution and source-identification requirements in the user
+16. Evaluate attribution and source-identification requirements in the user
     interface.
-16. Revisit commercial and community-origin classification in a future
+17. Revisit commercial and community-origin classification in a future
     increment only after the simple Mod exclusion has been validated in the
     working MVP.

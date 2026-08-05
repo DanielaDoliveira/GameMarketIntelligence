@@ -107,6 +107,9 @@ In progress:
 - source-specific contracts;
 - recently updated sample through `updated_at`;
 - controlled sample by identifiers;
+- reproducible 100-record sample selected through fixed identifiers;
+- `alternative_names`, `version_title`, and `game_localizations` coverage
+  inspection, with `alternative_names` excluded from the MVP mapping;
 - sample filtered by `parent_game`;
 - inspection of `game_type`, `game_status`, `version_parent`, `parent_game`, platforms, genres, themes, and keywords;
 - explicit HTTP error diagnostics;
@@ -118,7 +121,9 @@ Still required:
 - further comparison of editions, bundles, ports, remasters, mods, expansions, standalone expansions, and expanded games;
 - release-date and platform-specific release evaluation;
 - covers and image-use evaluation;
-- involved companies, franchises, collections, alternative names, modes, and perspectives;
+- involved companies, franchises, collections, modes, and perspectives;
+- determine whether `game_localizations` provides sufficient provenance and
+  coverage for regional-title mapping;
 - larger-sample coverage and nullability measurement;
 - pagination, rate limits, incremental synchronization, token strategy, and failure recovery;
 - final field candidates and PoC approval criteria.

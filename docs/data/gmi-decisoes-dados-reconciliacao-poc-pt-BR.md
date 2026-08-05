@@ -2,7 +2,8 @@
 
 ## 1. Objetivo
 
-Este documento consolida as decisões que orientarão o MVP do **Game Market Intelligence (GMI)** antes da PoC com a IGDB.
+Este documento consolida as decisões que orientam o MVP do **Game Market
+Intelligence (GMI)** e é atualizado conforme a PoC da IGDB produz evidências.
 
 O GMI não pretende armazenar todos os dados possíveis sobre jogos. Seu objetivo é selecionar, organizar e apresentar apenas o que realmente ajuda producers em pesquisa inicial de mercado, descoberta de comparáveis, exploração de nichos e compreensão do contexto competitivo.
 
@@ -12,7 +13,8 @@ O GMI não pretende armazenar todos os dados possíveis sobre jogos. Seu objetiv
 
 O MVP deverá oferecer:
 
-- pesquisa por nome e aliases;
+- pesquisa por nome; aliases poderão ser adicionados apenas a partir de campos
+  e fontes com política de proveniência aprovada;
 - exploração por keywords;
 - filtros por gênero, tema, plataforma, modo, perspectiva, multiplayer e período de lançamento;
 - contexto de empresas envolvidas;
@@ -52,14 +54,22 @@ Será uma fonte especializada para fatos do ecossistema Steam, como data de lan�
 
 ### 4.1 Identidade e descoberta
 
-**Incluir:** `id`, `name`, `alternative_names`, `game_type`, `version_parent`, `game_status`, `summary`.
+**Incluir:** `id`, `name`, `game_type`, `version_parent`, `game_status`, `summary`.
 
-**Adiar ou excluir:** `slug` adiado; `storyline` não importado inicialmente.
+**Adiar ou excluir:** excluir `alternative_names` do mapping do MVP; adiar
+`slug`; não importar `storyline` inicialmente.
 
 Regras:
 
 - identidade externa = `Source + ExternalId`;
 - nome nunca basta para reconciliação automática;
+- `alternative_names` não deve ser usado para exibição, busca, identidade ou
+  reconciliação no MVP, pois os valores observados misturam variações regionais
+  e linguísticas com nomes de executáveis, títulos provisórios e aliases
+  ambíguos sem proveniência suficiente;
+- avaliar `game_localizations` separadamente como candidato mais estruturado
+  para nomes regionais, sem presumir que a estrutura regional comprove uso
+  oficial;
 - `game_status` é contexto;
 - `summary` serve à página de detalhes, não à identidade.
 
@@ -152,7 +162,7 @@ O GMI distinguirá duas intenções:
 ### Encontrar um jogo conhecido
 
 - nome;
-- aliases;
+- aliases aprovados com proveniência suficiente;
 - refinamento por plataforma, período e tipo.
 
 ### Explorar uma ideia ou nicho
@@ -185,7 +195,9 @@ Somente quando houver:
 
 ### 6.3 Correspondência provável
 
-Sem ID forte, usar sinais compostos: nome normalizado, aliases, tipo, empresas, plataformas, período, franquia, collection e relações declaradas.
+Sem ID forte, usar sinais compostos: nome normalizado, aliases aprovados com
+proveniência suficiente, tipo, empresas, plataformas, período, franquia,
+collection e relações declaradas.
 
 Correspondência composta gera candidato, não fusão automática.
 
