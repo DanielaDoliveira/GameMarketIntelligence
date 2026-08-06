@@ -107,11 +107,6 @@ In progress:
 - source-specific contracts;
 - recently updated sample through `updated_at`;
 - controlled sample by identifiers;
-- reproducible 100-record sample selected through fixed identifiers;
-- `alternative_names`, `version_title`, and `game_localizations` coverage
-  inspection, with `alternative_names` excluded from the MVP mapping and
-  `game_localizations` deferred beyond the MVP because it does not currently
-  improve a prioritized viability-comparison capability;
 - sample filtered by `parent_game`;
 - inspection of `game_type`, `game_status`, `version_parent`, `parent_game`, platforms, genres, themes, and keywords;
 - explicit HTTP error diagnostics;
@@ -123,10 +118,20 @@ Still required:
 - further comparison of editions, bundles, ports, remasters, mods, expansions, standalone expansions, and expanded games;
 - release-date and platform-specific release evaluation;
 - covers and image-use evaluation;
-- involved companies, franchises, collections, modes, and perspectives;
+- franchises, collections, alternative names, modes, and perspectives;
 - larger-sample coverage and nullability measurement;
 - pagination, rate limits, incremental synchronization, token strategy, and failure recovery;
 - final field candidates and PoC approval criteria.
+
+Completed complementary-field decision:
+
+- `involved_companies` was evaluated in the frozen 100-game sample and deferred,
+  not discarded, because only 51% of records had any company information;
+- company coverage will be reconsidered through comparison and reconciliation
+  with Wikidata and other suitable sources;
+- records classified as `game_type = Mod` will be excluded from the first
+  analytical catalogue as a provisional safeguard against mods, ROM hacks, and
+  fan games.
 
 ### 2.2 Lightweight multi-source compatibility spike
 

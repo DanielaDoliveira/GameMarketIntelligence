@@ -2,8 +2,7 @@
 
 ## 1. Objetivo
 
-Este documento consolida as decisões que orientam o MVP do **Game Market
-Intelligence (GMI)** e é atualizado conforme a PoC da IGDB produz evidências.
+Este documento consolida as decisões que orientarão o MVP do **Game Market Intelligence (GMI)** antes da PoC com a IGDB.
 
 O GMI não pretende armazenar todos os dados possíveis sobre jogos. Seu objetivo é selecionar, organizar e apresentar apenas o que realmente ajuda producers em pesquisa inicial de mercado, descoberta de comparáveis, exploração de nichos e compreensão do contexto competitivo.
 
@@ -13,11 +12,11 @@ O GMI não pretende armazenar todos os dados possíveis sobre jogos. Seu objetiv
 
 O MVP deverá oferecer:
 
-- pesquisa por nome; aliases poderão ser adicionados apenas a partir de campos
-  e fontes com política de proveniência aprovada;
+- pesquisa por nome e aliases;
 - exploração por keywords;
 - filtros por gênero, tema, plataforma, modo, perspectiva, multiplayer e período de lançamento;
-- contexto de empresas envolvidas;
+- contexto empresarial somente após a cobertura poder ser complementada e
+  reconciliada entre fontes adequadas;
 - franquias e collections/séries;
 - relações entre produtos, como remake, remaster, port, edição, DLC e expansão;
 - proveniência e nível de confiança;
@@ -54,27 +53,14 @@ Será uma fonte especializada para fatos do ecossistema Steam, como data de lan�
 
 ### 4.1 Identidade e descoberta
 
-**Incluir:** `id`, `name`, `game_type`, `version_parent`, `game_status`, `summary`.
+**Incluir:** `id`, `name`, `alternative_names`, `game_type`, `version_parent`, `game_status`, `summary`.
 
-**Adiar ou excluir:** excluir `alternative_names` do mapping do MVP; adiar
-`game_localizations` e `slug`; não importar `storyline` inicialmente.
+**Adiar ou excluir:** `slug` adiado; `storyline` não importado inicialmente.
 
 Regras:
 
 - identidade externa = `Source + ExternalId`;
 - nome nunca basta para reconciliação automática;
-- `alternative_names` não deve ser usado para exibição, busca, identidade ou
-  reconciliação no MVP, pois os valores observados misturam variações regionais
-  e linguísticas com nomes de executáveis, títulos provisórios e aliases
-  ambíguos sem proveniência suficiente;
-- `game_localizations` foi avaliado separadamente e fica adiado para depois do
-  MVP: a amostra apresentou integridade completa de nome e região quando o dado
-  existia, mas somente 15 de 100 jogos possuíam localizações, e o campo não
-  melhora de forma relevante uma decisão prioritária de comparação ou
-  viabilidade no produto atual;
-- preservar as evidências para uma futura funcionalidade regional, multilíngue
-  ou de localização, sem tratar nomes localizados como identificadores nem
-  usá-los isoladamente na reconciliação automática;
 - `game_status` é contexto;
 - `summary` serve à página de detalhes, não à identidade.
 
@@ -96,11 +82,21 @@ Regras:
 
 ### 4.3 Empresas envolvidas
 
-**Incluir papéis:** developer, publisher, porting e supporting.
+**Adiar na primeira iteração de Comparable Games:** developer, publisher,
+porting, supporting e o mapping correspondente de empresas.
 
-**Incluir dados mínimos:** identificador externo, nome, status quando disponível e `updated_at`.
+Na amostra de 100 jogos da PoC da IGDB, 51% dos registros possuíam alguma
+empresa, 47% possuíam developer e 44% possuíam publisher. Os 79 vínculos
+presentes demonstraram boa integridade estrutural, mas a proporção de dados
+ausentes é alta demais para sustentar uma dimensão principal e equilibrada de
+comparação no MVP.
 
-**Adiar:** `changed_company_id`, websites, parent company, histórico corporativo e descrição extensa.
+Esta decisão é um adiamento, não uma rejeição. A cobertura de developers e
+publishers deverá ser comparada e reconciliada com Wikidata e outras fontes
+adequadas antes de reconsiderarmos a dimensão. Os nomes das empresas poderão
+ajudar o producer a investigar o contexto organizacional, mas o campo isolado
+não comprova porte, orçamento, oficialidade, força de distribuição ou
+responsabilidade pelo resultado comercial de um jogo.
 
 Regras:
 
@@ -109,6 +105,12 @@ Regras:
 - ausência numa fonte não é conflito;
 - papéis diferentes podem ser complementares;
 - porting e supporting não substituem developer ou publisher.
+- ausência de empresa significa "não informado pela fonte", nunca "não existiu
+  empresa";
+- a presença de empresa não comprova que o registro seja um produto oficial de
+  mercado;
+- empresas não sustentarão filtros, rankings, pontuações de confiança ou
+  elegibilidade na primeira iteração.
 
 ### 4.4 Tipos e relações entre produtos
 
@@ -117,6 +119,13 @@ Regras:
 **Adiar:** `expanded_games`, detalhes de `game_versions`, `forks` e `similar_games`.
 
 > Produtos relacionados permanecem registros distintos.
+
+No primeiro catálogo analítico, registros classificados pela IGDB como
+`game_type = Mod` serão excluídos da pesquisa geral de Comparable Games. Essa
+regra simples remove muitos mods, ROM hacks e jogos de fã enquanto a IGDB for a
+única fonte ativa, mas não garante detecção completa: a IGDB não possui um tipo
+específico para ROM hacks e pode classificar registros de forma imprecisa. A
+regra é provisória e independente dos dados de empresas.
 
 ### 4.5 Identificadores externos e websites
 
@@ -167,7 +176,7 @@ O GMI distinguirá duas intenções:
 ### Encontrar um jogo conhecido
 
 - nome;
-- aliases aprovados com proveniência suficiente;
+- aliases;
 - refinamento por plataforma, período e tipo.
 
 ### Explorar uma ideia ou nicho
@@ -200,9 +209,7 @@ Somente quando houver:
 
 ### 6.3 Correspondência provável
 
-Sem ID forte, usar sinais compostos: nome normalizado, aliases aprovados com
-proveniência suficiente, tipo, empresas, plataformas, período, franquia,
-collection e relações declaradas.
+Sem ID forte, usar sinais compostos: nome normalizado, aliases, tipo, empresas, plataformas, período, franquia, collection e relações declaradas.
 
 Correspondência composta gera candidato, não fusão automática.
 

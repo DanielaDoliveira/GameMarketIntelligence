@@ -107,11 +107,6 @@ Em andamento:
 - contratos específicos da fonte;
 - amostra recente por `updated_at`;
 - amostra controlada por IDs;
-- amostra reproduzível de 100 registros por IDs fixados;
-- inspeção de cobertura de `alternative_names`, `version_title` e
-  `game_localizations`, com exclusão de `alternative_names` do mapping do MVP e
-  adiamento de `game_localizations` para depois do MVP por não melhorar, neste
-  momento, uma capacidade prioritária de comparação de viabilidade;
 - amostra com `parent_game`;
 - inspeção de tipo, status, relações, plataformas, gêneros, temas e keywords;
 - diagnóstico explícito de erros HTTP;
@@ -123,10 +118,20 @@ Ainda necessário:
 - aprofundar edições, bundles, ports, remasters, mods e expansões;
 - avaliar releases por plataforma;
 - avaliar capas e permissões de imagem;
-- avaliar empresas, franquias, collections, modos e perspectivas;
+- avaliar franquias, collections, aliases, modos e perspectivas;
 - medir cobertura e nulabilidade em amostra maior;
 - validar paginação, rate limit, atualização incremental, token e retomada;
 - fechar campos candidatos e critérios de aprovação.
+
+Decisão concluída sobre campo complementar:
+
+- `involved_companies` foi avaliado na amostra congelada de 100 jogos e adiado,
+  não descartado, pois somente 51% dos registros possuíam alguma empresa;
+- a cobertura de empresas será reconsiderada por comparação e reconciliação com
+  Wikidata e outras fontes adequadas;
+- registros classificados como `game_type = Mod` serão excluídos do primeiro
+  catálogo analítico como proteção provisória contra mods, ROM hacks e jogos de
+  fã.
 
 ### 2.2 Spike leve de compatibilidade multifonte
 
