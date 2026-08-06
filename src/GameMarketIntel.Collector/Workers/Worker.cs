@@ -37,7 +37,7 @@ public sealed class Worker(
 
             logger.LogInformation(
                 """
-                Starting IGDB alternative-name analysis:
+                Starting IGDB game-localization analysis:
                 Fixed sample size: {SampleSize}
                 Original release-date cutoff: {ReleaseDateCutoff}
                 Original sample seed: {SampleSeed}
@@ -71,13 +71,13 @@ public sealed class Worker(
             when (stoppingToken.IsCancellationRequested)
         {
             logger.LogInformation(
-                "IGDB alternative-name analysis was cancelled.");
+                "IGDB game-localization analysis was cancelled.");
         }
         catch (Exception exception)
         {
             logger.LogError(
                 exception,
-                "IGDB alternative-name analysis failed.");
+                "IGDB game-localization analysis failed.");
         }
         finally
         {
@@ -158,20 +158,14 @@ public sealed class Worker(
         {
             logger.LogInformation(
                 """
-                IGDB alternative-name evidence:
+                IGDB game-localization evidence:
                 Game ID: {GameId}
                 Primary name: {PrimaryName}
-                Version title: {VersionTitle}
-                Alternative names ({AlternativeNameCount}):
-                {AlternativeNames}
                 Game localizations ({LocalizationCount}):
                 {GameLocalizations}
                 """,
                 game.Id,
                 FormatValue(game.Name),
-                FormatValue(game.VersionTitle),
-                game.AlternativeNames.Count,
-                FormatAlternativeNames(game.AlternativeNames),
                 game.GameLocalizations.Count,
                 FormatGameLocalizations(game.GameLocalizations));
         }
@@ -180,85 +174,108 @@ public sealed class Worker(
     private void LogSummary(
         IReadOnlyList<IgdbGameSample> games)
     {
-        var gamesWithAlternativeNames = games.Count(
-            game => game.AlternativeNames.Count > 0);
-
-        var gamesWithVersionTitle = games.Count(
-            game => !string.IsNullOrWhiteSpace(game.VersionTitle));
-
         var gamesWithLocalizations = games.Count(
             game => game.GameLocalizations.Count > 0);
-
-        var alternativeNames = games
-            .SelectMany(game => game.AlternativeNames)
-            .ToArray();
 
         var localizations = games
             .SelectMany(game => game.GameLocalizations)
             .ToArray();
 
-        var alternativeNamesWithComment = alternativeNames.Count(
-            alternativeName =>
-                !string.IsNullOrWhiteSpace(alternativeName.Comment));
+        var localizationsWithoutRegion = localizations.Count(
+            localization => localization.Region is null);
 
-        var duplicateAlternativeNamesWithinGames = games.Sum(game =>
-            game.AlternativeNames
-                .Where(alternativeName =>
-                    !string.IsNullOrWhiteSpace(alternativeName.Name))
+        var localizationsWithoutName = localizations.Count(
+            localization => string.IsNullOrWhiteSpace(localization.Name));
+
+        var localizationsEqualToPrimaryName = games.Sum(game =>
+            game.GameLocalizations.Count(localization =>
+                NormalizeName(localization.Name) == NormalizeName(game.Name)));
+
+        var duplicateLocalizedNamesWithinGames = games.Sum(game =>
+            game.GameLocalizations
+                .Where(localization =>
+                    !string.IsNullOrWhiteSpace(localization.Name))
                 .GroupBy(
-                    alternativeName => NormalizeName(alternativeName.Name),
+                    localization => NormalizeName(localization.Name),
                     StringComparer.Ordinal)
                 .Sum(group => Math.Max(0, group.Count() - 1)));
 
-        var alternativeNamesEqualToPrimaryName = games.Sum(game =>
-            game.AlternativeNames.Count(alternativeName =>
-                NormalizeName(alternativeName.Name) ==
-                NormalizeName(game.Name)));
+        var duplicateRegionsWithinGames = games.Sum(game =>
+            game.GameLocalizations
+                .Where(localization => localization.Region is not null)
+                .GroupBy(localization => localization.Region!.Id)
+                .Sum(group => Math.Max(0, group.Count() - 1)));
 
-        var crossGameNameCollisions = FindCrossGameNameCollisions(games);
+        var regionSummaries = localizations
+            .Where(localization => localization.Region is not null)
+            .GroupBy(localization => localization.Region!.Id)
+            .Select(group => new RegionSummary(
+                group.Key,
+                group.Select(localization => localization.Region!.Name)
+                    .FirstOrDefault(name => !string.IsNullOrWhiteSpace(name)),
+                group.Select(localization => localization.Region!.Identifier)
+                    .FirstOrDefault(identifier => !string.IsNullOrWhiteSpace(identifier)),
+                group.Select(localization => localization.Region!.Category)
+                    .FirstOrDefault(category => !string.IsNullOrWhiteSpace(category)),
+                group.Count()))
+            .OrderByDescending(summary => summary.LocalizationCount)
+            .ThenBy(summary => summary.RegionId)
+            .ToArray();
+
+        var categorySummaries = localizations
+            .Select(localization => localization.Region?.Category)
+            .GroupBy(category => FormatValue(category), StringComparer.Ordinal)
+            .Select(group => new CategorySummary(group.Key, group.Count()))
+            .OrderByDescending(summary => summary.LocalizationCount)
+            .ThenBy(summary => summary.Category, StringComparer.Ordinal)
+            .ToArray();
+
+        var crossGameLocalizedNameCollisions =
+            FindCrossGameLocalizedNameCollisions(games);
 
         logger.LogInformation(
             """
-            IGDB alternative-name analysis completed:
+            IGDB game-localization analysis completed:
             Requested fixed IDs: {RequestedGameCount}
             Returned unique games: {ReturnedGameCount}
-            Games with alternative names: {GamesWithAlternativeNames} ({AlternativeNameCoverage:F2}%)
-            Total alternative names: {TotalAlternativeNames}
-            Alternative names with comment: {AlternativeNamesWithComment} ({CommentCoverage:F2}%)
-            Duplicate alternative-name occurrences within the same game: {DuplicateAlternativeNamesWithinGames}
-            Alternative names equal to their primary name: {AlternativeNamesEqualToPrimaryName}
-            Games with version title: {GamesWithVersionTitle} ({VersionTitleCoverage:F2}%)
             Games with localizations: {GamesWithLocalizations} ({LocalizationCoverage:F2}%)
             Total localizations: {TotalLocalizations}
-            Exact normalized names associated with multiple game IDs: {CrossGameCollisionCount}
-            Cross-game collision evidence:
+            Localizations without a name: {LocalizationsWithoutName}
+            Localizations without a region: {LocalizationsWithoutRegion}
+            Localized names equal to their primary name: {LocalizationsEqualToPrimaryName}
+            Duplicate localized-name occurrences within the same game: {DuplicateLocalizedNamesWithinGames}
+            Duplicate region occurrences within the same game: {DuplicateRegionsWithinGames}
+            Exact normalized localized names associated with multiple game IDs: {CrossGameCollisionCount}
+            Region coverage:
+            {RegionSummaries}
+            Region-category coverage:
+            {CategorySummaries}
+            Cross-game localized-name collision evidence:
             {CrossGameCollisions}
             """,
             SelectedGameIds.Count,
             games.Count,
-            gamesWithAlternativeNames,
-            Percentage(gamesWithAlternativeNames, games.Count),
-            alternativeNames.Length,
-            alternativeNamesWithComment,
-            Percentage(alternativeNamesWithComment, alternativeNames.Length),
-            duplicateAlternativeNamesWithinGames,
-            alternativeNamesEqualToPrimaryName,
-            gamesWithVersionTitle,
-            Percentage(gamesWithVersionTitle, games.Count),
             gamesWithLocalizations,
             Percentage(gamesWithLocalizations, games.Count),
             localizations.Length,
-            crossGameNameCollisions.Count,
-            FormatNameCollisions(crossGameNameCollisions));
+            localizationsWithoutName,
+            localizationsWithoutRegion,
+            localizationsEqualToPrimaryName,
+            duplicateLocalizedNamesWithinGames,
+            duplicateRegionsWithinGames,
+            crossGameLocalizedNameCollisions.Count,
+            FormatRegionSummaries(regionSummaries),
+            FormatCategorySummaries(categorySummaries),
+            FormatNameCollisions(crossGameLocalizedNameCollisions));
     }
 
-    private static IReadOnlyList<NameCollision> FindCrossGameNameCollisions(
+    private static IReadOnlyList<NameCollision> FindCrossGameLocalizedNameCollisions(
         IReadOnlyList<IgdbGameSample> games)
     {
         return games
             .SelectMany(game =>
-                new[] { game.Name }
-                    .Concat(game.AlternativeNames.Select(name => name.Name))
+                game.GameLocalizations
+                    .Select(localization => localization.Name)
                     .Where(name => !string.IsNullOrWhiteSpace(name))
                     .Select(name => new
                     {
@@ -275,6 +292,31 @@ public sealed class Worker(
             .ToArray();
     }
 
+    private static string FormatRegionSummaries(
+        IReadOnlyList<RegionSummary> summaries)
+    {
+        return summaries.Count == 0
+            ? "(none)"
+            : string.Join(
+                Environment.NewLine,
+                summaries.Select(summary =>
+                    $"- {summary.RegionId}: {FormatValue(summary.Name)}; " +
+                    $"identifier={FormatValue(summary.Identifier)}; " +
+                    $"category={FormatValue(summary.Category)}; " +
+                    $"localizations={summary.LocalizationCount}"));
+    }
+
+    private static string FormatCategorySummaries(
+        IReadOnlyList<CategorySummary> summaries)
+    {
+        return summaries.Count == 0
+            ? "(none)"
+            : string.Join(
+                Environment.NewLine,
+                summaries.Select(summary =>
+                    $"- {summary.Category}: {summary.LocalizationCount}"));
+    }
+
     private static string FormatNameCollisions(
         IReadOnlyList<NameCollision> collisions)
     {
@@ -284,21 +326,6 @@ public sealed class Worker(
                 Environment.NewLine,
                 collisions.Select(collision =>
                     $"- {collision.Name}: {FormatIds(collision.GameIds)}"));
-    }
-
-    private static string FormatAlternativeNames(
-        IReadOnlyList<IgdbAlternativeNameReference> alternativeNames)
-    {
-        return alternativeNames.Count == 0
-            ? "(none)"
-            : string.Join(
-                Environment.NewLine,
-                alternativeNames
-                    .OrderBy(alternativeName => alternativeName.Id)
-                    .Select(alternativeName =>
-                        $"- {alternativeName.Id}: " +
-                        $"{FormatValue(alternativeName.Name)}; " +
-                        $"comment={FormatValue(alternativeName.Comment)}"));
     }
 
     private static string FormatGameLocalizations(
@@ -359,4 +386,15 @@ public sealed class Worker(
     private sealed record NameCollision(
         string Name,
         IReadOnlyList<long> GameIds);
+
+    private sealed record RegionSummary(
+        long RegionId,
+        string? Name,
+        string? Identifier,
+        string? Category,
+        int LocalizationCount);
+
+    private sealed record CategorySummary(
+        string Category,
+        int LocalizationCount);
 }
