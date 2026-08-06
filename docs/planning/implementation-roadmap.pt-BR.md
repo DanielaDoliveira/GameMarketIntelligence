@@ -109,7 +109,9 @@ Em andamento:
 - amostra controlada por IDs;
 - amostra reproduzível de 100 registros por IDs fixados;
 - inspeção de cobertura de `alternative_names`, `version_title` e
-  `game_localizations`, com exclusão de `alternative_names` do mapping do MVP;
+  `game_localizations`, com exclusão de `alternative_names` do mapping do MVP e
+  adiamento de `game_localizations` para depois do MVP por não melhorar, neste
+  momento, uma capacidade prioritária de comparação de viabilidade;
 - amostra com `parent_game`;
 - inspeção de tipo, status, relações, plataformas, gêneros, temas e keywords;
 - diagnóstico explícito de erros HTTP;
@@ -122,8 +124,6 @@ Ainda necessário:
 - avaliar releases por plataforma;
 - avaliar capas e permissões de imagem;
 - avaliar empresas, franquias, collections, modos e perspectivas;
-- determinar se `game_localizations` oferece proveniência e cobertura
-  suficientes para o mapping de títulos regionais;
 - medir cobertura e nulabilidade em amostra maior;
 - validar paginação, rate limit, atualização incremental, token e retomada;
 - fechar campos candidatos e critérios de aprovação.

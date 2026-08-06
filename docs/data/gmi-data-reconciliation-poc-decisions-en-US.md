@@ -57,7 +57,7 @@ Steam will be a specialized source for Steam-specific facts, such as Steam relea
 **Include:** `id`, `name`, `game_type`, `version_parent`, `game_status`, `summary`.
 
 **Defer or exclude:** exclude `alternative_names` from the MVP mapping; defer
-`slug`; do not initially import `storyline`.
+`game_localizations` and `slug`; do not initially import `storyline`.
 
 Rules:
 
@@ -67,8 +67,13 @@ Rules:
   reconciliation in the MVP because the observed values mix regional and
   linguistic variants with executable names, working titles, and ambiguous
   aliases without sufficient provenance;
-- evaluate `game_localizations` separately as a more structured candidate for
-  regional names, without assuming that regional structure proves official use;
+- `game_localizations` was evaluated separately and is deferred beyond the MVP:
+  the sample showed complete name-and-region integrity when present, but only
+  15 of 100 games had localizations, and the field does not materially improve
+  a prioritized comparison or viability decision in the current product;
+- preserve the evidence for a future regional, multilingual, or localization
+  feature, without treating localized names as identifiers or using them alone
+  for automatic reconciliation;
 - `game_status` is contextual;
 - `summary` supports details, not identity.
 

@@ -1813,6 +1813,77 @@ its low observed coverage and provenance still require a separate evaluation.
 Regional structure alone must not be treated as proof of official commercial
 use.
 
+### `game_localizations` sample results
+
+The same frozen 100-game sample was subsequently evaluated with a Worker
+focused specifically on `game_localizations`. The collection was validated
+again before analysis: all 100 expected identifiers were returned, with no
+missing, unexpected, or duplicate game identifiers.
+
+Observed results:
+
+| Observation | Result |
+|---|---:|
+| Games with `game_localizations` | 15/100 (15%) |
+| Localization records | 20 |
+| Localization records without a name | 0 |
+| Localization records without a region | 0 |
+| Localized names equal to the main game name | 0 |
+| Duplicate localized names inside one game | 0 |
+| Duplicate regions inside one game | 0 |
+| Exact localized-name collisions across different games | 0 |
+
+Regional distribution:
+
+| Region | Localization records |
+|---|---:|
+| Japan | 13 |
+| Korea | 6 |
+| Europe | 1 |
+
+The field showed better structure and internal integrity than
+`alternative_names` when present: every observed value had both a name and an
+explicit region, and the sample contained no duplicate or cross-game name
+collisions. This supports treating it as regional source evidence rather than
+as an unqualified alias collection.
+
+The experiment did not, however, establish that a localized name is official,
+commercially used, or associated with an eligible market product. Region is
+not the same as language or commercial provenance. The field also does not
+classify the underlying game as an authorized product, fan game, ROM hack, mod,
+or other community-origin content.
+
+Most importantly, only 15% of the sample contained localization records, and
+the current MVP has no prioritized capability whose viability comparison is
+materially improved by storing or displaying them. The field does not improve
+the primary comparable-game dimensions currently planned for the MVP, such as
+genre, theme, platform, product relationship, release period, company context,
+or other evidence used to assess a comparable product.
+
+### `game_localizations` MVP decision
+
+`game_localizations` was evaluated and is **deferred beyond the MVP**, not
+discarded.
+
+It must not currently be added to the domain, ingestion mapping, persistence,
+API contracts, search behavior, reconciliation rules, or user interface. This
+decision is based on current product value as well as coverage: adding the
+field would expand several application layers without a demonstrated benefit
+to the MVP's central comparison and viability questions.
+
+The evidence and potential future value remain recorded. The field may be
+reassessed when a concrete feature requires it, for example:
+
+- regional or multilingual title search;
+- display of source-qualified titles by market;
+- localization or regional-market analysis;
+- a future source combination that improves language, official-use, or
+  commercial-provenance evidence.
+
+Any future use must preserve the source and region, remain optional, avoid
+treating a localized name as an identifier, and avoid automatic reconciliation
+based only on that name.
+
 ## Current architectural boundaries
 
 ### `IgdbClient`
@@ -2050,8 +2121,11 @@ The current proof of concept confirms that:
 - `alternative_names` is excluded from MVP display, search, identity, and
   reconciliation.
 - `version_title` must remain separate from alternative names.
-- `game_localizations` requires a separate provenance and coverage evaluation
-  before any regional-title mapping decision.
+- `game_localizations` showed complete name-and-region integrity in the 20
+  observed records, but appeared in only 15 of 100 sampled games.
+- `game_localizations` is deferred beyond the MVP because it does not currently
+  improve a prioritized comparison or viability decision; it remains a
+  candidate for a future regional, multilingual, or localization feature.
 
 ## Next investigations
 
@@ -2072,9 +2146,9 @@ The following points still require investigation:
    and `Expanded Game`.
 6. Evaluate covers, screenshots, involved companies, franchises, and other
    complementary MVP fields.
-7. Evaluate `game_localizations` independently, including coverage, region
-   semantics, duplicates, relationship to the main name, and evidence of
-   official use.
+7. Reassess `game_localizations` only when a concrete regional, multilingual,
+   or localization capability is prioritized, potentially with complementary
+   provenance from another source.
 8. Measure nullability and field coverage using a larger and less recency-biased
    sample.
 9. Compare metadata completeness between parent records and related products.

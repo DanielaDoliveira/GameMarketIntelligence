@@ -57,7 +57,7 @@ Será uma fonte especializada para fatos do ecossistema Steam, como data de lan�
 **Incluir:** `id`, `name`, `game_type`, `version_parent`, `game_status`, `summary`.
 
 **Adiar ou excluir:** excluir `alternative_names` do mapping do MVP; adiar
-`slug`; não importar `storyline` inicialmente.
+`game_localizations` e `slug`; não importar `storyline` inicialmente.
 
 Regras:
 
@@ -67,9 +67,14 @@ Regras:
   reconciliação no MVP, pois os valores observados misturam variações regionais
   e linguísticas com nomes de executáveis, títulos provisórios e aliases
   ambíguos sem proveniência suficiente;
-- avaliar `game_localizations` separadamente como candidato mais estruturado
-  para nomes regionais, sem presumir que a estrutura regional comprove uso
-  oficial;
+- `game_localizations` foi avaliado separadamente e fica adiado para depois do
+  MVP: a amostra apresentou integridade completa de nome e região quando o dado
+  existia, mas somente 15 de 100 jogos possuíam localizações, e o campo não
+  melhora de forma relevante uma decisão prioritária de comparação ou
+  viabilidade no produto atual;
+- preservar as evidências para uma futura funcionalidade regional, multilíngue
+  ou de localização, sem tratar nomes localizados como identificadores nem
+  usá-los isoladamente na reconciliação automática;
 - `game_status` é contexto;
 - `summary` serve à página de detalhes, não à identidade.
 
