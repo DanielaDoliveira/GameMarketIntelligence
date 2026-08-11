@@ -11,42 +11,15 @@ public sealed class Worker(
     ILogger<Worker> logger)
     : BackgroundService
 {
+    private const int SearchResultLimit = 10;
+
     private static readonly IReadOnlyList<ReferenceCase> ReferenceCases =
     [
-        new("The Legend of Zelda", 1029, "The Legend of Zelda: Ocarina of Time"),
-        new("The Legend of Zelda", 1036, "The Legend of Zelda: Twilight Princess"),
-        new("The Legend of Zelda", 119388, "The Legend of Zelda: Tears of the Kingdom"),
-
-        new("Mario", 26758, "Super Mario Odyssey"),
-        new("Mario", 2350, "Mario Kart 8"),
-        new("Mario", 1077, "Super Mario Galaxy"),
-
-        new("Pokémon", 1561, "Pokémon Red Version"),
-        new("Pokémon", 37382, "Pokémon Sword"),
-        new("Pokémon", 144054, "Pokémon Legends: Arceus"),
-
-        new("Kingdom Hearts", 393742, "Kingdom Hearts"),
-        new("Kingdom Hearts", 1221, "Kingdom Hearts II"),
-        new("Kingdom Hearts", 2933, "Kingdom Hearts III"),
-
-        new("Final Fantasy", 393025, "Final Fantasy VII"),
-        new("Final Fantasy", 418, "Final Fantasy X"),
-        new("Final Fantasy", 31551, "Final Fantasy XVI"),
-
-        new("Hollow Knight", 14593, "Hollow Knight"),
-        new("Hollow Knight", 115289, "Hollow Knight: Silksong"),
-
-        new("Animal Crossing", 2655, "Animal Crossing"),
-        new("Animal Crossing", 2687, "Animal Crossing: New Leaf"),
-        new("Animal Crossing", 109462, "Animal Crossing: New Horizons"),
-
-        new("Splatoon", 7335, "Splatoon"),
-        new("Splatoon", 26761, "Splatoon 2"),
-        new("Splatoon", 143613, "Splatoon 3"),
-
-        new("Grand Theft Auto", 730, "Grand Theft Auto III"),
-        new("Grand Theft Auto", 732, "Grand Theft Auto: San Andreas"),
-        new("Grand Theft Auto", 1020, "Grand Theft Auto V")
+        new(7335, "Splatoon"),
+        new(1077, "Super Mario Galaxy"),
+        new(26758, "Super Mario Odyssey"),
+        new(732, "Grand Theft Auto: San Andreas"),
+        new(1020, "Grand Theft Auto V")
     ];
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -55,12 +28,12 @@ public sealed class Worker(
         {
             logger.LogInformation(
                 """
-                Starting IGDB targeted franchise-versus-collection analysis:
+                Starting IGDB targeted game-mode semantics validation:
                 Reference cases: {CaseCount}
-                Reference series: {SeriesCount}
+                Search-result limit per case: {SearchResultLimit}
                 """,
                 ReferenceCases.Count,
-                ReferenceCases.Select(item => item.Series).Distinct().Count());
+                SearchResultLimit);
 
             var tokenResponse =
                 await authenticationService.GetAccessTokenAsync(stoppingToken);
@@ -71,68 +44,58 @@ public sealed class Worker(
                     "Twitch returned an empty access token.");
             }
 
-            var games = await igdbClient.GetGamesByIdsAsync(
+            var referenceGames = await igdbClient.GetGamesByIdsAsync(
                 tokenResponse.AccessToken,
                 ReferenceCases.Select(item => item.GameId).ToArray(),
                 stoppingToken);
+            var referenceGamesById = referenceGames.ToDictionary(game => game.Id);
 
-            var gamesById = games.ToDictionary(game => game.Id);
-            var results = ReferenceCases
-                .Select(reference => Evaluate(reference, gamesById))
-                .ToArray();
+            foreach (var reference in ReferenceCases)
+            {
+                referenceGamesById.TryGetValue(reference.GameId, out var referenceGame);
+
+                var searchResults = await igdbClient.SearchGamesByNameAsync(
+                    tokenResponse.AccessToken,
+                    reference.SearchTerm,
+                    SearchResultLimit,
+                    stoppingToken);
+
+                logger.LogInformation(
+                    """
+                    IGDB game-mode semantics case:
+                    Reference ID: {ReferenceId}
+                    Search term: {SearchTerm}
+                    Reference record: {ReferenceRecord}
+                    Related search results returned: {ResultCount}
+                    Related search results:
+                    {SearchResults}
+                    """,
+                    reference.GameId,
+                    reference.SearchTerm,
+                    FormatGame(referenceGame, reference.GameId),
+                    searchResults.Count,
+                    FormatSearchResults(searchResults, reference.GameId));
+            }
 
             logger.LogInformation(
                 """
-                IGDB targeted franchise-versus-collection results:
-                {Results}
-                """,
-                FormatResults(results));
-
-            logger.LogInformation(
-                """
-                IGDB targeted franchise-versus-collection summary:
-                Reference cases: {ReferenceCases}
-                Records returned: {ReturnedRecords}
-                Records with one or more franchises: {WithFranchises}
-                Records with one or more collections: {WithCollections}
-                Records with both fields: {WithBoth}
-                Records with neither field: {WithNeither}
-                Missing records: {MissingRecords}
-                Franchise presence coverage: {FranchiseCoverage:F2}%
-                Collection presence coverage: {CollectionCoverage:F2}%
-                Records where at least one franchise label also appears as a collection label: {WithLabelOverlap}
-                Records where at least one franchise label is distinct from every collection label: {WithDistinctFranchiseLabel}
-
-                Franchise presence by reference series:
-                {SeriesSummary}
-                """,
-                results.Length,
-                results.Count(result => result.Game is not null),
-                results.Count(result => result.HasFranchise),
-                results.Count(result => result.HasCollection),
-                results.Count(result => result.HasFranchise && result.HasCollection),
-                results.Count(result => result.Game is not null && !result.HasFranchise && !result.HasCollection),
-                results.Count(result => result.Game is null),
-                Percentage(results.Count(result => result.HasFranchise), results.Length),
-                Percentage(results.Count(result => result.HasCollection), results.Length),
-                results.Count(result => result.HasMatchingLabel),
-                results.Count(result => result.HasDistinctFranchiseLabel),
-                FormatSeriesSummary(results));
-
-            logger.LogInformation(
-                "IGDB targeted franchise-versus-collection analysis completed.");
+                IGDB targeted game-mode semantics validation completed.
+                Interpretation reminder: game_modes is attached to each IGDB game record,
+                not to an individual platform within that record. Search similarity does
+                not prove that two returned records represent the same edition.
+                """);
         }
         catch (OperationCanceledException)
             when (stoppingToken.IsCancellationRequested)
         {
             logger.LogInformation(
-                "IGDB targeted franchise-versus-collection analysis was cancelled.");
+                "IGDB targeted game-mode semantics validation was cancelled.");
         }
         catch (Exception exception)
         {
             logger.LogError(
                 exception,
-                "IGDB targeted franchise-versus-collection analysis failed.");
+                "IGDB targeted game-mode semantics validation failed.");
         }
         finally
         {
@@ -140,54 +103,42 @@ public sealed class Worker(
         }
     }
 
-    private static ComparisonResult Evaluate(
-        ReferenceCase reference,
-        IReadOnlyDictionary<long, IgdbGameSample> gamesById)
+    private static string FormatSearchResults(
+        IReadOnlyList<IgdbGameSample> games,
+        long referenceId) =>
+        games.Count == 0
+            ? "- no search results returned"
+            : string.Join(Environment.NewLine, games
+                .OrderByDescending(game => game.Id == referenceId)
+                .ThenBy(game => game.Id)
+                .Select(game => $"- {FormatGame(game, referenceId)}"));
+
+    private static string FormatGame(IgdbGameSample? game, long referenceId)
     {
-        if (!gamesById.TryGetValue(reference.GameId, out var game))
+        if (game is null)
         {
-            return new ComparisonResult(reference, null, false, false);
+            return "not returned";
         }
 
-        var collectionNames = game.Collections
-            .Select(collection => collection.Name)
-            .Where(name => !string.IsNullOrWhiteSpace(name))
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-        var hasMatchingLabel = game.Franchises
-            .Any(franchise => collectionNames.Contains(franchise.Name));
-
-        var hasDistinctFranchiseLabel = game.Franchises
-            .Any(franchise => !string.IsNullOrWhiteSpace(franchise.Name) &&
-                              !collectionNames.Contains(franchise.Name));
-
-        return new ComparisonResult(
-            reference,
-            game,
-            hasMatchingLabel,
-            hasDistinctFranchiseLabel);
+        return
+            $"ID={game.Id}; reference match={FormatBoolean(game.Id == referenceId)}; " +
+            $"name={FormatValue(game.Name)}; " +
+            $"type={FormatType(game.GameType)}; " +
+            $"version parent={FormatReference(game.VersionParent)}; " +
+            $"parent game={FormatReference(game.ParentGame)}; " +
+            $"platforms={FormatReferences(game.Platforms)}; " +
+            $"game modes={FormatReferences(game.GameModes)}";
     }
 
-    private static string FormatResults(IReadOnlyList<ComparisonResult> results) =>
-        string.Join(Environment.NewLine, results.Select(result =>
-            $"- reference series={result.Reference.Series}; " +
-            $"ID={result.Reference.GameId}; " +
-            $"expected title={result.Reference.GameName}; " +
-            $"returned title={result.Game?.Name ?? "not returned"}; " +
-            $"franchises={FormatReferences(result.Game?.Franchises)}; " +
-            $"collections={FormatReferences(result.Game?.Collections)}; " +
-            $"same-label overlap={FormatBoolean(result.HasMatchingLabel)}; " +
-            $"distinct franchise label={FormatBoolean(result.HasDistinctFranchiseLabel)}"));
+    private static string FormatType(IgdbGameTypeReference? type) =>
+        type is null
+            ? "not reported"
+            : $"{type.Id}|{FormatValue(type.Type)}";
 
-    private static string FormatSeriesSummary(IReadOnlyList<ComparisonResult> results) =>
-        string.Join(Environment.NewLine, results
-            .GroupBy(result => result.Reference.Series)
-            .Select(group =>
-            {
-                var withFranchise = group.Count(result => result.HasFranchise);
-                return $"- {group.Key}: {withFranchise}/{group.Count()} " +
-                       $"({Percentage(withFranchise, group.Count()):F2}%) with franchises";
-            }));
+    private static string FormatReference(IgdbNamedReference? reference) =>
+        reference is null
+            ? "not reported"
+            : $"{reference.Id}|{FormatValue(reference.Name)}";
 
     private static string FormatReferences(
         IReadOnlyList<IgdbNamedReference>? references) =>
@@ -200,25 +151,8 @@ public sealed class Worker(
 
     private static string FormatBoolean(bool value) => value ? "YES" : "NO";
 
-    private static double Percentage(int numerator, int denominator) =>
-        denominator == 0 ? 0 : numerator * 100.0 / denominator;
-
     private static string FormatValue(string? value) =>
         string.IsNullOrWhiteSpace(value) ? "not reported" : value;
 
-    private sealed record ReferenceCase(
-        string Series,
-        long GameId,
-        string GameName);
-
-    private sealed record ComparisonResult(
-        ReferenceCase Reference,
-        IgdbGameSample? Game,
-        bool HasMatchingLabel,
-        bool HasDistinctFranchiseLabel)
-    {
-        public bool HasFranchise => Game?.Franchises.Count > 0;
-
-        public bool HasCollection => Game?.Collections.Count > 0;
-    }
+    private sealed record ReferenceCase(long GameId, string SearchTerm);
 }

@@ -40,7 +40,9 @@ Métricas financeiras poderão ser consideradas após a conclusão do MVP.
 
 ### IGDB
 
-Será a principal fonte de catálogo e a taxonomia canônica do MVP para gêneros, temas, modos, perspectivas, keywords, tipos, relações, plataformas, datas, empresas, collections e identificadores externos. `franchises` permanece disponível na fonte, mas fica adiado para depois do MVP.
+A IGDB está aprovada com ressalvas como principal fonte de catálogo e taxonomia canônica do MVP para gêneros, temas, modos, perspectivas, keywords, tipos, relações, plataformas, datas, empresas, collections e identificadores externos. Ela é adequada para validar o primeiro MVP, mas não é uma fonte autoritativa: registros e relações individuais podem estar incompletos, inconsistentes ou representar conteúdo não oficial. `franchises` permanece disponível na fonte, mas fica adiado para depois do MVP.
+
+O primeiro MVP preservará proveniência e aplicará proteções básicas de catálogo sem bloquear a entrega por um sistema de comprovação de oficialidade entre fontes. Detecção mais sofisticada de conflitos, confiança por campo, quarentena e validação cruzada serão refinadas no incremento seguinte, quando uma segunda fonte for integrada.
 
 ### Wikidata
 
@@ -131,13 +133,23 @@ Regras:
 
 - **Gêneros:** múltiplos IDs usam AND; gêneros adicionais são permitidos.
 - **Temas:** múltiplos usam AND; temas adicionais são permitidos.
-- **Modos:** múltiplos usam AND.
+- **Modos:** múltiplos usam AND; o filtro significa que a fonte associa todos os modos selecionados ao registro do jogo, e não que todos estejam disponíveis em cada plataforma ou edição.
 - **Perspectivas:** múltiplas usam AND.
 - **Keywords:** múltiplas usam AND; são pilar central do valor do GMI; usar IDs estruturados; não criar keywords próprias nem unificar termos automaticamente.
 - **Plataformas:** múltiplas usam OR.
 - **Multiplayer:** incluir multiplayer, co-op online e multiplayer local/offline; capacidades selecionadas usam AND, sem exclusividade.
 
 Ficam fora do multiplayer do MVP: quantidade máxima de jogadores, LAN, drop-in/drop-out e configurações detalhadas por plataforma.
+
+#### Decisão sobre modos de jogo
+
+`game_modes` está aprovado para o MVP com ressalvas. Numa amostra direcionada de 26 jogos de nove séries conhecidas, todos os 26 registros apresentaram ao menos um modo, 12 apresentaram múltiplos modos e não foram encontrados IDs duplicados, IDs inválidos ou nomes vazios. A relação é muitos-para-muitos.
+
+O campo pertence a cada registro de jogo da IGDB e não possui granularidade por plataforma. Ele não informa um modo principal, não distingue cooperação limitada ou assimétrica, não mede importância ou qualidade do modo e não comprova que um modo informado se aplique a todas as plataformas e edições. Modos ausentes devem ser tratados como dado desconhecido da fonte, e não como prova de que a capacidade não existe. Os modos não serão propagados entre originais, ports, remakes, remasters, edições, updates ou outros registros relacionados e não constituem evidência forte de reconciliação.
+
+Uma inspeção semântica direcionada também encontrou uma suposta versão Android de `Super Mario Galaxy`. Como não existe versão oficial do jogo para Android, esse resultado não pode servir como evidência sobre o produto oficial. O caso demonstra que busca por nome, associação de plataforma e relações da IGDB não comprovam oficialidade isoladamente. Resultados de busca por nome são apenas candidatos de descoberta; registros relacionados não devem influenciar modos, plataformas ou lançamentos de outro jogo sem validação suficiente de identidade.
+
+Para este MVP, o risco residual é aceito e documentado. O catálogo identificará a fonte e não apresentará os dados como completos ou infalíveis. A validação entre fontes e o tratamento mais forte de registros suspeitos ficam adiados até a integração de uma segunda base.
 
 ### 4.7 Collections e franchises
 

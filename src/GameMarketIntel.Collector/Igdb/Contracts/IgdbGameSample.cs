@@ -37,6 +37,9 @@ public sealed class IgdbGameSample
     [JsonPropertyName("genres")]
     public IReadOnlyList<IgdbNamedReference> Genres { get; set; } = [];
 
+    [JsonPropertyName("game_modes")]
+    public IReadOnlyList<IgdbNamedReference> GameModes { get; set; } = [];
+
     [JsonPropertyName("franchises")]
     public IReadOnlyList<IgdbNamedReference> Franchises { get; set; } = [];
 

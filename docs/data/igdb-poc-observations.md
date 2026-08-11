@@ -1929,70 +1929,6 @@ Worker
 → Repository
 ```
 
-## Targeted collections and franchises evaluation
-
-### Collections coverage
-
-A targeted positive sample evaluated 26 main-game records from nine known
-series: The Legend of Zelda, Mario, Pokémon, Kingdom Hearts, Final Fantasy,
-Hollow Knight, Animal Crossing, Splatoon, and Grand Theft Auto.
-
-All 26 records were returned, all 26 contained one or more `collections`, and
-all 26 contained the collection expected for the reference case. Presence and
-expected-association coverage were therefore 100% within this targeted sample.
-The result supports the MVP use of `collections` for series and related
-groupings, but must not be generalized to universal IGDB coverage, especially
-for obscure, small, or incomplete catalogue records.
-
-Several records contained more than one collection. Examples included broad
-and title-specific groupings for Ocarina of Time, Tears of the Kingdom, Super
-Mario Galaxy, Final Fantasy VII, and Pokémon Legends: Arceus. The observed
-shape is therefore many-to-many:
-
-```text
-Game <-> GameCollection <-> Collection
-```
-
-No inspected field established a hierarchy, priority, or primary collection.
-The first association must not be interpreted as broadest, most specific, or
-most important.
-
-### Franchise comparison
-
-The same 26 records were then inspected with `franchises` and `collections`
-side by side:
-
-- 26 of 26 records contained one or more collections;
-- 24 of 26 contained one or more franchises (92.31%);
-- 21 records had at least one franchise label also present as a collection
-  label;
-- five records had at least one franchise label distinct from every collection
-  label;
-- Hollow Knight and Hollow Knight: Silksong had the expected collection but no
-  reported franchise.
-
-Distinct franchise labels were not consistently evidence of a broader primary
-series. `Super Mario Odyssey` used `Mario` as broader context alongside the
-`Super Mario` collection, but crossover-heavy records exposed ambiguity:
-
-- `Mario Kart 8` returned franchises for Mario Bros., The Legend of Zelda,
-  Donkey Kong, Mario, Yoshi, Wario, F-Zero, Excite, and Animal Crossing;
-- `Kingdom Hearts III` returned 22 franchises, including Kingdom Hearts, Final
-  Fantasy, Disney, Pixar, and multiple properties represented in its content;
-- `Animal Crossing: New Leaf` returned both Animal Crossing and Panel de Pon.
-
-The source did not indicate which franchise, if any, is primary. `franchises`
-can therefore mix central series context with crossovers, guest appearances,
-and licensed content. It must not be collapsed into a single `FranchiseId`,
-nor may the first association be selected automatically.
-
-For the MVP, `collections` is approved and `franchises` is deferred. The latter
-is not permanently rejected: it may be reconsidered for future analysis of
-crossovers, licensed intellectual properties, or brand reach. Missing values
-in either field mean unknown or not applicable, not proof that a game is
-standalone. Neither field proves commercial success, audience size, or legal
-ownership.
-
 ## Conclusions so far
 
 The current proof of concept confirms that:
@@ -2116,14 +2052,6 @@ The current proof of concept confirms that:
 - `version_title` must remain separate from alternative names.
 - `game_localizations` requires a separate provenance and coverage evaluation
   before any regional-title mapping decision.
-- In the targeted 26-game sample, all records contained the expected
-  `collection`; games and collections must be modeled as many-to-many, without
-  inferring hierarchy or a primary association.
-- In the same sample, `franchises` had 92.31% presence coverage and often
-  duplicated collection labels, while crossover-heavy records introduced
-  associations with no primary-franchise indicator.
-- `collections` is approved for the MVP; `franchises` is deferred until a
-  future product question justifies its additional ambiguity and complexity.
 
 ## Next investigations
 
@@ -2142,8 +2070,8 @@ The following points still require investigation:
    records and determine whether other relationship fields are needed.
 5. Clarify the practical distinction among `Expansion`, `Standalone Expansion`,
    and `Expanded Game`.
-6. Evaluate covers, screenshots, involved companies, and other complementary
-   MVP fields.
+6. Evaluate covers, screenshots, involved companies, franchises, and other
+   complementary MVP fields.
 7. Evaluate `game_localizations` independently, including coverage, region
    semantics, duplicates, relationship to the main name, and evidence of
    official use.
