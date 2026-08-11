@@ -172,6 +172,9 @@ public sealed class IgdbClient(HttpClient httpClient, IOptions<IgdbPocOptions> o
                  game_modes.id,
                  game_modes.name,
 
+                 player_perspectives.id,
+                 player_perspectives.name,
+
                  franchises.id,
                  franchises.name,
 

@@ -11,15 +11,24 @@ public sealed class Worker(
     ILogger<Worker> logger)
     : BackgroundService
 {
-    private const int SearchResultLimit = 10;
+    private const int SampleSeed = 20260804;
+    private const string SampleCutoff = "2026-08-04T00:00:00Z";
 
-    private static readonly IReadOnlyList<ReferenceCase> ReferenceCases =
+    private static readonly long[] SampleGameIds =
     [
-        new(7335, "Splatoon"),
-        new(1077, "Super Mario Galaxy"),
-        new(26758, "Super Mario Odyssey"),
-        new(732, "Grand Theft Auto: San Andreas"),
-        new(1020, "Grand Theft Auto V")
+        5722, 8916, 10646, 11845, 15671, 26254, 34755, 35086, 36409,
+        37586, 43038, 48588, 50982, 53080, 75951, 85339, 87336, 88673,
+        94203, 102352, 104269, 110942, 112378, 112780, 115420, 121801,
+        127166, 132372, 136185, 136414, 138954, 147667, 148596, 161412,
+        167238, 168966, 171880, 175803, 178134, 183126, 183605, 198307,
+        200355, 204839, 211968, 212672, 215569, 235524, 235982, 236449,
+        248613, 250264, 257727, 263132, 268601, 269217, 275556, 282139,
+        284455, 284464, 285194, 288072, 293820, 299137, 303375, 306988,
+        313806, 317392, 317584, 318108, 326470, 327816, 328786, 329403,
+        334302, 336294, 337379, 339924, 341133, 347230, 349475, 350477,
+        360889, 361018, 367296, 369479, 370585, 376941, 377320, 378090,
+        379032, 380648, 382347, 385917, 391762, 396823, 397730, 397831,
+        402731, 403794
     ];
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -28,12 +37,14 @@ public sealed class Worker(
         {
             logger.LogInformation(
                 """
-                Starting IGDB targeted game-mode semantics validation:
-                Reference cases: {CaseCount}
-                Search-result limit per case: {SearchResultLimit}
+                Starting IGDB random-sample player-perspectives analysis:
+                Frozen sample size: {SampleCount}
+                Sample seed: {SampleSeed}
+                Sample cutoff: {SampleCutoff}
                 """,
-                ReferenceCases.Count,
-                SearchResultLimit);
+                SampleGameIds.Length,
+                SampleSeed,
+                SampleCutoff);
 
             var tokenResponse =
                 await authenticationService.GetAccessTokenAsync(stoppingToken);
@@ -44,58 +55,24 @@ public sealed class Worker(
                     "Twitch returned an empty access token.");
             }
 
-            var referenceGames = await igdbClient.GetGamesByIdsAsync(
+            var games = await igdbClient.GetGamesByIdsAsync(
                 tokenResponse.AccessToken,
-                ReferenceCases.Select(item => item.GameId).ToArray(),
+                SampleGameIds,
                 stoppingToken);
-            var referenceGamesById = referenceGames.ToDictionary(game => game.Id);
 
-            foreach (var reference in ReferenceCases)
-            {
-                referenceGamesById.TryGetValue(reference.GameId, out var referenceGame);
-
-                var searchResults = await igdbClient.SearchGamesByNameAsync(
-                    tokenResponse.AccessToken,
-                    reference.SearchTerm,
-                    SearchResultLimit,
-                    stoppingToken);
-
-                logger.LogInformation(
-                    """
-                    IGDB game-mode semantics case:
-                    Reference ID: {ReferenceId}
-                    Search term: {SearchTerm}
-                    Reference record: {ReferenceRecord}
-                    Related search results returned: {ResultCount}
-                    Related search results:
-                    {SearchResults}
-                    """,
-                    reference.GameId,
-                    reference.SearchTerm,
-                    FormatGame(referenceGame, reference.GameId),
-                    searchResults.Count,
-                    FormatSearchResults(searchResults, reference.GameId));
-            }
-
-            logger.LogInformation(
-                """
-                IGDB targeted game-mode semantics validation completed.
-                Interpretation reminder: game_modes is attached to each IGDB game record,
-                not to an individual platform within that record. Search similarity does
-                not prove that two returned records represent the same edition.
-                """);
+            LogResults(games);
         }
         catch (OperationCanceledException)
             when (stoppingToken.IsCancellationRequested)
         {
             logger.LogInformation(
-                "IGDB targeted game-mode semantics validation was cancelled.");
+                "IGDB random-sample player-perspectives analysis was cancelled.");
         }
         catch (Exception exception)
         {
             logger.LogError(
                 exception,
-                "IGDB targeted game-mode semantics validation failed.");
+                "IGDB random-sample player-perspectives analysis failed.");
         }
         finally
         {
@@ -103,56 +80,132 @@ public sealed class Worker(
         }
     }
 
-    private static string FormatSearchResults(
-        IReadOnlyList<IgdbGameSample> games,
-        long referenceId) =>
-        games.Count == 0
-            ? "- no search results returned"
-            : string.Join(Environment.NewLine, games
-                .OrderByDescending(game => game.Id == referenceId)
-                .ThenBy(game => game.Id)
-                .Select(game => $"- {FormatGame(game, referenceId)}"));
-
-    private static string FormatGame(IgdbGameSample? game, long referenceId)
+    private void LogResults(IReadOnlyList<IgdbGameSample> games)
     {
-        if (game is null)
-        {
-            return "not returned";
-        }
+        var gamesById = games.ToDictionary(game => game.Id);
+        var returnedGames = SampleGameIds
+            .Where(gamesById.ContainsKey)
+            .Select(gameId => gamesById[gameId])
+            .ToArray();
 
-        return
-            $"ID={game.Id}; reference match={FormatBoolean(game.Id == referenceId)}; " +
-            $"name={FormatValue(game.Name)}; " +
-            $"type={FormatType(game.GameType)}; " +
-            $"version parent={FormatReference(game.VersionParent)}; " +
-            $"parent game={FormatReference(game.ParentGame)}; " +
-            $"platforms={FormatReferences(game.Platforms)}; " +
-            $"game modes={FormatReferences(game.GameModes)}";
+        var resultLines = SampleGameIds.Select(gameId =>
+            gamesById.TryGetValue(gameId, out var game)
+                ? FormatResult(game)
+                : $"- ID={gameId}; record=NOT RETURNED");
+
+        logger.LogInformation(
+            "IGDB random-sample player-perspectives results:{NewLine}{Results}",
+            Environment.NewLine,
+            string.Join(Environment.NewLine, resultLines));
+
+        var gamesWithPerspectives = returnedGames
+            .Where(game => game.PlayerPerspectives.Count > 0)
+            .ToArray();
+        var recordsWithDuplicateIds = returnedGames.Count(game =>
+            game.PlayerPerspectives.Select(item => item.Id).Distinct().Count()
+            != game.PlayerPerspectives.Count);
+        var recordsWithInvalidValues = returnedGames.Count(game =>
+            game.PlayerPerspectives.Any(item =>
+                item.Id <= 0 || string.IsNullOrWhiteSpace(item.Name)));
+        var conflictingNamesById = returnedGames
+            .SelectMany(game => game.PlayerPerspectives)
+            .GroupBy(item => item.Id)
+            .Count(group => group
+                .Select(item => item.Name?.Trim())
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Count() > 1);
+        var distinctPerspectives = returnedGames
+            .SelectMany(game => game.PlayerPerspectives)
+            .GroupBy(item => item.Id)
+            .Select(group => new
+            {
+                Id = group.Key,
+                Name = group.Select(item => item.Name).FirstOrDefault(name =>
+                    !string.IsNullOrWhiteSpace(name)) ?? "not reported",
+                RecordCount = returnedGames.Count(game =>
+                    game.PlayerPerspectives.Any(item => item.Id == group.Key))
+            })
+            .OrderByDescending(item => item.RecordCount)
+            .ThenBy(item => item.Id)
+            .ToArray();
+
+        var frequencyLines = distinctPerspectives.Length == 0
+            ? "- no player perspectives reported"
+            : string.Join(Environment.NewLine, distinctPerspectives.Select(item =>
+                $"- {item.Id}|{item.Name}: {item.RecordCount}/{returnedGames.Length} " +
+                $"records ({FormatPercentage(item.RecordCount, returnedGames.Length)})"));
+
+        logger.LogInformation(
+            """
+            IGDB random-sample player-perspectives summary:
+            Frozen sample size: {SampleCount}
+            Records returned: {ReturnedCount}
+            Missing records: {MissingCount}
+            Records with one or more player perspectives: {WithPerspectiveCount}
+            Records without player perspectives: {WithoutPerspectiveCount}
+            Player-perspective presence coverage among returned records: {Coverage}
+            Records with exactly one player perspective: {ExactlyOneCount}
+            Records with multiple player perspectives: {MultipleCount}
+            Records with duplicate player-perspective IDs: {DuplicateCount}
+            Records with invalid player-perspective IDs or blank names: {InvalidCount}
+            Player-perspective IDs with conflicting reported names: {ConflictingNameCount}
+            Distinct player-perspective IDs reported: {DistinctCount}
+
+            Player-perspective frequency among returned records:
+            {FrequencyLines}
+            """,
+            SampleGameIds.Length,
+            returnedGames.Length,
+            SampleGameIds.Length - returnedGames.Length,
+            gamesWithPerspectives.Length,
+            returnedGames.Length - gamesWithPerspectives.Length,
+            FormatPercentage(gamesWithPerspectives.Length, returnedGames.Length),
+            returnedGames.Count(game => game.PlayerPerspectives.Count == 1),
+            returnedGames.Count(game => game.PlayerPerspectives.Count > 1),
+            recordsWithDuplicateIds,
+            recordsWithInvalidValues,
+            conflictingNamesById,
+            distinctPerspectives.Length,
+            frequencyLines);
+
+        logger.LogInformation(
+            "IGDB random-sample player-perspectives analysis completed.");
     }
 
-    private static string FormatType(IgdbGameTypeReference? type) =>
-        type is null
-            ? "not reported"
-            : $"{type.Id}|{FormatValue(type.Type)}";
+    private static string FormatResult(IgdbGameSample game)
+    {
+        var duplicateIds = game.PlayerPerspectives
+            .Select(item => item.Id)
+            .Distinct()
+            .Count() != game.PlayerPerspectives.Count;
+        var invalidValues = game.PlayerPerspectives.Any(item =>
+            item.Id <= 0 || string.IsNullOrWhiteSpace(item.Name));
 
-    private static string FormatReference(IgdbNamedReference? reference) =>
-        reference is null
-            ? "not reported"
-            : $"{reference.Id}|{FormatValue(reference.Name)}";
+        return
+            $"- ID={game.Id}; title={FormatValue(game.Name)}; " +
+            $"player perspectives={FormatReferences(game.PlayerPerspectives)}; " +
+            $"perspective count={game.PlayerPerspectives.Count}; " +
+            $"duplicate IDs={FormatBoolean(duplicateIds)}; " +
+            $"invalid values={FormatBoolean(invalidValues)}";
+    }
 
     private static string FormatReferences(
-        IReadOnlyList<IgdbNamedReference>? references) =>
-        references is null || references.Count == 0
+        IReadOnlyList<IgdbNamedReference> references) =>
+        references.Count == 0
             ? "not reported"
             : string.Join(", ", references
                 .OrderBy(reference => reference.Id)
                 .Select(reference =>
                     $"{reference.Id}|{FormatValue(reference.Name)}"));
 
+    private static string FormatPercentage(int numerator, int denominator) =>
+        denominator == 0
+            ? "0.00%"
+            : $"{(double)numerator / denominator:P2}";
+
     private static string FormatBoolean(bool value) => value ? "YES" : "NO";
 
     private static string FormatValue(string? value) =>
         string.IsNullOrWhiteSpace(value) ? "not reported" : value;
-
-    private sealed record ReferenceCase(long GameId, string SearchTerm);
 }
