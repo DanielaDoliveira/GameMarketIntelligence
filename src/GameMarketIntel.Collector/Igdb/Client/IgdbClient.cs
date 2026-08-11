@@ -10,24 +10,24 @@ public sealed class IgdbClient(HttpClient httpClient, IOptions<IgdbPocOptions> o
 {
     private readonly IgdbPocOptions _options = options.Value;
 
-    public async Task<int> CountReleasedGamesAsync(string accessToken, long releaseDateCutoff, CancellationToken cancellationToken = default)
+    public async Task<int> CountReleasedGamesAsync(
+        string accessToken,
+        long releaseDateCutoff,
+        CancellationToken cancellationToken = default)
     {
         if (releaseDateCutoff <= 0)
         {
-            throw new ArgumentOutOfRangeException
-            (
+            throw new ArgumentOutOfRangeException(
                 nameof(releaseDateCutoff),
-                "The release-date cutoff must be a positive Unix timestamp."
-            );
+                "The release-date cutoff must be a positive Unix timestamp.");
         }
 
-        using var request = new HttpRequestMessage
-        (
+        using var request = new HttpRequestMessage(
             HttpMethod.Post,
-            "https://api.igdb.com/v4/games/count"
-        );
+            "https://api.igdb.com/v4/games/count");
 
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        request.Headers.Authorization =
+            new AuthenticationHeaderValue("Bearer", accessToken);
         request.Headers.Add("Client-ID", _options.ClientId);
         request.Content = new StringContent(
             $"""
@@ -35,11 +35,14 @@ public sealed class IgdbClient(HttpClient httpClient, IOptions<IgdbPocOptions> o
                  & first_release_date < {releaseDateCutoff};
              """);
 
-        using var response = await httpClient.SendAsync(request, cancellationToken);
+        using var response = await httpClient.SendAsync(
+            request,
+            cancellationToken);
 
         if (!response.IsSuccessStatusCode)
         {
-            var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
+            var errorContent = await response.Content.ReadAsStringAsync(
+                cancellationToken);
 
             throw new HttpRequestException(
                 $"""
@@ -52,109 +55,24 @@ public sealed class IgdbClient(HttpClient httpClient, IOptions<IgdbPocOptions> o
         }
 
         var countResponse =
-            await response.Content.ReadFromJsonAsync<IgdbCountResponse>(cancellationToken);
-
-        return countResponse?.Count ?? throw new InvalidOperationException("IGDB returned an empty games-count response.");
-    }
-
-    public async Task<IReadOnlyList<IgdbGameSample>> GetReleasedGameAtOffsetAsync(
-        string accessToken,
-        long releaseDateCutoff,
-        int offset,
-        CancellationToken cancellationToken = default)
-    {
-        if (releaseDateCutoff <= 0)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(releaseDateCutoff),
-                "The release-date cutoff must be a positive Unix timestamp.");
-        }
-
-        if (offset < 0)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(offset),
-                "The offset cannot be negative.");
-        }
-
-        using var request = CreateGamesRequest(
-            accessToken,
-            $"""
-             fields
-                 id,
-                 name,
-                 first_release_date;
-
-             where first_release_date != null
-                 & first_release_date < {releaseDateCutoff};
-
-             sort id asc;
-             offset {offset};
-             limit 1;
-             """);
-
-        return await SendGamesRequestAsync(request, cancellationToken);
-    }
-
-    public async Task<IReadOnlyList<IgdbGameSample>> GetReleasedGamesAtOffsetsAsync(
-        string accessToken,
-        long releaseDateCutoff,
-        IReadOnlyCollection<int> offsets,
-        CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(offsets);
-
-        if (releaseDateCutoff <= 0)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(releaseDateCutoff),
-                "The release-date cutoff must be a positive Unix timestamp.");
-        }
-
-        if (offsets.Count == 0)
-        {
-            return [];
-        }
-
-        if (offsets.Any(offset => offset < 0))
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(offsets),
-                "Offsets cannot be negative.");
-        }
-
-        if (offsets.Distinct().Count() != offsets.Count)
-        {
-            throw new ArgumentException(
-                "Offsets must be distinct.",
-                nameof(offsets));
-        }
-
-        var games = new List<IgdbGameSample>(offsets.Count);
-
-        foreach (var offset in offsets)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            var gamesAtOffset = await GetReleasedGameAtOffsetAsync(
-                accessToken,
-                releaseDateCutoff,
-                offset,
+            await response.Content.ReadFromJsonAsync<IgdbCountResponse>(
                 cancellationToken);
 
-            if (gamesAtOffset.Count != 1)
-            {
-                throw new InvalidOperationException(
-                    $"""
-                     Expected exactly one IGDB game at offset {offset},
-                     but received {gamesAtOffset.Count}.
-                     """);
-            }
+        return countResponse?.Count
+            ?? throw new InvalidOperationException(
+                "IGDB returned an empty games-count response.");
+    }
 
-            games.Add(gamesAtOffset[0]);
-        }
+    public Task<IReadOnlyList<IgdbGameSample>> GetReleasedGameAtOffsetAsync(string accessToken, long releaseDateCutoff, int offset,
+        CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
+    }
 
-        return games;
+    public Task<IReadOnlyList<IgdbGameSample>> GetReleasedGamesAtOffsetsAsync(string accessToken, long releaseDateCutoff, IReadOnlyCollection<int> offsets,
+        CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
     }
 
     public async Task<IReadOnlyList<IgdbGameSample>> GetGamesSampleAsync(string accessToken, int sampleSize, CancellationToken cancellationToken = default)
@@ -162,6 +80,7 @@ public sealed class IgdbClient(HttpClient httpClient, IOptions<IgdbPocOptions> o
         using var request = new HttpRequestMessage(HttpMethod.Post, "https://api.igdb.com/v4/games");
 
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
         request.Headers.Add("Client-ID", _options.ClientId);
         request.Content = new StringContent(
             $"""
@@ -211,7 +130,10 @@ public sealed class IgdbClient(HttpClient httpClient, IOptions<IgdbPocOptions> o
         return games ?? [];
     }
 
-    public async Task<IReadOnlyList<IgdbGameSample>> GetGamesByIdsAsync(string accessToken, IReadOnlyCollection<long> gameIds, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<IgdbGameSample>> GetGamesByIdsAsync(
+        string accessToken,
+        IReadOnlyCollection<long> gameIds,
+        CancellationToken cancellationToken = default)
     {
         if (gameIds.Count == 0)
         {
@@ -281,7 +203,7 @@ public sealed class IgdbClient(HttpClient httpClient, IOptions<IgdbPocOptions> o
                  websites.trusted,
                  websites.type.id,
                  websites.type.type,
-
+                 
                  release_dates.id,
                  release_dates.date,
                  release_dates.human,
@@ -303,12 +225,15 @@ public sealed class IgdbClient(HttpClient httpClient, IOptions<IgdbPocOptions> o
              limit {gameIds.Count};
              """);
 
-        return await SendGamesRequestAsync(request, cancellationToken);
+        return await SendGamesRequestAsync(
+            request,
+            cancellationToken);
     }
 
     public async Task<IReadOnlyList<IgdbGameSample>> GetGamesWithParentAsync(string accessToken, int sampleSize, CancellationToken cancellationToken = default)
     {
-        using var request = CreateGamesRequest(accessToken,
+        using var request = CreateGamesRequest(
+            accessToken,
             $"""
              fields
                  id,
@@ -341,7 +266,8 @@ public sealed class IgdbClient(HttpClient httpClient, IOptions<IgdbPocOptions> o
     public async Task<IReadOnlyList<IgdbGameSample>> GetGamesByTypeAsync(string accessToken, long gameTypeId, int sampleSize,
         CancellationToken cancellationToken = default)
     {
-        using var request = CreateGamesRequest(accessToken,
+        using var request = CreateGamesRequest(
+            accessToken,
             $"""
              fields
                  id,
@@ -376,7 +302,10 @@ public sealed class IgdbClient(HttpClient httpClient, IOptions<IgdbPocOptions> o
 
     public async Task<IReadOnlyList<IgdbGameTypeReference>> GetGameTypesAsync(string accessToken, CancellationToken cancellationToken = default)
     {
-        using var request = new HttpRequestMessage(HttpMethod.Post, "https://api.igdb.com/v4/game_types");
+        using var request = new HttpRequestMessage(
+            HttpMethod.Post,
+            "https://api.igdb.com/v4/game_types"
+            );
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
         request.Headers.Add("Client-ID", _options.ClientId);
         request.Content = new StringContent(
@@ -387,7 +316,7 @@ public sealed class IgdbClient(HttpClient httpClient, IOptions<IgdbPocOptions> o
             sort id asc;
             limit 500;
             """);
-
+        
         using var response = await httpClient.SendAsync(request, cancellationToken);
         if (!response.IsSuccessStatusCode)
         {
@@ -400,15 +329,19 @@ public sealed class IgdbClient(HttpClient httpClient, IOptions<IgdbPocOptions> o
                  Response: {errorContent}
                  """,
                 inner: null,
-                response.StatusCode);
+                response.StatusCode
+                );
         }
-
         var gameTypes = await response.Content.ReadFromJsonAsync<List<IgdbGameTypeReference>>(cancellationToken);
 
         return gameTypes ?? [];
     }
 
-    public async Task<IReadOnlyList<IgdbGameSample>> GetGamesIncludedInBundleAsync(string accessToken, long bundleId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<IgdbGameSample>>
+        GetGamesIncludedInBundleAsync(
+            string accessToken,
+            long bundleId,
+            CancellationToken cancellationToken = default)
     {
         using var request = CreateGamesRequest(
             accessToken,
@@ -455,10 +388,16 @@ public sealed class IgdbClient(HttpClient httpClient, IOptions<IgdbPocOptions> o
              limit 50;
              """);
 
-        return await SendGamesRequestAsync(request, cancellationToken);
+        return await SendGamesRequestAsync(
+            request,
+            cancellationToken);
     }
 
-    public async Task<IReadOnlyList<IgdbGameSample>> SearchGamesByNameAsync(string accessToken, string gameName, int resultLimit, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<IgdbGameSample>> SearchGamesByNameAsync(
+        string accessToken,
+        string gameName,
+        int resultLimit,
+        CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(gameName))
         {
@@ -467,7 +406,9 @@ public sealed class IgdbClient(HttpClient httpClient, IOptions<IgdbPocOptions> o
 
         if (resultLimit <= 0)
         {
-            throw new ArgumentOutOfRangeException(nameof(resultLimit), "The result limit must be greater than zero.");
+            throw new ArgumentOutOfRangeException(
+                nameof(resultLimit),
+                "The result limit must be greater than zero.");
         }
 
         var escapedGameName = gameName
@@ -489,14 +430,23 @@ public sealed class IgdbClient(HttpClient httpClient, IOptions<IgdbPocOptions> o
                  parent_game.id,
                  parent_game.name,
                  platforms.id,
-                 platforms.name;
+                 platforms.name,
+                 collections.id,
+                 collections.name,
+                 franchises.id,
+                 franchises.name;
              limit {resultLimit};
              """);
 
-        return await SendGamesRequestAsync(request, cancellationToken);
+        return await SendGamesRequestAsync(
+            request,
+            cancellationToken);
     }
 
-    public async Task<IReadOnlyList<IgdbGameSample>> GetGamesAlternativeNamesSampleAsync(string accessToken, IReadOnlyCollection<long> gameIds, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<IgdbGameSample>> GetGamesAlternativeNamesSampleAsync(
+        string accessToken,
+        IReadOnlyCollection<long> gameIds,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(gameIds);
 
@@ -507,17 +457,23 @@ public sealed class IgdbClient(HttpClient httpClient, IOptions<IgdbPocOptions> o
 
         if (gameIds.Count > 500)
         {
-            throw new ArgumentOutOfRangeException(nameof(gameIds), "An IGDB games query cannot request more than 500 IDs.");
+            throw new ArgumentOutOfRangeException(
+                nameof(gameIds),
+                "An IGDB games query cannot request more than 500 IDs.");
         }
 
         if (gameIds.Any(gameId => gameId <= 0))
         {
-            throw new ArgumentOutOfRangeException(nameof(gameIds), "Game IDs must be positive.");
+            throw new ArgumentOutOfRangeException(
+                nameof(gameIds),
+                "Game IDs must be positive.");
         }
 
         if (gameIds.Distinct().Count() != gameIds.Count)
         {
-            throw new ArgumentException("Game IDs must be distinct.", nameof(gameIds));
+            throw new ArgumentException(
+                "Game IDs must be distinct.",
+                nameof(gameIds));
         }
 
         var formattedIds = string.Join(",", gameIds);
@@ -546,14 +502,15 @@ public sealed class IgdbClient(HttpClient httpClient, IOptions<IgdbPocOptions> o
              limit {gameIds.Count};
              """);
 
-        return await SendGamesRequestAsync(request, cancellationToken);
+        return await SendGamesRequestAsync(
+            request,
+            cancellationToken);
     }
-
     private HttpRequestMessage CreateGamesRequest(string accessToken, string query)
     {
         var request = new HttpRequestMessage(HttpMethod.Post, "https://api.igdb.com/v4/games");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-        request.Headers.Add("Client-ID", _options.ClientId);
+        request.Headers.Add("Client-ID",_options.ClientId);
         request.Content = new StringContent(query);
         return request;
     }
@@ -564,7 +521,7 @@ public sealed class IgdbClient(HttpClient httpClient, IOptions<IgdbPocOptions> o
         if (!response.IsSuccessStatusCode)
         {
             var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
-
+            
             throw new HttpRequestException(
                 $"""
                  IGDB request failed.
@@ -572,10 +529,12 @@ public sealed class IgdbClient(HttpClient httpClient, IOptions<IgdbPocOptions> o
                  Response: {errorContent}
                  """,
                 inner: null,
-                response.StatusCode);
+                response.StatusCode
+                );
         }
 
         var games = await response.Content.ReadFromJsonAsync<List<IgdbGameSample>>(cancellationToken);
         return games ?? [];
     }
+    
 }
