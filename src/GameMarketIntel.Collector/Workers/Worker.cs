@@ -11,42 +11,42 @@ public sealed class Worker(
     ILogger<Worker> logger)
     : BackgroundService
 {
-    private static readonly IReadOnlyList<ExpectedCollectionCase> ExpectedCases =
+    private static readonly IReadOnlyList<ReferenceCase> ReferenceCases =
     [
-        new("The Legend of Zelda", 1029, "The Legend of Zelda: Ocarina of Time", 106, "The Legend of Zelda"),
-        new("The Legend of Zelda", 1036, "The Legend of Zelda: Twilight Princess", 106, "The Legend of Zelda"),
-        new("The Legend of Zelda", 119388, "The Legend of Zelda: Tears of the Kingdom", 106, "The Legend of Zelda"),
+        new("The Legend of Zelda", 1029, "The Legend of Zelda: Ocarina of Time"),
+        new("The Legend of Zelda", 1036, "The Legend of Zelda: Twilight Princess"),
+        new("The Legend of Zelda", 119388, "The Legend of Zelda: Tears of the Kingdom"),
 
-        new("Mario", 26758, "Super Mario Odyssey", 240, "Super Mario"),
-        new("Mario", 2350, "Mario Kart 8", 449, "Mario Kart"),
-        new("Mario", 1077, "Super Mario Galaxy", 240, "Super Mario"),
+        new("Mario", 26758, "Super Mario Odyssey"),
+        new("Mario", 2350, "Mario Kart 8"),
+        new("Mario", 1077, "Super Mario Galaxy"),
 
-        new("Pokémon", 1561, "Pokémon Red Version", 314, "Pokémon"),
-        new("Pokémon", 37382, "Pokémon Sword", 314, "Pokémon"),
-        new("Pokémon", 144054, "Pokémon Legends: Arceus", 314, "Pokémon"),
+        new("Pokémon", 1561, "Pokémon Red Version"),
+        new("Pokémon", 37382, "Pokémon Sword"),
+        new("Pokémon", 144054, "Pokémon Legends: Arceus"),
 
-        new("Kingdom Hearts", 393742, "Kingdom Hearts", 272, "Kingdom Hearts"),
-        new("Kingdom Hearts", 1221, "Kingdom Hearts II", 272, "Kingdom Hearts"),
-        new("Kingdom Hearts", 2933, "Kingdom Hearts III", 272, "Kingdom Hearts"),
+        new("Kingdom Hearts", 393742, "Kingdom Hearts"),
+        new("Kingdom Hearts", 1221, "Kingdom Hearts II"),
+        new("Kingdom Hearts", 2933, "Kingdom Hearts III"),
 
-        new("Final Fantasy", 393025, "Final Fantasy VII", 39, "Final Fantasy"),
-        new("Final Fantasy", 418, "Final Fantasy X", 39, "Final Fantasy"),
-        new("Final Fantasy", 31551, "Final Fantasy XVI", 39, "Final Fantasy"),
+        new("Final Fantasy", 393025, "Final Fantasy VII"),
+        new("Final Fantasy", 418, "Final Fantasy X"),
+        new("Final Fantasy", 31551, "Final Fantasy XVI"),
 
-        new("Hollow Knight", 14593, "Hollow Knight", 5702, "Hollow Knight"),
-        new("Hollow Knight", 115289, "Hollow Knight: Silksong", 5702, "Hollow Knight"),
+        new("Hollow Knight", 14593, "Hollow Knight"),
+        new("Hollow Knight", 115289, "Hollow Knight: Silksong"),
 
-        new("Animal Crossing", 2655, "Animal Crossing", 521, "Animal Crossing"),
-        new("Animal Crossing", 2687, "Animal Crossing: New Leaf", 521, "Animal Crossing"),
-        new("Animal Crossing", 109462, "Animal Crossing: New Horizons", 521, "Animal Crossing"),
+        new("Animal Crossing", 2655, "Animal Crossing"),
+        new("Animal Crossing", 2687, "Animal Crossing: New Leaf"),
+        new("Animal Crossing", 109462, "Animal Crossing: New Horizons"),
 
-        new("Splatoon", 7335, "Splatoon", 2584, "Splatoon"),
-        new("Splatoon", 26761, "Splatoon 2", 2584, "Splatoon"),
-        new("Splatoon", 143613, "Splatoon 3", 2584, "Splatoon"),
+        new("Splatoon", 7335, "Splatoon"),
+        new("Splatoon", 26761, "Splatoon 2"),
+        new("Splatoon", 143613, "Splatoon 3"),
 
-        new("Grand Theft Auto", 730, "Grand Theft Auto III", 847, "Grand Theft Auto"),
-        new("Grand Theft Auto", 732, "Grand Theft Auto: San Andreas", 847, "Grand Theft Auto"),
-        new("Grand Theft Auto", 1020, "Grand Theft Auto V", 847, "Grand Theft Auto")
+        new("Grand Theft Auto", 730, "Grand Theft Auto III"),
+        new("Grand Theft Auto", 732, "Grand Theft Auto: San Andreas"),
+        new("Grand Theft Auto", 1020, "Grand Theft Auto V")
     ];
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -55,12 +55,12 @@ public sealed class Worker(
         {
             logger.LogInformation(
                 """
-                Starting IGDB targeted collection-coverage analysis:
+                Starting IGDB targeted franchise-versus-collection analysis:
                 Reference cases: {CaseCount}
-                Series: {SeriesCount}
+                Reference series: {SeriesCount}
                 """,
-                ExpectedCases.Count,
-                ExpectedCases.Select(item => item.Series).Distinct().Count());
+                ReferenceCases.Count,
+                ReferenceCases.Select(item => item.Series).Distinct().Count());
 
             var tokenResponse =
                 await authenticationService.GetAccessTokenAsync(stoppingToken);
@@ -73,66 +73,66 @@ public sealed class Worker(
 
             var games = await igdbClient.GetGamesByIdsAsync(
                 tokenResponse.AccessToken,
-                ExpectedCases.Select(item => item.GameId).ToArray(),
+                ReferenceCases.Select(item => item.GameId).ToArray(),
                 stoppingToken);
 
             var gamesById = games.ToDictionary(game => game.Id);
-            var results = ExpectedCases
-                .Select(expected => Evaluate(expected, gamesById))
+            var results = ReferenceCases
+                .Select(reference => Evaluate(reference, gamesById))
                 .ToArray();
 
             logger.LogInformation(
                 """
-                IGDB targeted collection-coverage results:
+                IGDB targeted franchise-versus-collection results:
                 {Results}
                 """,
                 FormatResults(results));
 
             logger.LogInformation(
                 """
-                IGDB targeted collection-coverage summary:
+                IGDB targeted franchise-versus-collection summary:
                 Reference cases: {ReferenceCases}
                 Records returned: {ReturnedRecords}
+                Records with one or more franchises: {WithFranchises}
                 Records with one or more collections: {WithCollections}
-                Records containing the expected collection: {CorrectMatches}
+                Records with both fields: {WithBoth}
+                Records with neither field: {WithNeither}
                 Missing records: {MissingRecords}
-                Missing collections: {MissingCollections}
-                Unexpected collections: {UnexpectedCollections}
-                Presence coverage among all reference cases: {PresenceCoverage:F2}%
-                Correct coverage among all reference cases: {CorrectCoverage:F2}%
-                Correctness among records with collections: {CorrectnessWhenPresent:F2}%
+                Franchise presence coverage: {FranchiseCoverage:F2}%
+                Collection presence coverage: {CollectionCoverage:F2}%
+                Records where at least one franchise label also appears as a collection label: {WithLabelOverlap}
+                Records where at least one franchise label is distinct from every collection label: {WithDistinctFranchiseLabel}
 
-                Coverage by series:
+                Franchise presence by reference series:
                 {SeriesSummary}
                 """,
                 results.Length,
                 results.Count(result => result.Game is not null),
+                results.Count(result => result.HasFranchise),
                 results.Count(result => result.HasCollection),
-                results.Count(result => result.IsExpectedCollectionPresent),
-                results.Count(result => result.Status == CoverageStatus.MissingRecord),
-                results.Count(result => result.Status == CoverageStatus.MissingCollection),
-                results.Count(result => result.Status == CoverageStatus.UnexpectedCollection),
+                results.Count(result => result.HasFranchise && result.HasCollection),
+                results.Count(result => result.Game is not null && !result.HasFranchise && !result.HasCollection),
+                results.Count(result => result.Game is null),
+                Percentage(results.Count(result => result.HasFranchise), results.Length),
                 Percentage(results.Count(result => result.HasCollection), results.Length),
-                Percentage(results.Count(result => result.IsExpectedCollectionPresent), results.Length),
-                Percentage(
-                    results.Count(result => result.IsExpectedCollectionPresent),
-                    results.Count(result => result.HasCollection)),
+                results.Count(result => result.HasMatchingLabel),
+                results.Count(result => result.HasDistinctFranchiseLabel),
                 FormatSeriesSummary(results));
 
             logger.LogInformation(
-                "IGDB targeted collection-coverage analysis completed.");
+                "IGDB targeted franchise-versus-collection analysis completed.");
         }
         catch (OperationCanceledException)
             when (stoppingToken.IsCancellationRequested)
         {
             logger.LogInformation(
-                "IGDB targeted collection-coverage analysis was cancelled.");
+                "IGDB targeted franchise-versus-collection analysis was cancelled.");
         }
         catch (Exception exception)
         {
             logger.LogError(
                 exception,
-                "IGDB targeted collection-coverage analysis failed.");
+                "IGDB targeted franchise-versus-collection analysis failed.");
         }
         finally
         {
@@ -140,68 +140,65 @@ public sealed class Worker(
         }
     }
 
-    private static CoverageResult Evaluate(
-        ExpectedCollectionCase expected,
+    private static ComparisonResult Evaluate(
+        ReferenceCase reference,
         IReadOnlyDictionary<long, IgdbGameSample> gamesById)
     {
-        if (!gamesById.TryGetValue(expected.GameId, out var game))
+        if (!gamesById.TryGetValue(reference.GameId, out var game))
         {
-            return new CoverageResult(expected, null, CoverageStatus.MissingRecord);
+            return new ComparisonResult(reference, null, false, false);
         }
 
-        if (game.Collections.Count == 0)
-        {
-            return new CoverageResult(expected, game, CoverageStatus.MissingCollection);
-        }
+        var collectionNames = game.Collections
+            .Select(collection => collection.Name)
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-        var expectedCollectionPresent = game.Collections
-            .Any(collection => collection.Id == expected.CollectionId);
+        var hasMatchingLabel = game.Franchises
+            .Any(franchise => collectionNames.Contains(franchise.Name));
 
-        return new CoverageResult(
-            expected,
+        var hasDistinctFranchiseLabel = game.Franchises
+            .Any(franchise => !string.IsNullOrWhiteSpace(franchise.Name) &&
+                              !collectionNames.Contains(franchise.Name));
+
+        return new ComparisonResult(
+            reference,
             game,
-            expectedCollectionPresent
-                ? CoverageStatus.Match
-                : CoverageStatus.UnexpectedCollection);
+            hasMatchingLabel,
+            hasDistinctFranchiseLabel);
     }
 
-    private static string FormatResults(IReadOnlyList<CoverageResult> results) =>
+    private static string FormatResults(IReadOnlyList<ComparisonResult> results) =>
         string.Join(Environment.NewLine, results.Select(result =>
-            $"- series={result.Expected.Series}; " +
-            $"ID={result.Expected.GameId}; " +
-            $"expected title={result.Expected.GameName}; " +
+            $"- reference series={result.Reference.Series}; " +
+            $"ID={result.Reference.GameId}; " +
+            $"expected title={result.Reference.GameName}; " +
             $"returned title={result.Game?.Name ?? "not returned"}; " +
-            $"expected collection={result.Expected.CollectionId}|{result.Expected.CollectionName}; " +
-            $"returned collections={FormatCollections(result.Game?.Collections)}; " +
-            $"status={FormatStatus(result.Status)}"));
+            $"franchises={FormatReferences(result.Game?.Franchises)}; " +
+            $"collections={FormatReferences(result.Game?.Collections)}; " +
+            $"same-label overlap={FormatBoolean(result.HasMatchingLabel)}; " +
+            $"distinct franchise label={FormatBoolean(result.HasDistinctFranchiseLabel)}"));
 
-    private static string FormatSeriesSummary(IReadOnlyList<CoverageResult> results) =>
+    private static string FormatSeriesSummary(IReadOnlyList<ComparisonResult> results) =>
         string.Join(Environment.NewLine, results
-            .GroupBy(result => result.Expected.Series)
+            .GroupBy(result => result.Reference.Series)
             .Select(group =>
             {
-                var correct = group.Count(result => result.IsExpectedCollectionPresent);
-                return $"- {group.Key}: {correct}/{group.Count()} " +
-                       $"({Percentage(correct, group.Count()):F2}%) expected collections found";
+                var withFranchise = group.Count(result => result.HasFranchise);
+                return $"- {group.Key}: {withFranchise}/{group.Count()} " +
+                       $"({Percentage(withFranchise, group.Count()):F2}%) with franchises";
             }));
 
-    private static string FormatCollections(
-        IReadOnlyList<IgdbNamedReference>? collections) =>
-        collections is null || collections.Count == 0
+    private static string FormatReferences(
+        IReadOnlyList<IgdbNamedReference>? references) =>
+        references is null || references.Count == 0
             ? "not reported"
-            : string.Join(", ", collections
-                .OrderBy(collection => collection.Id)
-                .Select(collection =>
-                    $"{collection.Id}|{FormatValue(collection.Name)}"));
+            : string.Join(", ", references
+                .OrderBy(reference => reference.Id)
+                .Select(reference =>
+                    $"{reference.Id}|{FormatValue(reference.Name)}"));
 
-    private static string FormatStatus(CoverageStatus status) => status switch
-    {
-        CoverageStatus.Match => "MATCH",
-        CoverageStatus.MissingRecord => "MISSING RECORD",
-        CoverageStatus.MissingCollection => "MISSING COLLECTION",
-        CoverageStatus.UnexpectedCollection => "UNEXPECTED COLLECTION",
-        _ => throw new ArgumentOutOfRangeException(nameof(status), status, null)
-    };
+    private static string FormatBoolean(bool value) => value ? "YES" : "NO";
 
     private static double Percentage(int numerator, int denominator) =>
         denominator == 0 ? 0 : numerator * 100.0 / denominator;
@@ -209,28 +206,19 @@ public sealed class Worker(
     private static string FormatValue(string? value) =>
         string.IsNullOrWhiteSpace(value) ? "not reported" : value;
 
-    private sealed record ExpectedCollectionCase(
+    private sealed record ReferenceCase(
         string Series,
         long GameId,
-        string GameName,
-        long CollectionId,
-        string CollectionName);
+        string GameName);
 
-    private sealed record CoverageResult(
-        ExpectedCollectionCase Expected,
+    private sealed record ComparisonResult(
+        ReferenceCase Reference,
         IgdbGameSample? Game,
-        CoverageStatus Status)
+        bool HasMatchingLabel,
+        bool HasDistinctFranchiseLabel)
     {
+        public bool HasFranchise => Game?.Franchises.Count > 0;
+
         public bool HasCollection => Game?.Collections.Count > 0;
-
-        public bool IsExpectedCollectionPresent => Status == CoverageStatus.Match;
-    }
-
-    private enum CoverageStatus
-    {
-        Match,
-        MissingRecord,
-        MissingCollection,
-        UnexpectedCollection
     }
 }

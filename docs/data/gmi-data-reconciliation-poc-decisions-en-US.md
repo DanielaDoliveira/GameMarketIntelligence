@@ -2,7 +2,8 @@
 
 ## 1. Purpose
 
-This document consolidates the decisions that will guide the **Game Market Intelligence (GMI)** MVP before the IGDB proof of concept.
+This document consolidates the decisions that guide the **Game Market Intelligence
+(GMI)** MVP and is updated as the IGDB proof of concept produces evidence.
 
 GMI is not intended to store every possible piece of game data. Its purpose is to select, organize, and present only what genuinely helps producers with early market research, comparable-game discovery, niche exploration, and competitive-context analysis.
 
@@ -12,12 +13,12 @@ GMI is not intended to store every possible piece of game data. Its purpose is t
 
 The MVP will provide:
 
-- search by name and aliases;
+- search by name; aliases may be added only from fields and sources with an
+  approved provenance policy;
 - exploration through keywords;
 - filters for genre, theme, platform, game mode, perspective, multiplayer, and release period;
-- company context only after coverage can be complemented and reconciled across
-  suitable sources;
-- franchises and collections/series;
+- context about involved companies;
+- collections/series;
 - product relationships such as remake, remaster, port, edition, DLC, and expansion;
 - provenance and confidence levels;
 - transparency about limitations, conflicts, and coverage.
@@ -39,7 +40,7 @@ Financial metrics may be considered after the MVP is complete.
 
 ### IGDB
 
-IGDB will be the main catalog source and canonical MVP taxonomy for genres, themes, modes, perspectives, keywords, product types, relationships, platforms, release dates, companies, franchises, collections, and external identifiers.
+IGDB will be the main catalog source and canonical MVP taxonomy for genres, themes, modes, perspectives, keywords, product types, relationships, platforms, release dates, companies, collections, and external identifiers. `franchises` remains available from the source but is deferred until after the MVP.
 
 ### Wikidata
 
@@ -53,14 +54,21 @@ Steam will be a specialized source for Steam-specific facts, such as Steam relea
 
 ### 4.1 Identity and discovery
 
-**Include:** `id`, `name`, `alternative_names`, `game_type`, `version_parent`, `game_status`, `summary`.
+**Include:** `id`, `name`, `game_type`, `version_parent`, `game_status`, `summary`.
 
-**Defer or exclude:** defer `slug`; do not initially import `storyline`.
+**Defer or exclude:** exclude `alternative_names` from the MVP mapping; defer
+`slug`; do not initially import `storyline`.
 
 Rules:
 
 - external identity = `Source + ExternalId`;
 - name alone never supports automatic reconciliation;
+- `alternative_names` must not be used for display, search, identity, or
+  reconciliation in the MVP because the observed values mix regional and
+  linguistic variants with executable names, working titles, and ambiguous
+  aliases without sufficient provenance;
+- evaluate `game_localizations` separately as a more structured candidate for
+  regional names, without assuming that regional structure proves official use;
 - `game_status` is contextual;
 - `summary` supports details, not identity.
 
@@ -82,20 +90,11 @@ Rules:
 
 ### 4.3 Involved companies
 
-**Defer from the first Comparable Games iteration:** developer, publisher,
-porting, supporting, and the related company mapping.
+**Include roles:** developer, publisher, porting, and supporting.
 
-The 100-game IGDB PoC sample found company information for 51% of records,
-developers for 47%, and publishers for 44%. The 79 relationships that were
-present had good structural integrity, but the missing-data rate is too high for
-companies to support a principal and balanced MVP comparison dimension.
+**Include minimum company data:** external identifier, name, status when available, and `updated_at`.
 
-This is a deferral, not a rejection. Developer and publisher coverage must be
-compared and reconciled with Wikidata and other suitable sources before the
-dimension is reconsidered. Company names may later help producers investigate
-organizational context, but the field alone does not establish company size,
-budget, official status, distribution strength, or responsibility for a game's
-commercial outcome.
+**Defer:** `changed_company_id`, websites, parent company, corporate history, and long descriptions.
 
 Rules:
 
@@ -104,12 +103,6 @@ Rules:
 - absence in one source is not a conflict;
 - different roles may be complementary;
 - porting and supporting do not replace developer or publisher.
-- missing company data means "not informed by the source", never "no company
-  existed";
-- company presence does not establish that a record is an official market
-  product;
-- companies must not drive filters, rankings, confidence scores, or eligibility
-  in the first iteration.
 
 ### 4.4 Product types and relationships
 
@@ -118,13 +111,6 @@ Rules:
 **Defer:** `expanded_games`, detailed `game_versions`, `forks`, and `similar_games`.
 
 > Related products remain separate records.
-
-For the first analytical catalogue, records classified by IGDB as
-`game_type = Mod` are excluded from the general Comparable Games search. This
-simple rule removes many mods, ROM hacks, and fan games while IGDB is the only
-active source, but it does not guarantee complete detection because IGDB has no
-specific ROM-hack type and may classify records imprecisely. The rule is
-provisional and independent of company data.
 
 ### 4.5 External identifiers and websites
 
@@ -152,21 +138,29 @@ Rules:
 
 Out of scope for multiplayer: maximum player count, LAN, drop-in/drop-out, and detailed platform-specific configurations.
 
-### 4.7 Franchises and collections
+### 4.7 Collections and franchises
 
-**Include:** franchises, collections/series, identifiers, names, and technical synchronization metadata.
+**Include in the MVP:** `collections`, with identifiers, names, game relationships, and technical synchronization metadata.
 
-**Do not model separately:** IP, subfranchise, universe, editorial line, brand, licensed property, or corporate group.
+**Defer until after the MVP:** `franchises`.
 
-Simplified structure:
+A targeted sample of 26 games from nine known series returned `collections` for all 26 records, and all 26 contained the expected collection. This supports using `collections` to represent series and related groupings, but it does not demonstrate universal IGDB coverage.
 
-```text
-Franchise
-└── Collection / Series
-    └── Game
-```
+Games and collections have a many-to-many relationship. A game may belong to broad and specific groupings at the same time. IGDB provided no hierarchy, priority, or primary-collection indicator; none of these properties may therefore be inferred from association order or labels.
 
-Franchises and collections may become advanced filters.
+In the same sample, `franchises` appeared in 24 of 26 records. In 21 of those 24 cases, at least one franchise label was also present among the collections. The five records with an additional label showed that `franchises` may provide broader context, but may also represent crossovers, guest appearances, and licensed properties. For example, `Mario Kart 8` and `Kingdom Hearts III` returned multiple franchises without identifying a primary one.
+
+Decisions:
+
+- use `collections` in the MVP as a many-to-many relationship;
+- do not infer a primary collection or a hierarchy among collections;
+- defer `franchises` without permanently rejecting it;
+- do not use `franchises` in the MVP's main ingestion, filters, or reconciliation;
+- treat a missing collection or franchise as unknown or not applicable, not as proof that a game is standalone;
+- do not interpret either field as evidence of commercial success, audience size, or legal ownership;
+- do not separately model IP, subfranchise, universe, editorial line, brand, licensed property, or corporate group.
+
+`franchises` may be reconsidered if the product later needs to analyze crossovers, licensed-IP presence, or brand reach across different series. Even then, it must be modeled as a many-to-many relationship without automatically selecting the first association.
 
 ## 5. Search and user experience
 
@@ -175,7 +169,7 @@ GMI will distinguish two intentions:
 ### Find a known game
 
 - name;
-- aliases;
+- approved aliases with sufficient provenance;
 - refinement by platform, period, and type.
 
 ### Explore an idea or niche
@@ -208,7 +202,9 @@ Allowed only with:
 
 ### 6.3 Probable match
 
-Without a strong ID, use composite signals: normalized name, aliases, type, companies, platforms, release period, franchise, collection, and declared relationships.
+Without a strong ID, use composite signals: normalized name, approved aliases
+with sufficient provenance, type, companies, platforms, release period,
+collections, and declared relationships.
 
 Composite matches create candidates, not automatic merges.
 

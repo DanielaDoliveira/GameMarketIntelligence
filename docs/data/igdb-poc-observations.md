@@ -30,7 +30,9 @@ The Collector currently performs a one-time execution that:
    - a controlled release-date sample comparing first release, platform,
      region, precision, and later releases;
    - a controlled sample comparing commercial and community-origin products
-     through company, external-distribution, and website evidence.
+     through company, external-distribution, and website evidence;
+   - a fixed 100-game sample used to inspect `alternative_names`,
+     `version_title`, and `game_localizations`.
 4. Deserializes the response into IGDB-specific contracts.
 5. Writes selected fields to the application log.
 6. Stops the application after the execution finishes.
@@ -43,6 +45,11 @@ The current queries retrieve:
 
 - `id`
 - `name`
+- `alternative_names.name`
+- `alternative_names.comment`
+- `version_title`
+- `game_localizations.name`
+- `game_localizations.region`
 - `first_release_date`
 - `release_dates.date`
 - `release_dates.human`
@@ -684,49 +691,6 @@ These limitations are accepted for the MVP. A future increment may introduce a
 separate community-signal layer, editorial review, stronger authorization
 evidence, or explicit exceptions. No such layer is part of the current
 increment.
-
-### Involved-company coverage
-
-The frozen 100-game sample was also used to evaluate `involved_companies` as a
-possible basis for organizational context in Comparable Games.
-
-| Metric | Result |
-|---|---:|
-| Games with at least one involved company | 51/100 |
-| Games without involved-company information | 49/100 |
-| Games with a developer | 47/100 |
-| Games without a developer informed by IGDB | 53/100 |
-| Games with a publisher | 44/100 |
-| Games without a publisher informed by IGDB | 56/100 |
-| Games with a porting company | 1/100 |
-| Games with a supporting company | 2/100 |
-| Involved-company relationships inspected | 79 |
-
-The relationships that were present had strong structural integrity. No
-relationship had a missing company object, invalid company identifier, missing
-company name, empty role, or duplicate company-role association. Twenty-seven
-relationships legitimately accumulated more than one role.
-
-Coverage, however, is not sufficient for this field to support a principal MVP
-dimension. Missing data must mean only "not informed by IGDB"; it must never be
-presented as evidence that a developer, publisher, or other organization did
-not exist. The sample also contained company associations on records classified
-as `Mod`, so the presence of a company does not prove official, commercial, or
-product status.
-
-Decision for the first Comparable Games iteration:
-
-- defer `involved_companies` from the canonical MVP mapping and user-facing
-  organizational comparison;
-- do not use it for filters, rankings, confidence scores, product eligibility,
-  or inferences about company size, budget, distribution, or commercial
-  success;
-- preserve its demonstrated analytical value as a future candidate rather than
-  discard it;
-- compare and reconcile developer and publisher coverage with Wikidata and
-  other suitable sources in a later iteration;
-- keep `game_type = Mod` as the independent provisional exclusion rule for the
-  first analytical catalogue.
 
 ### Remaining game-type observations
 
@@ -1729,6 +1693,126 @@ record needs to be persisted. This remains safe only if the later synchronizatio
 strategy explicitly re-queries release windows and does not depend solely on
 `updated_at`.
 
+## Fixed-sample and alternative-name observations
+
+### Reproducible sample construction
+
+A less recency-biased sample was constructed from games whose
+`first_release_date` was earlier than the fixed cutoff:
+
+```text
+Cutoff: 2026-08-04T00:00:00Z
+Seed: 20260804
+Population recorded for the definitive selection: 278772
+Selected offsets: 100
+Returned games: 100
+Unique game identifiers: 100
+```
+
+The selection operation executed the 100 offset lookups in ten sequential
+batches of ten requests. All ten batches completed and produced one game for
+each selected offset. The offsets are retained as evidence of how the sample
+was produced, but the resulting 100 identifiers are the stable input for later
+field investigations.
+
+A subsequent verification run observed a different population count despite
+using the same release-date cutoff. This confirms that IGDB can add or correct
+records retroactively and that offsets alone do not preserve a sample over
+time. Later investigations therefore query the frozen identifiers directly.
+
+The successful execution demonstrates that the current client and Worker can:
+
+- coordinate sequential batches;
+- complete 100 controlled offset requests;
+- validate one returned record per offset;
+- verify count and identifier uniqueness;
+- freeze the selected identifiers for reproducible follow-up analysis;
+- retrieve the frozen collection directly by identifiers in a later request.
+
+This was not a performance, load, throughput, concurrency, or capacity test.
+No latency targets, timing distribution, rate-limit headroom, retry behavior,
+or production batch size were evaluated. The result is functional evidence
+about controlled batching and sample reproducibility, not evidence that the
+same strategy is suitable for production ingestion.
+
+No records were persisted in the Game Market Intelligence database during this
+experiment. The 100 IGDB responses were held in memory and inspected by the
+proof-of-concept Worker.
+
+### `alternative_names` sample results
+
+The frozen identifiers were queried to compare the main `name` with
+`alternative_names`, `version_title`, and `game_localizations`. The client
+validated that all 100 expected games were returned with no missing,
+unexpected, or duplicate identifiers.
+
+Observed coverage:
+
+| Observation | Result |
+|---|---:|
+| Games with `alternative_names` | 49/100 |
+| Alternative-name records | 67 |
+| Alternative names with `comment` | 65/67 |
+| Games with `version_title` | 2/100 |
+| Games with `game_localizations` | 15/100 |
+| Localization records | 20 |
+| Duplicate alternative name inside one game | 1 |
+| Alternative names equal to the same game's main name | 4 |
+| Exact name collision across different games | 1 |
+
+The cross-game collision was `Game.exe`, associated with IGDB identifiers
+`347230` and `403794`.
+
+The most frequent `alternative_names.comment` categories were:
+
+| Comment category | Count |
+|---|---:|
+| Windows Executable | 32 |
+| Alternative title | 6 |
+| Stylized title | 3 |
+| Japanese title — original | 3 |
+| Acronym | 3 |
+| Working title | 2 |
+| Russian title | 2 |
+| Japanese title — translated | 2 |
+| Japanese title — romanization | 2 |
+| Chinese title — traditional | 2 |
+| Chinese title — simplified | 2 |
+| No comment | 2 |
+| Other observed categories | 6 |
+
+`Windows Executable` accounted for 32 of 67 values, or 47.76% of all
+alternative names in the sample. The field is therefore not a homogeneous
+collection of titles by which a market product is officially known.
+
+The `comment` improves interpretation but does not consistently establish
+language, region, official usage, commercial provenance, or the relationship
+between an alias and a distributable product. Categories such as `Alternative
+title`, working titles, other aliases, and uncommented values remain ambiguous.
+The field also cannot determine whether the underlying game record represents
+an authorized market product, fan game, ROM hack, mod, or other community-origin
+content. Product eligibility must be evaluated at game-record level using
+combined evidence rather than inferred from an alias.
+
+### MVP mapping decision
+
+`alternative_names` is excluded from the MVP mapping and must not be used for:
+
+- public display;
+- title search;
+- identity;
+- automatic reconciliation.
+
+Creating a comment-category allowlist at this stage would imply a level of
+officiality and provenance that the observed data does not support.
+
+`version_title` remains semantically separate and must not be collapsed into a
+generic alias collection. `game_localizations` is a more structured candidate
+for regional titles because it carries an explicit region relationship, but
+its low observed coverage and provenance still require a separate evaluation.
+Regional structure alone must not be treated as proof of official commercial
+use.
+
 ## Current architectural boundaries
 
 ### `IgdbClient`
@@ -1744,6 +1828,8 @@ Responsible for:
 - deserializing the response into IGDB contracts;
 - retrieving a recently updated sample;
 - retrieving a controlled set of games by IGDB identifiers;
+- counting released games and retrieving records through controlled offsets;
+- retrieving the frozen alternative-name sample by IGDB identifiers;
 - retrieving records where `parent_game` is populated.
 - searching games by name for controlled identifier discovery;
 - retrieving expanded release-date data for controlled game identifiers.
@@ -1768,6 +1854,16 @@ GetGameTypesAsync
 
 SearchGamesByNameAsync
 → supports temporary controlled discovery of identifiers by name
+
+GetReleasedGameAtOffsetAsync
+→ retrieves one record at a controlled offset for sample construction
+
+GetReleasedGamesAtOffsetsAsync
+→ coordinates the selected offset lookups
+
+GetGamesAlternativeNamesSampleAsync
+→ retrieves the frozen games with alternative names, version titles, and
+  localization fields
 ```
 
 These operations represent different retrieval intentions while sharing common
@@ -1833,6 +1929,70 @@ Worker
 → Repository
 ```
 
+## Targeted collections and franchises evaluation
+
+### Collections coverage
+
+A targeted positive sample evaluated 26 main-game records from nine known
+series: The Legend of Zelda, Mario, Pokémon, Kingdom Hearts, Final Fantasy,
+Hollow Knight, Animal Crossing, Splatoon, and Grand Theft Auto.
+
+All 26 records were returned, all 26 contained one or more `collections`, and
+all 26 contained the collection expected for the reference case. Presence and
+expected-association coverage were therefore 100% within this targeted sample.
+The result supports the MVP use of `collections` for series and related
+groupings, but must not be generalized to universal IGDB coverage, especially
+for obscure, small, or incomplete catalogue records.
+
+Several records contained more than one collection. Examples included broad
+and title-specific groupings for Ocarina of Time, Tears of the Kingdom, Super
+Mario Galaxy, Final Fantasy VII, and Pokémon Legends: Arceus. The observed
+shape is therefore many-to-many:
+
+```text
+Game <-> GameCollection <-> Collection
+```
+
+No inspected field established a hierarchy, priority, or primary collection.
+The first association must not be interpreted as broadest, most specific, or
+most important.
+
+### Franchise comparison
+
+The same 26 records were then inspected with `franchises` and `collections`
+side by side:
+
+- 26 of 26 records contained one or more collections;
+- 24 of 26 contained one or more franchises (92.31%);
+- 21 records had at least one franchise label also present as a collection
+  label;
+- five records had at least one franchise label distinct from every collection
+  label;
+- Hollow Knight and Hollow Knight: Silksong had the expected collection but no
+  reported franchise.
+
+Distinct franchise labels were not consistently evidence of a broader primary
+series. `Super Mario Odyssey` used `Mario` as broader context alongside the
+`Super Mario` collection, but crossover-heavy records exposed ambiguity:
+
+- `Mario Kart 8` returned franchises for Mario Bros., The Legend of Zelda,
+  Donkey Kong, Mario, Yoshi, Wario, F-Zero, Excite, and Animal Crossing;
+- `Kingdom Hearts III` returned 22 franchises, including Kingdom Hearts, Final
+  Fantasy, Disney, Pixar, and multiple properties represented in its content;
+- `Animal Crossing: New Leaf` returned both Animal Crossing and Panel de Pon.
+
+The source did not indicate which franchise, if any, is primary. `franchises`
+can therefore mix central series context with crossovers, guest appearances,
+and licensed content. It must not be collapsed into a single `FranchiseId`,
+nor may the first association be selected automatically.
+
+For the MVP, `collections` is approved and `franchises` is deferred. The latter
+is not permanently rejected: it may be reconsidered for future analysis of
+crossovers, licensed intellectual properties, or brand reach. Missing values
+in either field mean unknown or not applicable, not proof that a game is
+standalone. Neither field proves commercial success, audience size, or legal
+ownership.
+
 ## Conclusions so far
 
 The current proof of concept confirms that:
@@ -1877,11 +2037,6 @@ The current proof of concept confirms that:
 - Company, external-game, website, and storefront evidence is useful context,
   but no inspected field independently proves authorization or commercial
   eligibility.
-- `involved_companies` relationships were structurally complete when present,
-  but only 51% of the frozen sample had any company information; developer and
-  publisher coverage were 47% and 44%, respectively.
-- `involved_companies` is deferred, not discarded, until other sources can be
-  evaluated for company coverage and reconciliation.
 - The `trusted` website flag must not be used as proof that a game is officially
   licensed or commercially distributed.
 - Digital-store presence must not be required because it would exclude
@@ -1946,6 +2101,29 @@ The current proof of concept confirms that:
 - Real-source inspection is necessary before defining the final mapping.
 - The Worker should coordinate execution, while future jobs, mappers, import
   services, and repositories should contain specialized responsibilities.
+- The 100-record selection completed 100 sequential offset requests in ten
+  batches of ten and produced 100 unique identifiers.
+- The batching result is functional evidence only; performance, load,
+  concurrency, rate-limit headroom, retries, and production capacity remain
+  untested.
+- Frozen identifiers are required for reproducible follow-up analysis because
+  the eligible IGDB population can change retroactively even with a fixed
+  release-date cutoff.
+- `alternative_names` mixes potentially useful title variants with executable
+  names, working titles, and ambiguous aliases.
+- `alternative_names` is excluded from MVP display, search, identity, and
+  reconciliation.
+- `version_title` must remain separate from alternative names.
+- `game_localizations` requires a separate provenance and coverage evaluation
+  before any regional-title mapping decision.
+- In the targeted 26-game sample, all records contained the expected
+  `collection`; games and collections must be modeled as many-to-many, without
+  inferring hierarchy or a primary association.
+- In the same sample, `franchises` had 92.31% presence coverage and often
+  duplicated collection labels, while crossover-heavy records introduced
+  associations with no primary-franchise indicator.
+- `collections` is approved for the MVP; `franchises` is deferred until a
+  future product question justifies its additional ambiguity and complexity.
 
 ## Next investigations
 
@@ -1964,24 +2142,25 @@ The following points still require investigation:
    records and determine whether other relationship fields are needed.
 5. Clarify the practical distinction among `Expansion`, `Standalone Expansion`,
    and `Expanded Game`.
-6. Evaluate covers, screenshots, franchises, alternative names, and other
-   complementary MVP fields.
-7. Measure nullability and field coverage using a larger and less recency-biased
+6. Evaluate covers, screenshots, involved companies, and other complementary
+   MVP fields.
+7. Evaluate `game_localizations` independently, including coverage, region
+   semantics, duplicates, relationship to the main name, and evidence of
+   official use.
+8. Measure nullability and field coverage using a larger and less recency-biased
    sample.
-8. Compare metadata completeness between parent records and related products.
-9. Validate pagination, rate limits, token behavior, retries, and an appropriate
+9. Compare metadata completeness between parent records and related products.
+10. Validate pagination, rate limits, token behavior, retries, and an appropriate
    synchronization strategy, including an overlapping release-date window for
    previously skipped future releases.
-10. Define which external fields are candidates for the MVP.
-11. Consolidate the proof-of-concept approval criteria.
-12. Define which findings affect product decisions and which require an ADR.
-13. Define the mapping boundary between IGDB contracts and the internal model.
-14. Define the future boundary between the Worker, jobs, import services,
+11. Define which external fields are candidates for the MVP.
+12. Consolidate the proof-of-concept approval criteria.
+13. Define which findings affect product decisions and which require an ADR.
+14. Define the mapping boundary between IGDB contracts and the internal model.
+15. Define the future boundary between the Worker, jobs, import services,
     mappers, and repositories.
-15. Evaluate attribution and source-identification requirements in the user
+16. Evaluate attribution and source-identification requirements in the user
     interface.
-16. Revisit commercial and community-origin classification in a future
+17. Revisit commercial and community-origin classification in a future
     increment only after the simple Mod exclusion has been validated in the
     working MVP.
-17. Re-evaluate involved-company coverage through Wikidata and other suitable
-    sources before proposing an organizational-context dimension.
