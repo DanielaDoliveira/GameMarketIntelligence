@@ -28,8 +28,7 @@ public sealed class Worker(
         402731, 403794
     ];
 
-    protected override async Task ExecuteAsync(
-        CancellationToken stoppingToken)
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         try
         {
@@ -37,7 +36,7 @@ public sealed class Worker(
 
             logger.LogInformation(
                 """
-                Starting IGDB involved-companies analysis:
+                Starting IGDB franchises-and-collections analysis:
                 Fixed sample size: {SampleSize}
                 Original release-date cutoff: {ReleaseDateCutoff}
                 Original sample seed: {SampleSeed}
@@ -70,13 +69,13 @@ public sealed class Worker(
             when (stoppingToken.IsCancellationRequested)
         {
             logger.LogInformation(
-                "IGDB involved-companies analysis was cancelled.");
+                "IGDB franchises-and-collections analysis was cancelled.");
         }
         catch (Exception exception)
         {
             logger.LogError(
                 exception,
-                "IGDB involved-companies analysis failed.");
+                "IGDB franchises-and-collections analysis failed.");
         }
         finally
         {
@@ -105,8 +104,7 @@ public sealed class Worker(
         }
     }
 
-    private static void ValidateReturnedGames(
-        IReadOnlyList<IgdbGameSample> games)
+    private static void ValidateReturnedGames(IReadOnlyList<IgdbGameSample> games)
     {
         var duplicateIds = games
             .GroupBy(game => game.Id)
@@ -117,12 +115,10 @@ public sealed class Worker(
 
         var returnedIds = games.Select(game => game.Id).ToHashSet();
         var selectedIds = SelectedGameIds.ToHashSet();
-
         var missingIds = SelectedGameIds
             .Where(gameId => !returnedIds.Contains(gameId))
             .Order()
             .ToArray();
-
         var unexpectedIds = returnedIds
             .Where(gameId => !selectedIds.Contains(gameId))
             .Order()
@@ -153,300 +149,206 @@ public sealed class Worker(
         {
             logger.LogInformation(
                 """
-                IGDB involved-companies evidence:
+                IGDB franchises-and-collections evidence:
                 Game ID: {GameId}
                 Primary name: {PrimaryName}
                 Game type: {GameType}
-                Involved companies ({RelationshipCount}):
-                {InvolvedCompanies}
+                Franchises ({FranchiseCount}): {Franchises}
+                Collections ({CollectionCount}): {Collections}
+                Shared IDs between both fields: {SharedIds}
                 """,
                 game.Id,
                 FormatValue(game.Name),
                 FormatGameType(game.GameType),
-                game.InvolvedCompanies.Count,
-                FormatInvolvedCompanies(game.InvolvedCompanies));
+                game.Franchises.Count,
+                FormatReferences(game.Franchises),
+                game.Collections.Count,
+                FormatReferences(game.Collections),
+                FormatIds(GetSharedIds(game)));
         }
     }
 
     private void LogSummary(IReadOnlyList<IgdbGameSample> games)
     {
-        var relationships = games
-            .SelectMany(game => game.InvolvedCompanies.Select(relationship =>
-                new GameCompanyRelationship(game, relationship)))
-            .ToArray();
+        var gamesWithFranchises = games.Count(game => game.Franchises.Count > 0);
+        var gamesWithCollections = games.Count(game => game.Collections.Count > 0);
+        var gamesWithBoth = games.Count(game =>
+            game.Franchises.Count > 0 && game.Collections.Count > 0);
+        var gamesWithNeither = games.Count(game =>
+            game.Franchises.Count == 0 && game.Collections.Count == 0);
+        var gamesWithMultipleFranchises = games.Count(game =>
+            game.Franchises.Count > 1);
+        var gamesWithMultipleCollections = games.Count(game =>
+            game.Collections.Count > 1);
+        var gamesWithSharedIds = games.Count(game => GetSharedIds(game).Length > 0);
 
-        var gamesWithCompanies = games.Count(
-            game => game.InvolvedCompanies.Count > 0);
+        var franchiseReferences = games.SelectMany(game => game.Franchises).ToArray();
+        var collectionReferences = games.SelectMany(game => game.Collections).ToArray();
 
-        var gamesWithDeveloper = games.Count(game =>
-            game.InvolvedCompanies.Any(relationship => relationship.Developer));
+        var franchiseIntegrity = CalculateIntegrity(games, game => game.Franchises);
+        var collectionIntegrity = CalculateIntegrity(games, game => game.Collections);
 
-        var gamesWithPublisher = games.Count(game =>
-            game.InvolvedCompanies.Any(relationship => relationship.Publisher));
+        logger.LogInformation(
+            """
+            IGDB franchises-and-collections analysis completed:
+            Requested fixed IDs: {RequestedGameCount}
+            Returned unique games: {ReturnedGameCount}
 
-        var gamesWithPorting = games.Count(game =>
-            game.InvolvedCompanies.Any(relationship => relationship.Porting));
+            Franchise coverage:
+            Games with at least one franchise: {GamesWithFranchises} ({FranchiseCoverage:F2}%)
+            Games without franchise data: {GamesWithoutFranchises} ({MissingFranchiseCoverage:F2}%)
+            Total franchise references: {FranchiseReferenceCount}
+            Games with multiple franchises: {GamesWithMultipleFranchises}
+            Franchise references with invalid ID: {InvalidFranchiseIds}
+            Franchise references without name: {MissingFranchiseNames}
+            Duplicate franchise IDs within a game: {DuplicateFranchiseIds}
 
-        var gamesWithSupporting = games.Count(game =>
-            game.InvolvedCompanies.Any(relationship => relationship.Supporting));
+            Collection coverage:
+            Games with at least one collection: {GamesWithCollections} ({CollectionCoverage:F2}%)
+            Games without collection data: {GamesWithoutCollections} ({MissingCollectionCoverage:F2}%)
+            Total collection references: {CollectionReferenceCount}
+            Games with multiple collections: {GamesWithMultipleCollections}
+            Collection references with invalid ID: {InvalidCollectionIds}
+            Collection references without name: {MissingCollectionNames}
+            Duplicate collection IDs within a game: {DuplicateCollectionIds}
 
-        var relationshipsWithoutCompany = relationships.Count(item =>
-            item.Relationship.Company is null);
+            Relationship between fields:
+            Games with both fields: {GamesWithBoth}
+            Games with franchise only: {GamesWithFranchiseOnly}
+            Games with collection only: {GamesWithCollectionOnly}
+            Games with neither field: {GamesWithNeither}
+            Games sharing at least one numeric ID between fields: {GamesWithSharedIds}
 
-        var relationshipsWithInvalidCompanyId = relationships.Count(item =>
-            item.Relationship.Company is not null &&
-            item.Relationship.Company.Id <= 0);
+            Coverage by game type:
+            {GameTypeCoverage}
 
-        var relationshipsWithoutCompanyName = relationships.Count(item =>
-            item.Relationship.Company is not null &&
-            string.IsNullOrWhiteSpace(item.Relationship.Company.Name));
+            Recurring franchises in the sample:
+            {FranchiseFrequency}
 
-        var relationshipsWithoutRole = relationships.Count(item =>
-            GetRoleCount(item.Relationship) == 0);
+            Recurring collections in the sample:
+            {CollectionFrequency}
+            """,
+            SelectedGameIds.Count,
+            games.Count,
+            gamesWithFranchises,
+            Percentage(gamesWithFranchises, games.Count),
+            games.Count - gamesWithFranchises,
+            Percentage(games.Count - gamesWithFranchises, games.Count),
+            franchiseReferences.Length,
+            gamesWithMultipleFranchises,
+            franchiseIntegrity.InvalidIds,
+            franchiseIntegrity.MissingNames,
+            franchiseIntegrity.DuplicateIdsWithinGames,
+            gamesWithCollections,
+            Percentage(gamesWithCollections, games.Count),
+            games.Count - gamesWithCollections,
+            Percentage(games.Count - gamesWithCollections, games.Count),
+            collectionReferences.Length,
+            gamesWithMultipleCollections,
+            collectionIntegrity.InvalidIds,
+            collectionIntegrity.MissingNames,
+            collectionIntegrity.DuplicateIdsWithinGames,
+            gamesWithBoth,
+            gamesWithFranchises - gamesWithBoth,
+            gamesWithCollections - gamesWithBoth,
+            gamesWithNeither,
+            gamesWithSharedIds,
+            FormatGameTypeCoverage(games),
+            FormatFrequency(games, game => game.Franchises),
+            FormatFrequency(games, game => game.Collections));
+    }
 
-        var relationshipsWithMultipleRoles = relationships.Count(item =>
-            GetRoleCount(item.Relationship) > 1);
+    private static ReferenceIntegrity CalculateIntegrity(
+        IReadOnlyList<IgdbGameSample> games,
+        Func<IgdbGameSample, IReadOnlyList<IgdbNamedReference>> selector)
+    {
+        var references = games.SelectMany(selector).ToArray();
+        return new ReferenceIntegrity(
+            references.Count(reference => reference.Id <= 0),
+            references.Count(reference => string.IsNullOrWhiteSpace(reference.Name)),
+            games.Sum(game => selector(game)
+                .GroupBy(reference => reference.Id)
+                .Sum(group => Math.Max(0, group.Count() - 1))));
+    }
 
-        var duplicateRelationshipIds = games.Sum(game =>
-            game.InvolvedCompanies
-                .GroupBy(relationship => relationship.Id)
-                .Sum(group => Math.Max(0, group.Count() - 1)));
-
-        var duplicateCompanyRoleRelationships = games.Sum(game =>
-            game.InvolvedCompanies
-                .Where(relationship => relationship.Company is not null)
-                .GroupBy(relationship => new
-                {
-                    relationship.Company!.Id,
-                    relationship.Developer,
-                    relationship.Publisher,
-                    relationship.Porting,
-                    relationship.Supporting
-                })
-                .Sum(group => Math.Max(0, group.Count() - 1)));
-
-        var repeatedCompaniesWithinGames = games.Sum(game =>
-            game.InvolvedCompanies
-                .Where(relationship => relationship.Company is not null)
-                .GroupBy(relationship => relationship.Company!.Id)
-                .Sum(group => Math.Max(0, group.Count() - 1)));
-
-        var gameTypeCoverage = games
+    private static string FormatGameTypeCoverage(IReadOnlyList<IgdbGameSample> games) =>
+        string.Join(Environment.NewLine, games
             .GroupBy(game => new
             {
                 Id = game.GameType?.Id,
                 Name = FormatValue(game.GameType?.Type)
             })
-            .Select(group => new GameTypeCoverage(
-                group.Key.Id,
-                group.Key.Name,
-                group.Count(),
-                group.Count(game => game.InvolvedCompanies.Count > 0),
-                group.Count(game => game.InvolvedCompanies.Any(
-                    relationship => relationship.Developer)),
-                group.Count(game => game.InvolvedCompanies.Any(
-                    relationship => relationship.Publisher))))
-            .OrderByDescending(summary => summary.GameCount)
-            .ThenBy(summary => summary.GameTypeId)
-            .ToArray();
+            .OrderByDescending(group => group.Count())
+            .ThenBy(group => group.Key.Id)
+            .Select(group =>
+                $"- {group.Key.Id?.ToString() ?? "null"} | {group.Key.Name}: " +
+                $"games={group.Count()}, " +
+                $"with franchises={group.Count(game => game.Franchises.Count > 0)}, " +
+                $"with collections={group.Count(game => game.Collections.Count > 0)}, " +
+                $"with both={group.Count(game => game.Franchises.Count > 0 && game.Collections.Count > 0)}"));
 
-        var companyFrequency = relationships
-            .Where(item => item.Relationship.Company is not null)
-            .GroupBy(item => item.Relationship.Company!.Id)
-            .Select(group => new CompanyFrequency(
-                group.Key,
-                group.Select(item => item.Relationship.Company!.Name)
+    private static string FormatFrequency(
+        IReadOnlyList<IgdbGameSample> games,
+        Func<IgdbGameSample, IReadOnlyList<IgdbNamedReference>> selector)
+    {
+        var frequencies = games
+            .SelectMany(game => selector(game).Select(reference => new { game.Id, Reference = reference }))
+            .GroupBy(item => item.Reference.Id)
+            .Select(group => new
+            {
+                ReferenceId = group.Key,
+                Name = group.Select(item => item.Reference.Name)
                     .FirstOrDefault(name => !string.IsNullOrWhiteSpace(name)),
-                group.Select(item => item.Game.Id).Distinct().Count(),
-                group.Count(item => item.Relationship.Developer),
-                group.Count(item => item.Relationship.Publisher),
-                group.Count(item => item.Relationship.Porting),
-                group.Count(item => item.Relationship.Supporting)))
-            .OrderByDescending(summary => summary.GameCount)
-            .ThenBy(summary => summary.CompanyId)
+                GameCount = group.Select(item => item.Id).Distinct().Count()
+            })
+            .Where(item => item.GameCount > 1)
+            .OrderByDescending(item => item.GameCount)
+            .ThenBy(item => item.ReferenceId)
             .ToArray();
 
-        logger.LogInformation(
-            """
-            IGDB involved-companies analysis completed:
-            Requested fixed IDs: {RequestedGameCount}
-            Returned unique games: {ReturnedGameCount}
-            Games with at least one involved company: {GamesWithCompanies} ({CompanyCoverage:F2}%)
-            Games without involved-company data: {GamesWithoutCompanies} ({MissingCompanyCoverage:F2}%)
-            Total involved-company relationships: {RelationshipCount}
-            Games with at least one developer: {GamesWithDeveloper} ({DeveloperCoverage:F2}%)
-            Games without a developer reported by IGDB: {GamesWithoutDeveloper} ({MissingDeveloperCoverage:F2}%)
-            Games with at least one publisher: {GamesWithPublisher} ({PublisherCoverage:F2}%)
-            Games without a publisher reported by IGDB: {GamesWithoutPublisher} ({MissingPublisherCoverage:F2}%)
-            Games with at least one porting company: {GamesWithPorting} ({PortingCoverage:F2}%)
-            Games with at least one supporting company: {GamesWithSupporting} ({SupportingCoverage:F2}%)
-            Developer role occurrences: {DeveloperRelationships}
-            Publisher role occurrences: {PublisherRelationships}
-            Porting role occurrences: {PortingRelationships}
-            Supporting role occurrences: {SupportingRelationships}
-            Relationships without a company object: {RelationshipsWithoutCompany}
-            Relationships with a non-positive company ID: {RelationshipsWithInvalidCompanyId}
-            Relationships without a company name: {RelationshipsWithoutCompanyName}
-            Relationships without any role: {RelationshipsWithoutRole}
-            Relationships with multiple roles: {RelationshipsWithMultipleRoles}
-            Duplicate relationship-ID occurrences within the same game: {DuplicateRelationshipIds}
-            Duplicate company-and-role occurrences within the same game: {DuplicateCompanyRoleRelationships}
-            Repeated company occurrences within the same game: {RepeatedCompaniesWithinGames}
-            Coverage by game type:
-            {GameTypeCoverage}
-            Company frequency across the fixed sample:
-            {CompanyFrequency}
-            """,
-            SelectedGameIds.Count,
-            games.Count,
-            gamesWithCompanies,
-            Percentage(gamesWithCompanies, games.Count),
-            games.Count - gamesWithCompanies,
-            Percentage(games.Count - gamesWithCompanies, games.Count),
-            relationships.Length,
-            gamesWithDeveloper,
-            Percentage(gamesWithDeveloper, games.Count),
-            games.Count - gamesWithDeveloper,
-            Percentage(games.Count - gamesWithDeveloper, games.Count),
-            gamesWithPublisher,
-            Percentage(gamesWithPublisher, games.Count),
-            games.Count - gamesWithPublisher,
-            Percentage(games.Count - gamesWithPublisher, games.Count),
-            gamesWithPorting,
-            Percentage(gamesWithPorting, games.Count),
-            gamesWithSupporting,
-            Percentage(gamesWithSupporting, games.Count),
-            relationships.Count(item => item.Relationship.Developer),
-            relationships.Count(item => item.Relationship.Publisher),
-            relationships.Count(item => item.Relationship.Porting),
-            relationships.Count(item => item.Relationship.Supporting),
-            relationshipsWithoutCompany,
-            relationshipsWithInvalidCompanyId,
-            relationshipsWithoutCompanyName,
-            relationshipsWithoutRole,
-            relationshipsWithMultipleRoles,
-            duplicateRelationshipIds,
-            duplicateCompanyRoleRelationships,
-            repeatedCompaniesWithinGames,
-            FormatGameTypeCoverage(gameTypeCoverage),
-            FormatCompanyFrequency(companyFrequency));
+        return frequencies.Length == 0
+            ? "None occurred in more than one sampled game."
+            : string.Join(Environment.NewLine, frequencies.Select(item =>
+                $"- {item.ReferenceId} | {FormatValue(item.Name)}: {item.GameCount} games"));
     }
 
-    private static int GetRoleCount(IgdbInvolvedCompanyReference relationship)
+    private static long[] GetSharedIds(IgdbGameSample game)
     {
-        return Convert.ToInt32(relationship.Developer) +
-               Convert.ToInt32(relationship.Publisher) +
-               Convert.ToInt32(relationship.Porting) +
-               Convert.ToInt32(relationship.Supporting);
+        var collectionIds = game.Collections.Select(reference => reference.Id).ToHashSet();
+        return game.Franchises
+            .Select(reference => reference.Id)
+            .Where(collectionIds.Contains)
+            .Distinct()
+            .Order()
+            .ToArray();
     }
 
-    private static string FormatInvolvedCompanies(
-        IReadOnlyList<IgdbInvolvedCompanyReference> relationships)
-    {
-        return relationships.Count == 0
-            ? "(not reported by IGDB)"
-            : string.Join(
-                Environment.NewLine,
-                relationships
-                    .OrderBy(relationship => relationship.Id)
-                    .Select(relationship =>
-                        $"- relationship={relationship.Id}; " +
-                        $"company={FormatCompany(relationship.Company)}; " +
-                        $"roles={FormatRoles(relationship)}"));
-    }
+    private static string FormatReferences(IReadOnlyList<IgdbNamedReference> references) =>
+        references.Count == 0
+            ? "Not reported by IGDB"
+            : string.Join("; ", references
+                .OrderBy(reference => reference.Id)
+                .Select(reference => $"{reference.Id} | {FormatValue(reference.Name)}"));
 
-    private static string FormatCompany(IgdbNamedReference? company)
-    {
-        return company is null
-            ? "(null)"
-            : $"{company.Id} - {FormatValue(company.Name)}";
-    }
+    private static string FormatGameType(IgdbGameTypeReference? gameType) =>
+        gameType is null
+            ? "Not reported by IGDB"
+            : $"{gameType.Id} | {FormatValue(gameType.Type)}";
 
-    private static string FormatRoles(IgdbInvolvedCompanyReference relationship)
-    {
-        var roles = new List<string>(4);
-
-        if (relationship.Developer) roles.Add("developer");
-        if (relationship.Publisher) roles.Add("publisher");
-        if (relationship.Porting) roles.Add("porting");
-        if (relationship.Supporting) roles.Add("supporting");
-
-        return roles.Count == 0 ? "(none)" : string.Join(", ", roles);
-    }
-
-    private static string FormatGameType(IgdbGameTypeReference? gameType)
-    {
-        return gameType is null
-            ? "(null)"
-            : $"{gameType.Id} - {FormatValue(gameType.Type)}";
-    }
-
-    private static string FormatGameTypeCoverage(
-        IReadOnlyList<GameTypeCoverage> summaries)
-    {
-        return summaries.Count == 0
-            ? "(none)"
-            : string.Join(
-                Environment.NewLine,
-                summaries.Select(summary =>
-                    $"- {summary.GameTypeId?.ToString() ?? "(null)"} - " +
-                    $"{summary.GameTypeName}: games={summary.GameCount}; " +
-                    $"with companies={summary.GamesWithCompanies} " +
-                    $"({Percentage(summary.GamesWithCompanies, summary.GameCount):F2}%); " +
-                    $"with developer={summary.GamesWithDeveloper}; " +
-                    $"with publisher={summary.GamesWithPublisher}"));
-    }
-
-    private static string FormatCompanyFrequency(
-        IReadOnlyList<CompanyFrequency> summaries)
-    {
-        return summaries.Count == 0
-            ? "(none)"
-            : string.Join(
-                Environment.NewLine,
-                summaries.Select(summary =>
-                    $"- {summary.CompanyId} - {FormatValue(summary.CompanyName)}: " +
-                    $"games={summary.GameCount}; developer={summary.DeveloperCount}; " +
-                    $"publisher={summary.PublisherCount}; porting={summary.PortingCount}; " +
-                    $"supporting={summary.SupportingCount}"));
-    }
-
-    private static string FormatValue(string? value)
-    {
-        return string.IsNullOrWhiteSpace(value)
-            ? "(null or whitespace)"
-            : value;
-    }
+    private static string FormatValue(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? "Not reported by IGDB" : value;
 
     private static string FormatIds(IEnumerable<long> ids)
     {
-        var values = ids.Select(id => id.ToString()).ToArray();
-        return values.Length == 0 ? "(none)" : string.Join(", ", values);
+        var values = ids.ToArray();
+        return values.Length == 0 ? "None" : string.Join(", ", values);
     }
 
-    private static double Percentage(int value, int total)
-    {
-        return total == 0 ? 0 : value * 100d / total;
-    }
+    private static double Percentage(int value, int total) =>
+        total == 0 ? 0 : value * 100d / total;
 
-    private sealed record GameCompanyRelationship(
-        IgdbGameSample Game,
-        IgdbInvolvedCompanyReference Relationship);
-
-    private sealed record GameTypeCoverage(
-        long? GameTypeId,
-        string GameTypeName,
-        int GameCount,
-        int GamesWithCompanies,
-        int GamesWithDeveloper,
-        int GamesWithPublisher);
-
-    private sealed record CompanyFrequency(
-        long CompanyId,
-        string? CompanyName,
-        int GameCount,
-        int DeveloperCount,
-        int PublisherCount,
-        int PortingCount,
-        int SupportingCount);
+    private sealed record ReferenceIntegrity(
+        int InvalidIds,
+        int MissingNames,
+        int DuplicateIdsWithinGames);
 }

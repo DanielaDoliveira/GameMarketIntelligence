@@ -6,7 +6,6 @@ using Microsoft.Extensions.Options;
 
 namespace GameMarketIntel.Collector.Igdb.Client;
 
-
 public sealed class IgdbClient(HttpClient httpClient, IOptions<IgdbPocOptions> options) : IIgdbClient
 {
     private readonly IgdbPocOptions _options = options.Value;
@@ -17,7 +16,7 @@ public sealed class IgdbClient(HttpClient httpClient, IOptions<IgdbPocOptions> o
         {
             throw new ArgumentOutOfRangeException
             (
-                nameof(releaseDateCutoff), 
+                nameof(releaseDateCutoff),
                 "The release-date cutoff must be a positive Unix timestamp."
             );
         }
@@ -26,7 +25,7 @@ public sealed class IgdbClient(HttpClient httpClient, IOptions<IgdbPocOptions> o
         (
             HttpMethod.Post,
             "https://api.igdb.com/v4/games/count"
-         );
+        );
 
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
         request.Headers.Add("Client-ID", _options.ClientId);
@@ -58,117 +57,111 @@ public sealed class IgdbClient(HttpClient httpClient, IOptions<IgdbPocOptions> o
         return countResponse?.Count ?? throw new InvalidOperationException("IGDB returned an empty games-count response.");
     }
 
-   public async Task<IReadOnlyList<IgdbGameSample>>
-    GetReleasedGameAtOffsetAsync(
+    public async Task<IReadOnlyList<IgdbGameSample>> GetReleasedGameAtOffsetAsync(
         string accessToken,
         long releaseDateCutoff,
         int offset,
         CancellationToken cancellationToken = default)
-{
-    if (releaseDateCutoff <= 0)
     {
-        throw new ArgumentOutOfRangeException(
-            nameof(releaseDateCutoff),
-            "The release-date cutoff must be a positive Unix timestamp.");
+        if (releaseDateCutoff <= 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(releaseDateCutoff),
+                "The release-date cutoff must be a positive Unix timestamp.");
+        }
+
+        if (offset < 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(offset),
+                "The offset cannot be negative.");
+        }
+
+        using var request = CreateGamesRequest(
+            accessToken,
+            $"""
+             fields
+                 id,
+                 name,
+                 first_release_date;
+
+             where first_release_date != null
+                 & first_release_date < {releaseDateCutoff};
+
+             sort id asc;
+             offset {offset};
+             limit 1;
+             """);
+
+        return await SendGamesRequestAsync(request, cancellationToken);
     }
 
-    if (offset < 0)
-    {
-        throw new ArgumentOutOfRangeException(
-            nameof(offset),
-            "The offset cannot be negative.");
-    }
-
-    using var request = CreateGamesRequest(
-        accessToken,
-        $"""
-         fields
-             id,
-             name,
-             first_release_date;
-
-         where first_release_date != null
-             & first_release_date < {releaseDateCutoff};
-
-         sort id asc;
-         offset {offset};
-         limit 1;
-         """);
-
-    return await SendGamesRequestAsync(
-        request,
-        cancellationToken);
-}
-
-public async Task<IReadOnlyList<IgdbGameSample>>
-    GetReleasedGamesAtOffsetsAsync(
+    public async Task<IReadOnlyList<IgdbGameSample>> GetReleasedGamesAtOffsetsAsync(
         string accessToken,
         long releaseDateCutoff,
         IReadOnlyCollection<int> offsets,
         CancellationToken cancellationToken = default)
-{
-    ArgumentNullException.ThrowIfNull(offsets);
-
-    if (releaseDateCutoff <= 0)
     {
-        throw new ArgumentOutOfRangeException(
-            nameof(releaseDateCutoff),
-            "The release-date cutoff must be a positive Unix timestamp.");
-    }
+        ArgumentNullException.ThrowIfNull(offsets);
 
-    if (offsets.Count == 0)
-    {
-        return [];
-    }
+        if (releaseDateCutoff <= 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(releaseDateCutoff),
+                "The release-date cutoff must be a positive Unix timestamp.");
+        }
 
-    if (offsets.Any(offset => offset < 0))
-    {
-        throw new ArgumentOutOfRangeException(
-            nameof(offsets),
-            "Offsets cannot be negative.");
-    }
+        if (offsets.Count == 0)
+        {
+            return [];
+        }
 
-    if (offsets.Distinct().Count() != offsets.Count)
-    {
-        throw new ArgumentException(
-            "Offsets must be distinct.",
-            nameof(offsets));
-    }
+        if (offsets.Any(offset => offset < 0))
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(offsets),
+                "Offsets cannot be negative.");
+        }
 
-    var games = new List<IgdbGameSample>(offsets.Count);
+        if (offsets.Distinct().Count() != offsets.Count)
+        {
+            throw new ArgumentException(
+                "Offsets must be distinct.",
+                nameof(offsets));
+        }
 
-    foreach (var offset in offsets)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
+        var games = new List<IgdbGameSample>(offsets.Count);
 
-        var gamesAtOffset =
-            await GetReleasedGameAtOffsetAsync(
+        foreach (var offset in offsets)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var gamesAtOffset = await GetReleasedGameAtOffsetAsync(
                 accessToken,
                 releaseDateCutoff,
                 offset,
                 cancellationToken);
 
-        if (gamesAtOffset.Count != 1)
-        {
-            throw new InvalidOperationException(
-                $"""
-                 Expected exactly one IGDB game at offset {offset},
-                 but received {gamesAtOffset.Count}.
-                 """);
+            if (gamesAtOffset.Count != 1)
+            {
+                throw new InvalidOperationException(
+                    $"""
+                     Expected exactly one IGDB game at offset {offset},
+                     but received {gamesAtOffset.Count}.
+                     """);
+            }
+
+            games.Add(gamesAtOffset[0]);
         }
 
-        games.Add(gamesAtOffset[0]);
+        return games;
     }
-
-    return games;
-}
 
     public async Task<IReadOnlyList<IgdbGameSample>> GetGamesSampleAsync(string accessToken, int sampleSize, CancellationToken cancellationToken = default)
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, "https://api.igdb.com/v4/games");
 
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-
         request.Headers.Add("Client-ID", _options.ClientId);
         request.Content = new StringContent(
             $"""
@@ -254,6 +247,12 @@ public async Task<IReadOnlyList<IgdbGameSample>>
                  genres.id,
                  genres.name,
 
+                 franchises.id,
+                 franchises.name,
+
+                 collections.id,
+                 collections.name,
+
                  themes.id,
                  themes.name,
 
@@ -282,7 +281,7 @@ public async Task<IReadOnlyList<IgdbGameSample>>
                  websites.trusted,
                  websites.type.id,
                  websites.type.type,
-                 
+
                  release_dates.id,
                  release_dates.date,
                  release_dates.human,
@@ -388,7 +387,7 @@ public async Task<IReadOnlyList<IgdbGameSample>>
             sort id asc;
             limit 500;
             """);
-        
+
         using var response = await httpClient.SendAsync(request, cancellationToken);
         if (!response.IsSuccessStatusCode)
         {
@@ -401,16 +400,15 @@ public async Task<IReadOnlyList<IgdbGameSample>>
                  Response: {errorContent}
                  """,
                 inner: null,
-                response.StatusCode
-                );
+                response.StatusCode);
         }
+
         var gameTypes = await response.Content.ReadFromJsonAsync<List<IgdbGameTypeReference>>(cancellationToken);
 
         return gameTypes ?? [];
     }
 
-    public async Task<IReadOnlyList<IgdbGameSample>>
-        GetGamesIncludedInBundleAsync(string accessToken, long bundleId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<IgdbGameSample>> GetGamesIncludedInBundleAsync(string accessToken, long bundleId, CancellationToken cancellationToken = default)
     {
         using var request = CreateGamesRequest(
             accessToken,
@@ -550,11 +548,12 @@ public async Task<IReadOnlyList<IgdbGameSample>>
 
         return await SendGamesRequestAsync(request, cancellationToken);
     }
+
     private HttpRequestMessage CreateGamesRequest(string accessToken, string query)
     {
         var request = new HttpRequestMessage(HttpMethod.Post, "https://api.igdb.com/v4/games");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-        request.Headers.Add("Client-ID",_options.ClientId);
+        request.Headers.Add("Client-ID", _options.ClientId);
         request.Content = new StringContent(query);
         return request;
     }
@@ -565,7 +564,7 @@ public async Task<IReadOnlyList<IgdbGameSample>>
         if (!response.IsSuccessStatusCode)
         {
             var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
-            
+
             throw new HttpRequestException(
                 $"""
                  IGDB request failed.
@@ -573,12 +572,10 @@ public async Task<IReadOnlyList<IgdbGameSample>>
                  Response: {errorContent}
                  """,
                 inner: null,
-                response.StatusCode
-                );
+                response.StatusCode);
         }
 
         var games = await response.Content.ReadFromJsonAsync<List<IgdbGameSample>>(cancellationToken);
         return games ?? [];
     }
-    
 }
