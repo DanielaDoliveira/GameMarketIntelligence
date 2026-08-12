@@ -37,7 +37,7 @@ public sealed class Worker(
         {
             logger.LogInformation(
                 """
-                Starting IGDB random-sample player-perspectives analysis:
+                Starting IGDB random-sample game-modes analysis:
                 Frozen sample size: {SampleCount}
                 Sample seed: {SampleSeed}
                 Sample cutoff: {SampleCutoff}
@@ -66,13 +66,13 @@ public sealed class Worker(
             when (stoppingToken.IsCancellationRequested)
         {
             logger.LogInformation(
-                "IGDB random-sample player-perspectives analysis was cancelled.");
+                "IGDB random-sample game-modes analysis was cancelled.");
         }
         catch (Exception exception)
         {
             logger.LogError(
                 exception,
-                "IGDB random-sample player-perspectives analysis failed.");
+                "IGDB random-sample game-modes analysis failed.");
         }
         finally
         {
@@ -94,29 +94,29 @@ public sealed class Worker(
                 : $"- ID={gameId}; record=NOT RETURNED");
 
         logger.LogInformation(
-            "IGDB random-sample player-perspectives results:{NewLine}{Results}",
+            "IGDB random-sample game-modes results:{NewLine}{Results}",
             Environment.NewLine,
             string.Join(Environment.NewLine, resultLines));
 
-        var gamesWithPerspectives = returnedGames
-            .Where(game => game.PlayerPerspectives.Count > 0)
+        var gamesWithModes = returnedGames
+            .Where(game => game.GameModes.Count > 0)
             .ToArray();
         var recordsWithDuplicateIds = returnedGames.Count(game =>
-            game.PlayerPerspectives.Select(item => item.Id).Distinct().Count()
-            != game.PlayerPerspectives.Count);
+            game.GameModes.Select(item => item.Id).Distinct().Count()
+            != game.GameModes.Count);
         var recordsWithInvalidValues = returnedGames.Count(game =>
-            game.PlayerPerspectives.Any(item =>
+            game.GameModes.Any(item =>
                 item.Id <= 0 || string.IsNullOrWhiteSpace(item.Name)));
         var conflictingNamesById = returnedGames
-            .SelectMany(game => game.PlayerPerspectives)
+            .SelectMany(game => game.GameModes)
             .GroupBy(item => item.Id)
             .Count(group => group
                 .Select(item => item.Name?.Trim())
                 .Where(name => !string.IsNullOrWhiteSpace(name))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .Count() > 1);
-        var distinctPerspectives = returnedGames
-            .SelectMany(game => game.PlayerPerspectives)
+        var distinctModes = returnedGames
+            .SelectMany(game => game.GameModes)
             .GroupBy(item => item.Id)
             .Select(group => new
             {
@@ -124,68 +124,68 @@ public sealed class Worker(
                 Name = group.Select(item => item.Name).FirstOrDefault(name =>
                     !string.IsNullOrWhiteSpace(name)) ?? "not reported",
                 RecordCount = returnedGames.Count(game =>
-                    game.PlayerPerspectives.Any(item => item.Id == group.Key))
+                    game.GameModes.Any(item => item.Id == group.Key))
             })
             .OrderByDescending(item => item.RecordCount)
             .ThenBy(item => item.Id)
             .ToArray();
 
-        var frequencyLines = distinctPerspectives.Length == 0
-            ? "- no player perspectives reported"
-            : string.Join(Environment.NewLine, distinctPerspectives.Select(item =>
+        var frequencyLines = distinctModes.Length == 0
+            ? "- no game modes reported"
+            : string.Join(Environment.NewLine, distinctModes.Select(item =>
                 $"- {item.Id}|{item.Name}: {item.RecordCount}/{returnedGames.Length} " +
                 $"records ({FormatPercentage(item.RecordCount, returnedGames.Length)})"));
 
         logger.LogInformation(
             """
-            IGDB random-sample player-perspectives summary:
+            IGDB random-sample game-modes summary:
             Frozen sample size: {SampleCount}
             Records returned: {ReturnedCount}
             Missing records: {MissingCount}
-            Records with one or more player perspectives: {WithPerspectiveCount}
-            Records without player perspectives: {WithoutPerspectiveCount}
-            Player-perspective presence coverage among returned records: {Coverage}
-            Records with exactly one player perspective: {ExactlyOneCount}
-            Records with multiple player perspectives: {MultipleCount}
-            Records with duplicate player-perspective IDs: {DuplicateCount}
-            Records with invalid player-perspective IDs or blank names: {InvalidCount}
-            Player-perspective IDs with conflicting reported names: {ConflictingNameCount}
-            Distinct player-perspective IDs reported: {DistinctCount}
+            Records with one or more game modes: {WithModeCount}
+            Records without game modes: {WithoutModeCount}
+            Game-mode presence coverage among returned records: {Coverage}
+            Records with exactly one game mode: {ExactlyOneCount}
+            Records with multiple game modes: {MultipleCount}
+            Records with duplicate game-mode IDs: {DuplicateCount}
+            Records with invalid game-mode IDs or blank names: {InvalidCount}
+            Game-mode IDs with conflicting reported names: {ConflictingNameCount}
+            Distinct game-mode IDs reported: {DistinctCount}
 
-            Player-perspective frequency among returned records:
+            Game-mode frequency among returned records:
             {FrequencyLines}
             """,
             SampleGameIds.Length,
             returnedGames.Length,
             SampleGameIds.Length - returnedGames.Length,
-            gamesWithPerspectives.Length,
-            returnedGames.Length - gamesWithPerspectives.Length,
-            FormatPercentage(gamesWithPerspectives.Length, returnedGames.Length),
-            returnedGames.Count(game => game.PlayerPerspectives.Count == 1),
-            returnedGames.Count(game => game.PlayerPerspectives.Count > 1),
+            gamesWithModes.Length,
+            returnedGames.Length - gamesWithModes.Length,
+            FormatPercentage(gamesWithModes.Length, returnedGames.Length),
+            returnedGames.Count(game => game.GameModes.Count == 1),
+            returnedGames.Count(game => game.GameModes.Count > 1),
             recordsWithDuplicateIds,
             recordsWithInvalidValues,
             conflictingNamesById,
-            distinctPerspectives.Length,
+            distinctModes.Length,
             frequencyLines);
 
         logger.LogInformation(
-            "IGDB random-sample player-perspectives analysis completed.");
+            "IGDB random-sample game-modes analysis completed.");
     }
 
     private static string FormatResult(IgdbGameSample game)
     {
-        var duplicateIds = game.PlayerPerspectives
+        var duplicateIds = game.GameModes
             .Select(item => item.Id)
             .Distinct()
-            .Count() != game.PlayerPerspectives.Count;
-        var invalidValues = game.PlayerPerspectives.Any(item =>
+            .Count() != game.GameModes.Count;
+        var invalidValues = game.GameModes.Any(item =>
             item.Id <= 0 || string.IsNullOrWhiteSpace(item.Name));
 
         return
             $"- ID={game.Id}; title={FormatValue(game.Name)}; " +
-            $"player perspectives={FormatReferences(game.PlayerPerspectives)}; " +
-            $"perspective count={game.PlayerPerspectives.Count}; " +
+            $"game modes={FormatReferences(game.GameModes)}; " +
+            $"mode count={game.GameModes.Count}; " +
             $"duplicate IDs={FormatBoolean(duplicateIds)}; " +
             $"invalid values={FormatBoolean(invalidValues)}";
     }
