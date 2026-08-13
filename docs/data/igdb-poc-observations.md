@@ -1813,6 +1813,92 @@ its low observed coverage and provenance still require a separate evaluation.
 Regional structure alone must not be treated as proof of official commercial
 use.
 
+## Fixed-sample game-mode and player-perspective observations
+
+The frozen 100 game identifiers were reused for structurally equivalent
+investigations of `game_modes` and `player_perspectives`. This preserves the
+same broad sample across fields and avoids treating completeness among famous
+games as representative of the wider IGDB catalogue.
+
+The 100-record sample includes the broad source population represented by the
+frozen identifiers, including main games, editions, DLCs, expansions, and
+community-origin content. The measurements therefore describe that sample and
+must not be presented as universal catalogue rates. The targeted 26-game sample
+from nine well-known series remains useful for semantic inspection only.
+
+### `game_modes` results and decision
+
+| Observation | Result |
+|---|---:|
+| Expected and returned records | 100/100 |
+| Records with one or more modes | 84/100 |
+| Records without modes | 16/100 |
+| Records with exactly one mode | 69/100 |
+| Records with multiple modes | 15/100 |
+| Duplicate mode IDs inside a record | 0 |
+| Invalid IDs or blank names | 0 |
+| Conflicting names for the same ID | 0 |
+| Distinct mode IDs observed | 5 |
+
+The earlier targeted sample had modes in all 26 records. The 84% fixed-sample
+coverage shows that this complete targeted result was not representative, while
+still providing sufficient coverage for qualified MVP use.
+
+`game_modes` is approved with caveats for ingestion, optional detail display,
+comparisons, and a source-qualified public filter. It is a nullable many-to-many
+relationship. A filter means that IGDB associates the selected mode with the
+game record; it does not prove that excluded games lack the mode or that the
+mode applies to every platform and edition.
+
+The field does not identify a primary mode, measure prominence or quality, or
+fully distinguish overlapping concepts such as multiplayer, co-operative,
+split-screen, and MMO. Missing modes mean unknown source data. Associations
+must not be propagated among originals, ports, remakes, remasters, editions,
+updates, or other related records, and they are not strong reconciliation
+evidence.
+
+The targeted semantic inspection also returned a purported Android version of
+`Super Mario Galaxy`. Because no official Android release exists, that record
+cannot support claims about the official product. It reinforces that name,
+platform, and relationship data do not independently prove officiality. IGDB
+is accepted for the first MVP but is not authoritative; stronger cross-source
+validation is deferred until the second source is integrated.
+
+### `player_perspectives` results and decision
+
+| Observation | Result |
+|---|---:|
+| Expected and returned records | 100/100 |
+| Records with one or more perspectives | 45/100 |
+| Records without perspectives | 55/100 |
+| Records with exactly one perspective | 42/100 |
+| Records with multiple perspectives | 3/100 |
+| Duplicate perspective IDs inside a record | 0 |
+| Invalid IDs or blank names | 0 |
+| Conflicting names for the same ID | 0 |
+| Distinct perspective IDs observed | 5 |
+
+All 26 records in the targeted known-game sample contained at least one
+perspective, compared with only 45% in the fixed sample. This confirms a strong
+completeness bias toward prominent and well-maintained records. Coverage
+decisions must therefore use the frozen 100-record sample rather than the
+targeted sample.
+
+The targeted cases remain semantically useful. Multiple perspectives may
+describe different systems or contexts inside one game rather than a single
+primary camera: examples included `Pokémon Red Version`, `Pokémon Sword`,
+`Final Fantasy X`, and `Grand Theft Auto V`. Differences within visually
+similar series records also show that classifications are not necessarily
+applied consistently.
+
+`player_perspectives` is approved for nullable many-to-many ingestion and
+optional detail display. It is not approved as a public MVP filter because 55%
+missing coverage would create excessive false negatives. The field does not
+identify a primary or predominant perspective, has no platform- or
+edition-level granularity, and must not be propagated between related records.
+Absence means unknown, not that no perspective exists, and the field is not
+strong reconciliation evidence.
+
 ## Current architectural boundaries
 
 ### `IgdbClient`
@@ -2052,6 +2138,21 @@ The current proof of concept confirms that:
 - `version_title` must remain separate from alternative names.
 - `game_localizations` requires a separate provenance and coverage evaluation
   before any regional-title mapping decision.
+- In the frozen 100-record sample, `game_modes` had 84% coverage, with 15
+  records containing multiple modes and no observed structural defects.
+- `game_modes` is approved as nullable many-to-many data for details,
+  comparisons, and a source-qualified MVP filter; absence means unknown.
+- In the same sample, `player_perspectives` had 45% coverage, with three
+  records containing multiple perspectives and no observed structural defects.
+- The 100% coverage of both fields in the targeted 26-game sample was not
+  representative of the broader fixed sample and demonstrates a famous-game
+  completeness bias.
+- `player_perspectives` is approved as nullable many-to-many detail data, but
+  its public filter is deferred because the missing coverage would create too
+  many false negatives.
+- Neither modes nor perspectives identify a primary value, guarantee
+  applicability across platforms or editions, or provide strong reconciliation
+  evidence.
 
 ## Next investigations
 
@@ -2071,7 +2172,8 @@ The following points still require investigation:
 5. Clarify the practical distinction among `Expansion`, `Standalone Expansion`,
    and `Expanded Game`.
 6. Evaluate covers, screenshots, involved companies, franchises, and other
-   complementary MVP fields.
+   complementary MVP fields. The `game_modes` and `player_perspectives`
+   investigations are complete for the current PoC scope.
 7. Evaluate `game_localizations` independently, including coverage, region
    semantics, duplicates, relationship to the main name, and evidence of
    official use.
