@@ -18,6 +18,8 @@ The MVP will provide:
 - exploration through keywords;
 - filters for genre, theme, platform, game mode, multiplayer, and release period;
 - player perspectives as optional detail data when reported by the source;
+- covers as optional, non-dominant visual support in results and details;
+- screenshots as optional visual context in game details;
 - context about involved companies;
 - collections/series;
 - product relationships such as remake, remaster, port, edition, DLC, and expansion;
@@ -210,6 +212,68 @@ Decisions:
 
 `franchises` may be reconsidered if the product later needs to analyze crossovers, licensed-IP presence, or brand reach across different series. Even then, it must be modeled as a many-to-many relationship without automatically selecting the first association.
 
+### 4.8 Covers, screenshots, and artworks
+
+`cover` is approved with legal and operational caveats for optional use in
+search results and game details. In the frozen 100-record sample, 93 records
+contained a cover and seven did not. No invalid IDs, blank `image_id` values,
+blank URLs, non-positive dimensions, duplicate image IDs, or conflicting
+metadata were observed.
+
+`screenshots` is approved with legal and operational caveats for game details
+only. In the same sample, 84 records contained screenshots and 16 did not. The
+84 populated records contained 507 images: four records had exactly one, 80
+had multiple images, and the observed range was one to 21, with an average of
+6.04. No structural defects, duplicate image IDs, or conflicting metadata were
+observed.
+
+`artworks` is deferred rather than rejected. It may be reconsidered for a
+future visual-research or art-direction capability, but it does not directly
+answer the current Comparable Games questions.
+
+Product and presentation rules:
+
+- covers and screenshots are nullable; absence means that no image was
+  reported by the source, not that the product has no visual material;
+- images are complementary and must not become essential to understanding a
+  result or dominate its hierarchy;
+- results use a single mobile-first card structure; when a valid cover exists,
+  it may appear as a compact thumbnail on the right;
+- when a cover is absent or invalid, the permanent image container is omitted
+  and textual content uses the available width; a placeholder may still be
+  used during loading or where a detail-page composition requires one;
+- the container is standardized, but the image preserves its original aspect
+  ratio with a contain-style fit; mandatory cropping, distortion, and
+  excessive upscaling are avoided;
+- screenshots are not displayed in filters or initial result cards; game
+  details may show one principal image and a small number of previews, with
+  additional images available on demand and loaded lazily;
+- the source order may be preserved, but GMI must not infer that the first
+  screenshot is the best, primary, or most representative image;
+- images are not filters, identity evidence, officiality proof, or strong
+  reconciliation signals, and must not be propagated between related records.
+
+Operational and rights policy for the first MVP:
+
+- store the IGDB image record ID, `image_id`, dimensions, source provenance,
+  and synchronization metadata; binary-file storage is deferred;
+- construct HTTPS URLs with the IGDB CDN size appropriate to the component;
+- do not offer image downloads, build an independent image repository, or make
+  substantive transformations beyond source-supported sizing;
+- maintain a refresh/removal path because IGDB states that removed or replaced
+  images remain available for approximately 30 days;
+- provide visible, static attribution to IGDB in the product and do not imply
+  that IGDB owns the underlying artwork;
+- state that image rights remain with their respective rights holders;
+- re-evaluate terms and contact IGDB before monetization or another material
+  expansion of use.
+
+IGDB's documentation allows API data to be stored and cached and describes
+user-facing attribution for commercial integrations, but it does not provide
+an explicit per-image copyright licence for each cover or screenshot. The MVP
+policy is therefore a cautious operational decision, not a legal determination
+that GMI owns or may freely redistribute the images.
+
 ## 5. Search and user experience
 
 GMI will distinguish two intentions:
@@ -225,6 +289,10 @@ GMI will distinguish two intentions:
 - one or multiple keywords;
 - refinement through genres, themes, modes, platforms, and release period;
 - perspectives shown as complementary details when available.
+
+Images support recognition and visual breathing room without replacing the
+textual comparison. Covers are optional in results, while screenshots remain
+inside details and on-demand galleries.
 
 Name-only search may show related versions in an expandable group.
 

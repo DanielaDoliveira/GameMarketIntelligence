@@ -18,6 +18,8 @@ O MVP deverá oferecer:
 - exploração por keywords;
 - filtros por gênero, tema, plataforma, modo, multiplayer e período de lançamento;
 - perspectivas como dado opcional de detalhe quando informadas pela fonte;
+- capas como apoio visual opcional e não dominante nos resultados e detalhes;
+- screenshots como contexto visual opcional nos detalhes dos jogos;
 - contexto de empresas envolvidas;
 - collections/séries;
 - relações entre produtos, como remake, remaster, port, edição, DLC e expansão;
@@ -215,6 +217,74 @@ Decisões:
 
 `franchises` poderá ser reavaliado futuramente se o produto precisar analisar crossovers, presença de propriedades intelectuais licenciadas ou alcance de uma marca entre séries diferentes. Mesmo nesse cenário, deverá ser uma relação muitos-para-muitos, sem escolha automática da primeira associação.
 
+### 4.8 Capas, screenshots e artworks
+
+`cover` está aprovado com ressalvas jurídicas e operacionais para uso opcional
+nos resultados de busca e nos detalhes do jogo. Na amostra congelada de 100
+registros, 93 apresentaram capa e sete não apresentaram. Não foram observados
+IDs inválidos, `image_id` vazio, URL vazia, dimensões não positivas, IDs de
+imagem duplicados nem metadados conflitantes.
+
+`screenshots` está aprovado com ressalvas jurídicas e operacionais somente para
+os detalhes do jogo. Na mesma amostra, 84 registros apresentaram screenshots e
+16 não apresentaram. Os 84 registros preenchidos continham 507 imagens: quatro
+tinham exatamente uma, 80 tinham múltiplas imagens e o intervalo observado foi
+de uma a 21, com média de 6,04. Não foram observados defeitos estruturais, IDs
+de imagem duplicados nem metadados conflitantes.
+
+`artworks` fica adiado, e não descartado. O campo poderá ser reconsiderado numa
+capacidade futura de pesquisa visual ou apoio à direção de arte, mas não
+responde diretamente às perguntas atuais de Comparable Games.
+
+Regras de produto e apresentação:
+
+- capas e screenshots são anuláveis; ausência significa que a fonte não
+  informou uma imagem, e não que o produto não possua material visual;
+- imagens são complementares e não podem se tornar essenciais para compreender
+  um resultado nem dominar sua hierarquia;
+- os resultados usam uma única estrutura de card mobile first; quando houver
+  capa válida, ela poderá aparecer como miniatura compacta à direita;
+- quando a capa estiver ausente ou inválida, o contêiner permanente da imagem
+  será omitido e o conteúdo textual usará o espaço disponível; um placeholder
+  ainda poderá ser usado durante o carregamento ou quando a composição da
+  página de detalhes exigir;
+- o contêiner é padronizado, mas a imagem preserva sua proporção original com
+  ajuste equivalente a `contain`; evitam-se corte obrigatório, distorção e
+  ampliação excessiva;
+- screenshots não aparecem em filtros nem nos cards iniciais de resultados; os
+  detalhes poderão mostrar uma imagem principal e poucas prévias, com imagens
+  adicionais sob demanda e lazy loading;
+- a ordem da fonte poderá ser preservada, mas o GMI não inferirá que a primeira
+  screenshot é a melhor, principal ou mais representativa;
+- imagens não são filtros, evidência de identidade, prova de oficialidade ou
+  sinal forte de reconciliação, e não serão propagadas entre registros
+  relacionados.
+
+Política operacional e de direitos para o primeiro MVP:
+
+- armazenar ID do registro de imagem da IGDB, `image_id`, dimensões,
+  proveniência da fonte e metadados de sincronização; o armazenamento dos
+  arquivos binários fica adiado;
+- construir URLs HTTPS com o tamanho da CDN da IGDB adequado ao componente;
+- não oferecer download das imagens, criar um repositório independente de
+  imagens nem realizar transformações substanciais além dos tamanhos suportados
+  pela fonte;
+- manter caminho de atualização e remoção, pois a IGDB informa que imagens
+  removidas ou substituídas permanecem disponíveis por aproximadamente 30 dias;
+- fornecer atribuição visível e estática à IGDB no produto, sem sugerir que a
+  IGDB seja proprietária das artes subjacentes;
+- informar que os direitos das imagens permanecem com seus respectivos
+  titulares;
+- reavaliar os termos e contatar a IGDB antes de monetização ou outra ampliação
+  material do uso.
+
+A documentação da IGDB permite armazenar e manter cache dos dados da API e
+descreve atribuição visível ao usuário para integrações comerciais, mas não
+fornece uma licença autoral explícita e individual para cada capa ou
+screenshot. A política do MVP é, portanto, uma decisão operacional cautelosa, e
+não uma determinação jurídica de que o GMI possua ou possa redistribuir
+livremente as imagens.
+
 ## 5. Pesquisa e experiência do usuário
 
 O GMI distinguirá duas intenções:
@@ -230,6 +300,10 @@ O GMI distinguirá duas intenções:
 - uma ou várias keywords;
 - refinamento com gêneros, temas, modos, plataformas e período;
 - perspectivas exibidas como detalhes complementares quando disponíveis.
+
+As imagens apoiam o reconhecimento e o respiro visual sem substituir a
+comparação textual. Capas são opcionais nos resultados, enquanto screenshots
+permanecem nos detalhes e em galerias abertas sob demanda.
 
 Busca apenas por nome poderá mostrar versões relacionadas agrupadas e expansíveis.
 

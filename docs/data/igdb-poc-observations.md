@@ -1899,6 +1899,114 @@ edition-level granularity, and must not be propagated between related records.
 Absence means unknown, not that no perspective exists, and the field is not
 strong reconciliation evidence.
 
+## Fixed-sample cover and screenshot observations
+
+The same frozen 100 game identifiers were reused to evaluate `cover` and
+`screenshots`. All 100 game records were returned. The sample retains the same
+broad-population limitation as the other fixed-sample investigations: it
+includes main games, related products, editions, DLCs, expansions, and
+community-origin content and must not be presented as a universal IGDB rate.
+
+### `cover` results and decision
+
+| Observation | Result |
+|---|---:|
+| Expected and returned records | 100/100 |
+| Records with a cover | 93/100 |
+| Records without a cover | 7/100 |
+| Invalid image-record IDs | 0 |
+| Blank `image_id` values | 0 |
+| Blank URLs | 0 |
+| Non-positive dimensions | 0 |
+| Duplicate image IDs across games | 0 |
+| Conflicting metadata for the same image ID | 0 |
+
+`cover` is approved with legal and operational caveats as nullable visual data
+for search results and game details. It is not a filter, identity attribute,
+officiality proof, or strong reconciliation signal. A missing cover means only
+that IGDB did not report one for that record.
+
+The observed source dimensions varied substantially and did not always follow
+a portrait-cover ratio. Examples included square and landscape values such as
+`500x500`, `1024x1024`, `320x176`, and `175x150`. The UI must therefore
+standardize the image container rather than distort the image: preserve aspect
+ratio, use a contain-style fit, avoid mandatory cropping, and avoid excessive
+upscaling that would expose compression or pixelation.
+
+The result component will use a single mobile-first structure. A valid cover
+may appear as a compact, non-dominant thumbnail on the right. If the cover is
+absent or invalid, the permanent image container is omitted and text uses the
+available width. Loading placeholders remain allowed, and a detail-page
+composition may use a fallback when it materially improves balance. Essential
+meaning must never depend on the image.
+
+### `screenshots` results and decision
+
+| Observation | Result |
+|---|---:|
+| Expected and returned records | 100/100 |
+| Records with one or more screenshots | 84/100 |
+| Records without screenshots | 16/100 |
+| Records with exactly one screenshot | 4/100 |
+| Records with multiple screenshots | 80/100 |
+| Total screenshots | 507 |
+| Minimum per populated record | 1 |
+| Maximum per populated record | 21 |
+| Average per populated record | 6.04 |
+| Invalid image-record IDs | 0 |
+| Blank `image_id` values | 0 |
+| Blank URLs | 0 |
+| Non-positive dimensions | 0 |
+| Records with duplicate image IDs | 0 |
+| Duplicate image IDs across games | 0 |
+| Conflicting metadata for the same image ID | 0 |
+
+`screenshots` is approved with legal and operational caveats for game details
+only. It is not approved for filters or initial result cards. A detail page may
+show one principal visual slot and a small number of previews; additional
+images remain available on demand and should be lazy-loaded. The source order
+may be retained, but it does not establish that the first image is primary,
+best, or representative. Screenshots must not be propagated between related
+records or used as strong reconciliation evidence.
+
+The 507-image total demonstrates that displaying every returned screenshot by
+default would produce visual density and unnecessary transfer cost. Images are
+intended to provide recognition, context, and breathing room between structured
+information sections, not to turn Comparable Games into an image gallery.
+
+### Artworks decision
+
+`artworks` was not added to the current ingestion investigation. It is deferred
+rather than rejected because it may support a future visual-research,
+mood-board, or art-direction capability. That use case is outside the current
+Comparable Games MVP questions.
+
+### Operational, attribution, and rights constraints
+
+IGDB documentation states that API data may be stored and cached and describes
+visible, static user-facing attribution for commercial integrations. It also
+documents CDN URL construction from `image_id`, multiple size variants, and an
+approximately 30-day availability period after an image is removed or replaced.
+These statements support an operational integration but do not constitute an
+explicit per-image copyright licence for every cover or screenshot.
+
+The first MVP will therefore:
+
+- store image-record IDs, `image_id`, dimensions, provenance, and synchronization
+  metadata, while deferring local binary-file storage;
+- build HTTPS URLs with an IGDB CDN size appropriate to the component;
+- avoid image downloads, independent redistribution, and substantive image
+  transformations beyond source-supported sizing;
+- support refresh, disappearance, and removal without breaking textual results;
+- provide visible, static attribution to IGDB;
+- avoid implying that IGDB owns the underlying images and state that image
+  rights remain with their respective rights holders;
+- re-evaluate the terms and contact IGDB before monetization or a material
+  expansion of image use.
+
+Reference reviewed: <https://api-docs.igdb.com/>. This is a cautious operational
+PoC decision, not legal advice or a conclusion that GMI owns the images.
+
 ## Current architectural boundaries
 
 ### `IgdbClient`
@@ -1919,6 +2027,8 @@ Responsible for:
 - retrieving records where `parent_game` is populated.
 - searching games by name for controlled identifier discovery;
 - retrieving expanded release-date data for controlled game identifiers.
+- retrieving expanded cover and screenshot metadata for controlled game
+  identifiers.
 
 The client currently exposes separate operations for:
 
@@ -2153,6 +2263,20 @@ The current proof of concept confirms that:
 - Neither modes nor perspectives identify a primary value, guarantee
   applicability across platforms or editions, or provide strong reconciliation
   evidence.
+- In the frozen 100-record sample, `cover` had 93% coverage with no observed
+  structural defects; it is approved with legal and operational caveats as an
+  optional, non-dominant visual in results and details.
+- In the same sample, `screenshots` had 84% coverage and returned 507 images
+  across 84 populated records, with no observed structural defects; screenshots
+  are approved with caveats for details and on-demand galleries only.
+- Missing images do not make a textual result incomplete, images do not prove
+  officiality or identity, and no image association may be propagated between
+  related records.
+- `artworks` is deferred for a possible future visual-research or art-direction
+  capability.
+- The first MVP stores image metadata and uses size-appropriate IGDB CDN URLs;
+  local binary storage is deferred, visible IGDB attribution is required, and
+  image rights remain with their respective rights holders.
 
 ## Next investigations
 
@@ -2171,9 +2295,10 @@ The following points still require investigation:
    records and determine whether other relationship fields are needed.
 5. Clarify the practical distinction among `Expansion`, `Standalone Expansion`,
    and `Expanded Game`.
-6. Evaluate covers, screenshots, involved companies, franchises, and other
-   complementary MVP fields. The `game_modes` and `player_perspectives`
-   investigations are complete for the current PoC scope.
+6. The complementary-field investigation is complete for the current PoC
+   scope: aliases, involved companies, collections, franchises, game modes,
+   player perspectives, covers, screenshots, and the deferral of artworks have
+   been classified and documented.
 7. Evaluate `game_localizations` independently, including coverage, region
    semantics, duplicates, relationship to the main name, and evidence of
    official use.
@@ -2189,8 +2314,9 @@ The following points still require investigation:
 14. Define the mapping boundary between IGDB contracts and the internal model.
 15. Define the future boundary between the Worker, jobs, import services,
     mappers, and repositories.
-16. Evaluate attribution and source-identification requirements in the user
-    interface.
+16. Validate the documented IGDB attribution and image-rights presentation in
+    the definitive user interface before release and re-evaluate it before
+    monetization.
 17. Revisit commercial and community-origin classification in a future
     increment only after the simple Mod exclusion has been validated in the
     working MVP.
