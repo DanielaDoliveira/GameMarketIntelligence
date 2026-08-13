@@ -43,6 +43,12 @@ public sealed class IgdbGameSample
     [JsonPropertyName("player_perspectives")]
     public IReadOnlyList<IgdbNamedReference> PlayerPerspectives { get; set; } = [];
 
+    [JsonPropertyName("cover")]
+    public IgdbImageReference? Cover { get; set; }
+
+    [JsonPropertyName("screenshots")]
+    public IReadOnlyList<IgdbImageReference> Screenshots { get; set; } = [];
+
     [JsonPropertyName("franchises")]
     public IReadOnlyList<IgdbNamedReference> Franchises { get; set; } = [];
 

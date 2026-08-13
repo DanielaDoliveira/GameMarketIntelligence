@@ -8,8 +8,7 @@ public sealed class Worker(
     IIgdbAuthenticationService authenticationService,
     IIgdbClient igdbClient,
     IHostApplicationLifetime applicationLifetime,
-    ILogger<Worker> logger)
-    : BackgroundService
+    ILogger<Worker> logger) : BackgroundService
 {
     private const int SampleSeed = 20260804;
     private const string SampleCutoff = "2026-08-04T00:00:00Z";
@@ -36,43 +35,26 @@ public sealed class Worker(
         try
         {
             logger.LogInformation(
-                """
-                Starting IGDB random-sample game-modes analysis:
-                Frozen sample size: {SampleCount}
-                Sample seed: {SampleSeed}
-                Sample cutoff: {SampleCutoff}
-                """,
-                SampleGameIds.Length,
-                SampleSeed,
-                SampleCutoff);
+                "Starting IGDB cover-and-screenshot analysis: sample={SampleCount}, seed={Seed}, cutoff={Cutoff}",
+                SampleGameIds.Length, SampleSeed, SampleCutoff);
 
-            var tokenResponse =
-                await authenticationService.GetAccessTokenAsync(stoppingToken);
-
-            if (string.IsNullOrWhiteSpace(tokenResponse.AccessToken))
+            var token = await authenticationService.GetAccessTokenAsync(stoppingToken);
+            if (string.IsNullOrWhiteSpace(token.AccessToken))
             {
-                throw new InvalidOperationException(
-                    "Twitch returned an empty access token.");
+                throw new InvalidOperationException("Twitch returned an empty access token.");
             }
 
             var games = await igdbClient.GetGamesByIdsAsync(
-                tokenResponse.AccessToken,
-                SampleGameIds,
-                stoppingToken);
-
+                token.AccessToken, SampleGameIds, stoppingToken);
             LogResults(games);
         }
-        catch (OperationCanceledException)
-            when (stoppingToken.IsCancellationRequested)
+        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
         {
-            logger.LogInformation(
-                "IGDB random-sample game-modes analysis was cancelled.");
+            logger.LogInformation("IGDB cover-and-screenshot analysis was cancelled.");
         }
         catch (Exception exception)
         {
-            logger.LogError(
-                exception,
-                "IGDB random-sample game-modes analysis failed.");
+            logger.LogError(exception, "IGDB cover-and-screenshot analysis failed.");
         }
         finally
         {
@@ -82,130 +64,122 @@ public sealed class Worker(
 
     private void LogResults(IReadOnlyList<IgdbGameSample> games)
     {
-        var gamesById = games.ToDictionary(game => game.Id);
-        var returnedGames = SampleGameIds
-            .Where(gamesById.ContainsKey)
-            .Select(gameId => gamesById[gameId])
+        var byId = games.ToDictionary(game => game.Id);
+        var returned = SampleGameIds
+            .Where(byId.ContainsKey)
+            .Select(id => byId[id])
             .ToArray();
 
-        var resultLines = SampleGameIds.Select(gameId =>
-            gamesById.TryGetValue(gameId, out var game)
-                ? FormatResult(game)
-                : $"- ID={gameId}; record=NOT RETURNED");
+        var lines = SampleGameIds.Select(id => byId.TryGetValue(id, out var game)
+            ? FormatGame(game)
+            : $"- ID={id}; record=NOT RETURNED");
 
-        logger.LogInformation(
-            "IGDB random-sample game-modes results:{NewLine}{Results}",
-            Environment.NewLine,
-            string.Join(Environment.NewLine, resultLines));
+        logger.LogInformation("IGDB image results:{NewLine}{Results}",
+            Environment.NewLine, string.Join(Environment.NewLine, lines));
 
-        var gamesWithModes = returnedGames
-            .Where(game => game.GameModes.Count > 0)
-            .ToArray();
-        var recordsWithDuplicateIds = returnedGames.Count(game =>
-            game.GameModes.Select(item => item.Id).Distinct().Count()
-            != game.GameModes.Count);
-        var recordsWithInvalidValues = returnedGames.Count(game =>
-            game.GameModes.Any(item =>
-                item.Id <= 0 || string.IsNullOrWhiteSpace(item.Name)));
-        var conflictingNamesById = returnedGames
-            .SelectMany(game => game.GameModes)
-            .GroupBy(item => item.Id)
-            .Count(group => group
-                .Select(item => item.Name?.Trim())
-                .Where(name => !string.IsNullOrWhiteSpace(name))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .Count() > 1);
-        var distinctModes = returnedGames
-            .SelectMany(game => game.GameModes)
-            .GroupBy(item => item.Id)
-            .Select(group => new
-            {
-                Id = group.Key,
-                Name = group.Select(item => item.Name).FirstOrDefault(name =>
-                    !string.IsNullOrWhiteSpace(name)) ?? "not reported",
-                RecordCount = returnedGames.Count(game =>
-                    game.GameModes.Any(item => item.Id == group.Key))
-            })
-            .OrderByDescending(item => item.RecordCount)
-            .ThenBy(item => item.Id)
-            .ToArray();
+        LogCoverSummary(returned);
+        LogScreenshotSummary(returned);
+        logger.LogInformation("IGDB cover-and-screenshot analysis completed.");
+    }
 
-        var frequencyLines = distinctModes.Length == 0
-            ? "- no game modes reported"
-            : string.Join(Environment.NewLine, distinctModes.Select(item =>
-                $"- {item.Id}|{item.Name}: {item.RecordCount}/{returnedGames.Length} " +
-                $"records ({FormatPercentage(item.RecordCount, returnedGames.Length)})"));
+    private void LogCoverSummary(IReadOnlyList<IgdbGameSample> games)
+    {
+        var images = games.Where(g => g.Cover is not null).Select(g => g.Cover!).ToArray();
 
         logger.LogInformation(
             """
-            IGDB random-sample game-modes summary:
+            IGDB cover summary:
             Frozen sample size: {SampleCount}
             Records returned: {ReturnedCount}
             Missing records: {MissingCount}
-            Records with one or more game modes: {WithModeCount}
-            Records without game modes: {WithoutModeCount}
-            Game-mode presence coverage among returned records: {Coverage}
-            Records with exactly one game mode: {ExactlyOneCount}
-            Records with multiple game modes: {MultipleCount}
-            Records with duplicate game-mode IDs: {DuplicateCount}
-            Records with invalid game-mode IDs or blank names: {InvalidCount}
-            Game-mode IDs with conflicting reported names: {ConflictingNameCount}
-            Distinct game-mode IDs reported: {DistinctCount}
-
-            Game-mode frequency among returned records:
-            {FrequencyLines}
+            Records with a cover: {PresentCount}
+            Records without a cover: {AbsentCount}
+            Cover presence coverage: {Coverage}
+            Invalid record IDs: {InvalidIdCount}
+            Blank image IDs: {BlankImageIdCount}
+            Blank URLs: {BlankUrlCount}
+            Non-positive dimensions: {InvalidDimensionsCount}
+            Duplicate image IDs across games: {DuplicateImageIdCount}
+            Conflicting metadata for the same image ID: {ConflictCount}
             """,
-            SampleGameIds.Length,
-            returnedGames.Length,
-            SampleGameIds.Length - returnedGames.Length,
-            gamesWithModes.Length,
-            returnedGames.Length - gamesWithModes.Length,
-            FormatPercentage(gamesWithModes.Length, returnedGames.Length),
-            returnedGames.Count(game => game.GameModes.Count == 1),
-            returnedGames.Count(game => game.GameModes.Count > 1),
-            recordsWithDuplicateIds,
-            recordsWithInvalidValues,
-            conflictingNamesById,
-            distinctModes.Length,
-            frequencyLines);
+            SampleGameIds.Length, games.Count, SampleGameIds.Length - games.Count,
+            images.Length, games.Count - images.Length,
+            Percentage(images.Length, games.Count),
+            images.Count(i => i.Id <= 0),
+            images.Count(i => string.IsNullOrWhiteSpace(i.ImageId)),
+            images.Count(i => string.IsNullOrWhiteSpace(i.Url)),
+            images.Count(i => i.Width <= 0 || i.Height <= 0),
+            DuplicateImageIds(images), ConflictingMetadata(images));
+    }
+
+    private void LogScreenshotSummary(IReadOnlyList<IgdbGameSample> games)
+    {
+        var populated = games.Where(g => g.Screenshots.Count > 0).ToArray();
+        var images = games.SelectMany(g => g.Screenshots).ToArray();
 
         logger.LogInformation(
-            "IGDB random-sample game-modes analysis completed.");
+            """
+            IGDB screenshot summary:
+            Frozen sample size: {SampleCount}
+            Records returned: {ReturnedCount}
+            Missing records: {MissingCount}
+            Records with screenshots: {PresentCount}
+            Records without screenshots: {AbsentCount}
+            Screenshot presence coverage: {Coverage}
+            Records with exactly one screenshot: {ExactlyOneCount}
+            Records with multiple screenshots: {MultipleCount}
+            Total screenshots: {TotalCount}
+            Minimum per populated record: {MinimumCount}
+            Maximum per populated record: {MaximumCount}
+            Average per populated record: {AverageCount:F2}
+            Invalid record IDs: {InvalidIdCount}
+            Blank image IDs: {BlankImageIdCount}
+            Blank URLs: {BlankUrlCount}
+            Non-positive dimensions: {InvalidDimensionsCount}
+            Records with duplicate image IDs: {RecordsWithDuplicates}
+            Duplicate image IDs across games: {DuplicatesAcrossGames}
+            Conflicting metadata for the same image ID: {ConflictCount}
+            """,
+            SampleGameIds.Length, games.Count, SampleGameIds.Length - games.Count,
+            populated.Length, games.Count - populated.Length,
+            Percentage(populated.Length, games.Count),
+            games.Count(g => g.Screenshots.Count == 1),
+            games.Count(g => g.Screenshots.Count > 1), images.Length,
+            populated.Length == 0 ? 0 : populated.Min(g => g.Screenshots.Count),
+            populated.Length == 0 ? 0 : populated.Max(g => g.Screenshots.Count),
+            populated.Length == 0 ? 0 : populated.Average(g => g.Screenshots.Count),
+            images.Count(i => i.Id <= 0),
+            images.Count(i => string.IsNullOrWhiteSpace(i.ImageId)),
+            images.Count(i => string.IsNullOrWhiteSpace(i.Url)),
+            images.Count(i => i.Width <= 0 || i.Height <= 0),
+            games.Count(g => DuplicateImageIds(g.Screenshots) > 0),
+            DuplicateImageIds(images), ConflictingMetadata(images));
     }
 
-    private static string FormatResult(IgdbGameSample game)
-    {
-        var duplicateIds = game.GameModes
-            .Select(item => item.Id)
-            .Distinct()
-            .Count() != game.GameModes.Count;
-        var invalidValues = game.GameModes.Any(item =>
-            item.Id <= 0 || string.IsNullOrWhiteSpace(item.Name));
-
-        return
-            $"- ID={game.Id}; title={FormatValue(game.Name)}; " +
-            $"game modes={FormatReferences(game.GameModes)}; " +
-            $"mode count={game.GameModes.Count}; " +
-            $"duplicate IDs={FormatBoolean(duplicateIds)}; " +
-            $"invalid values={FormatBoolean(invalidValues)}";
-    }
-
-    private static string FormatReferences(
-        IReadOnlyList<IgdbNamedReference> references) =>
-        references.Count == 0
+    private static string FormatGame(IgdbGameSample game) =>
+        $"- ID={game.Id}; title={Value(game.Name)}; " +
+        $"cover={(game.Cover is null ? "not reported" : FormatImage(game.Cover))}; " +
+        $"screenshot count={game.Screenshots.Count}; screenshots=" +
+        (game.Screenshots.Count == 0
             ? "not reported"
-            : string.Join(", ", references
-                .OrderBy(reference => reference.Id)
-                .Select(reference =>
-                    $"{reference.Id}|{FormatValue(reference.Name)}"));
+            : string.Join(", ", game.Screenshots.OrderBy(i => i.Id).Select(FormatImage)));
 
-    private static string FormatPercentage(int numerator, int denominator) =>
-        denominator == 0
-            ? "0.00%"
-            : $"{(double)numerator / denominator:P2}";
+    private static string FormatImage(IgdbImageReference image) =>
+        $"{image.Id}|image_id={Value(image.ImageId)}|{image.Width}x{image.Height}|url={Value(image.Url)}";
 
-    private static string FormatBoolean(bool value) => value ? "YES" : "NO";
+    private static int DuplicateImageIds(IEnumerable<IgdbImageReference> images) =>
+        images.Where(i => !string.IsNullOrWhiteSpace(i.ImageId))
+            .GroupBy(i => i.ImageId.Trim(), StringComparer.OrdinalIgnoreCase)
+            .Count(group => group.Count() > 1);
 
-    private static string FormatValue(string? value) =>
+    private static int ConflictingMetadata(IEnumerable<IgdbImageReference> images) =>
+        images.Where(i => !string.IsNullOrWhiteSpace(i.ImageId))
+            .GroupBy(i => i.ImageId.Trim(), StringComparer.OrdinalIgnoreCase)
+            .Count(group => group.Select(i => (i.Url?.Trim(), i.Width, i.Height)).Distinct().Count() > 1);
+
+    private static string Percentage(int numerator, int denominator) =>
+        denominator == 0 ? "0.00%" : $"{(double)numerator / denominator:P2}";
+
+    private static string Value(string? value) =>
         string.IsNullOrWhiteSpace(value) ? "not reported" : value;
 }

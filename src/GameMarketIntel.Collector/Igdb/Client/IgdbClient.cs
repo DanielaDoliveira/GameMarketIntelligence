@@ -175,6 +175,18 @@ public sealed class IgdbClient(HttpClient httpClient, IOptions<IgdbPocOptions> o
                  player_perspectives.id,
                  player_perspectives.name,
 
+                 cover.id,
+                 cover.image_id,
+                 cover.url,
+                 cover.width,
+                 cover.height,
+
+                 screenshots.id,
+                 screenshots.image_id,
+                 screenshots.url,
+                 screenshots.width,
+                 screenshots.height,
+
                  franchises.id,
                  franchises.name,
 
