@@ -16,7 +16,8 @@ The MVP will provide:
 - search by name; aliases may be added only from fields and sources with an
   approved provenance policy;
 - exploration through keywords;
-- filters for genre, theme, platform, game mode, perspective, multiplayer, and release period;
+- filters for genre, theme, platform, game mode, multiplayer, and release period;
+- player perspectives as optional detail data when reported by the source;
 - context about involved companies;
 - collections/series;
 - product relationships such as remake, remaster, port, edition, DLC, and expansion;
@@ -133,7 +134,8 @@ Rules:
 - **Genres:** multiple IDs use AND; extra genres are allowed.
 - **Themes:** multiple values use AND; extra themes are allowed.
 - **Game modes:** multiple values use AND; the filter means that the source associates every selected mode with the game record, not that every mode is available on every platform or edition.
-- **Perspectives:** multiple values use AND.
+- **Perspectives:** ingest as optional many-to-many detail data; defer the public
+  filter because current coverage would create excessive false negatives.
 - **Keywords:** multiple values use AND; keywords are central to GMI's value; use structured IDs; do not create custom keywords or automatically merge terms.
 - **Platforms:** multiple values use OR.
 - **Multiplayer:** include multiplayer, online co-op, and local/offline multiplayer; selected capabilities use AND without exclusivity.
@@ -142,13 +144,47 @@ Out of scope for multiplayer: maximum player count, LAN, drop-in/drop-out, and d
 
 #### Game-modes decision
 
-`game_modes` is approved for the MVP with caveats. In a targeted sample of 26 games from nine known series, all 26 records contained at least one mode, 12 contained multiple modes, and no duplicate IDs, invalid IDs, or blank names were found. The relationship is many-to-many.
+`game_modes` is approved for the MVP with caveats. In the fixed sample of 100
+games, 84 records contained at least one mode, 69 contained exactly one, 15
+contained multiple modes, and 16 contained none. No duplicate IDs, invalid IDs,
+blank names, or conflicting names for the same ID were found. A separate
+targeted sample of 26 games from nine known series had 100% coverage and remains
+useful for semantic inspection, but it is not representative of general catalogue
+completeness. The relationship is many-to-many and nullable.
 
 The field belongs to each IGDB game record and has no platform-level granularity. It does not identify a primary mode, distinguish limited or asymmetric cooperation, measure the importance or quality of a mode, or prove that a reported mode applies to every platform and edition. Missing modes must be treated as unknown source data rather than proof that the capability does not exist. Modes must not be propagated among originals, ports, remakes, remasters, editions, updates, or other related records, and they are not strong reconciliation evidence.
 
 A targeted semantic inspection also found a purported Android version of `Super Mario Galaxy`. As no official Android version exists, that result must not be used as evidence about the official product. It demonstrates that name search, platform associations, and IGDB relationships do not independently prove officiality. Search-by-name results are discovery candidates only; related records must not influence another game's modes, platforms, or releases unless their identity is sufficiently validated.
 
 For this MVP, that residual risk is accepted and documented. The catalogue will make the source visible and avoid claims of completeness or infallibility. Cross-source validation and stronger handling of suspicious records are deferred until a second database is integrated.
+
+The 84% fixed-sample coverage is sufficient to approve a source-qualified public
+filter. The filter means "games for which IGDB reports the selected mode"; it
+must not imply that omitted games lack that mode. The field may also be displayed
+in details and used in comparisons when available.
+
+#### Player-perspectives decision
+
+`player_perspectives` is approved for ingestion and optional detail display in
+the MVP, but not as a public filter. In the same fixed sample of 100 games, 45
+records contained at least one perspective, 42 contained exactly one, three
+contained multiple perspectives, and 55 contained none. No duplicate IDs,
+invalid IDs, blank names, or conflicting names for the same ID were found. All
+five source values appeared. The relationship is many-to-many and nullable.
+
+The targeted sample of 26 well-known games had 100% coverage, compared with 45%
+in the fixed sample. This difference demonstrates a strong completeness bias
+toward prominent, well-maintained records. The fixed sample is therefore used
+to assess coverage, while the known-game sample is retained only for semantic
+interpretation.
+
+The field does not identify a primary or predominant perspective and may combine
+perspectives used in different systems, scenes, or modes. It has no platform- or
+edition-level granularity. Missing data means unknown, not that the game lacks a
+perspective. Values must not be propagated between related products and are not
+strong reconciliation evidence. With 55% of the fixed sample missing the field,
+a public filter would create too many false negatives; it is deferred until
+coverage can be improved or qualified with another source.
 
 ### 4.7 Collections and franchises
 
@@ -187,7 +223,8 @@ GMI will distinguish two intentions:
 ### Explore an idea or niche
 
 - one or multiple keywords;
-- refinement through genres, themes, modes, perspectives, platforms, and release period.
+- refinement through genres, themes, modes, platforms, and release period;
+- perspectives shown as complementary details when available.
 
 Name-only search may show related versions in an expandable group.
 
@@ -420,7 +457,8 @@ The PoC must demonstrate:
 
 ### Filters
 
-- AND for genres, themes, modes, perspectives, keywords, and multiplayer;
+- AND for genres, themes, modes, keywords, and multiplayer;
+- no public perspective filter in the first MVP;
 - OR for platforms;
 - AND across categories;
 - name search;

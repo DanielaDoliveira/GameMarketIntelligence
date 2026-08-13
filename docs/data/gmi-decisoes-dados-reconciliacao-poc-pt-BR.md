@@ -16,7 +16,8 @@ O MVP deverá oferecer:
 - pesquisa por nome; aliases poderão ser adicionados apenas a partir de campos
   e fontes com política de proveniência aprovada;
 - exploração por keywords;
-- filtros por gênero, tema, plataforma, modo, perspectiva, multiplayer e período de lançamento;
+- filtros por gênero, tema, plataforma, modo, multiplayer e período de lançamento;
+- perspectivas como dado opcional de detalhe quando informadas pela fonte;
 - contexto de empresas envolvidas;
 - collections/séries;
 - relações entre produtos, como remake, remaster, port, edição, DLC e expansão;
@@ -134,7 +135,9 @@ Regras:
 - **Gêneros:** múltiplos IDs usam AND; gêneros adicionais são permitidos.
 - **Temas:** múltiplos usam AND; temas adicionais são permitidos.
 - **Modos:** múltiplos usam AND; o filtro significa que a fonte associa todos os modos selecionados ao registro do jogo, e não que todos estejam disponíveis em cada plataforma ou edição.
-- **Perspectivas:** múltiplas usam AND.
+- **Perspectivas:** ingerir como detalhe opcional em relação muitos-para-muitos;
+  adiar o filtro público porque a cobertura atual produziria falsos negativos em
+  excesso.
 - **Keywords:** múltiplas usam AND; são pilar central do valor do GMI; usar IDs estruturados; não criar keywords próprias nem unificar termos automaticamente.
 - **Plataformas:** múltiplas usam OR.
 - **Multiplayer:** incluir multiplayer, co-op online e multiplayer local/offline; capacidades selecionadas usam AND, sem exclusividade.
@@ -143,13 +146,50 @@ Ficam fora do multiplayer do MVP: quantidade máxima de jogadores, LAN, drop-in/
 
 #### Decisão sobre modos de jogo
 
-`game_modes` está aprovado para o MVP com ressalvas. Numa amostra direcionada de 26 jogos de nove séries conhecidas, todos os 26 registros apresentaram ao menos um modo, 12 apresentaram múltiplos modos e não foram encontrados IDs duplicados, IDs inválidos ou nomes vazios. A relação é muitos-para-muitos.
+`game_modes` está aprovado para o MVP com ressalvas. Na amostra fixa de 100
+jogos, 84 registros apresentaram ao menos um modo, 69 apresentaram exatamente
+um, 15 apresentaram múltiplos modos e 16 não apresentaram nenhum. Não foram
+encontrados IDs duplicados, IDs inválidos, nomes vazios nem nomes conflitantes
+para o mesmo ID. Uma amostra direcionada separada de 26 jogos de nove séries
+conhecidas teve cobertura de 100% e continua útil para inspeção semântica, mas
+não representa a completude geral do catálogo. A relação é muitos-para-muitos e
+anulável.
 
 O campo pertence a cada registro de jogo da IGDB e não possui granularidade por plataforma. Ele não informa um modo principal, não distingue cooperação limitada ou assimétrica, não mede importância ou qualidade do modo e não comprova que um modo informado se aplique a todas as plataformas e edições. Modos ausentes devem ser tratados como dado desconhecido da fonte, e não como prova de que a capacidade não existe. Os modos não serão propagados entre originais, ports, remakes, remasters, edições, updates ou outros registros relacionados e não constituem evidência forte de reconciliação.
 
 Uma inspeção semântica direcionada também encontrou uma suposta versão Android de `Super Mario Galaxy`. Como não existe versão oficial do jogo para Android, esse resultado não pode servir como evidência sobre o produto oficial. O caso demonstra que busca por nome, associação de plataforma e relações da IGDB não comprovam oficialidade isoladamente. Resultados de busca por nome são apenas candidatos de descoberta; registros relacionados não devem influenciar modos, plataformas ou lançamentos de outro jogo sem validação suficiente de identidade.
 
 Para este MVP, o risco residual é aceito e documentado. O catálogo identificará a fonte e não apresentará os dados como completos ou infalíveis. A validação entre fontes e o tratamento mais forte de registros suspeitos ficam adiados até a integração de uma segunda base.
+
+A cobertura de 84% na amostra fixa é suficiente para aprovar um filtro público
+qualificado pela fonte. O filtro significa "jogos para os quais a IGDB informa o
+modo selecionado"; ele não deve sugerir que jogos omitidos não possuem esse modo.
+O campo também poderá ser exibido nos detalhes e usado em comparações quando
+disponível.
+
+#### Decisão sobre perspectivas do jogador
+
+`player_perspectives` está aprovado para ingestão e exibição opcional nos
+detalhes do MVP, mas não como filtro público. Na mesma amostra fixa de 100 jogos,
+45 registros apresentaram ao menos uma perspectiva, 42 apresentaram exatamente
+uma, três apresentaram múltiplas perspectivas e 55 não apresentaram nenhuma. Não
+foram encontrados IDs duplicados, IDs inválidos, nomes vazios nem nomes
+conflitantes para o mesmo ID. Os cinco valores da fonte apareceram. A relação é
+muitos-para-muitos e anulável.
+
+A amostra direcionada de 26 jogos conhecidos teve cobertura de 100%, contra 45%
+na amostra fixa. A diferença demonstra forte viés de completude em favor de
+registros famosos e bem mantidos. Por isso, a amostra fixa mede cobertura, e a
+amostra de jogos conhecidos permanece apenas para interpretação semântica.
+
+O campo não identifica perspectiva principal ou predominante e pode combinar
+perspectivas usadas em sistemas, cenas ou modos diferentes. Ele não possui
+granularidade por plataforma ou edição. Ausência significa dado desconhecido, e
+não que o jogo não possua perspectiva. Os valores não serão propagados entre
+produtos relacionados e não constituem evidência forte de reconciliação. Com
+55% da amostra fixa sem o campo, um filtro público produziria falsos negativos
+demais; ele fica adiado até que a cobertura possa ser ampliada ou qualificada
+com outra fonte.
 
 ### 4.7 Collections e franchises
 
@@ -188,7 +228,8 @@ O GMI distinguirá duas intenções:
 ### Explorar uma ideia ou nicho
 
 - uma ou várias keywords;
-- refinamento com gêneros, temas, modos, perspectivas, plataformas e período.
+- refinamento com gêneros, temas, modos, plataformas e período;
+- perspectivas exibidas como detalhes complementares quando disponíveis.
 
 Busca apenas por nome poderá mostrar versões relacionadas agrupadas e expansíveis.
 
@@ -421,7 +462,8 @@ A PoC deverá demonstrar:
 
 ### Filtros
 
-- AND para gêneros, temas, modos, perspectivas, keywords e multiplayer;
+- AND para gêneros, temas, modos, keywords e multiplayer;
+- sem filtro público de perspectivas no primeiro MVP;
 - OR para plataformas;
 - AND entre categorias;
 - busca por nome;
