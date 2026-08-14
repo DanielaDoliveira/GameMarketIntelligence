@@ -1,5 +1,7 @@
 # Comparable Games Domain Model
 
+> Review status: updated after IGDB PoC approval on August 14, 2026.
+
 ## Purpose
 
 Describe the implemented foundation and the approved direction after external-source selection. The domain must answer validated producer questions without copying upstream API schemas.
@@ -38,6 +40,9 @@ The current release date is intentionally simplified and does not represent all 
 Provider identifiers must not become permanent source-specific properties on `Game`.
 
 ## Proposed concepts for review
+
+These concepts describe an extensible direction, not a requirement to deliver
+every future source or analytical capability in the first IGDB MVP.
 
 ```text
 Game
@@ -80,8 +85,16 @@ Supporting concepts may include:
 
 No major migration before:
 
-1. required producer questions and filters are fixed;
-2. permitted fields are mapped for IGDB, Wikidata, and Steam;
-3. reconciliation rules are proposed;
+1. required questions and filters for the current IGDB MVP are fixed;
+2. permitted IGDB fields and their nullability are approved by the completed
+   PoC;
+3. a lightweight compatibility spike confirms that canonical identity,
+   external identities, provenance, and source-specific contracts can later
+   accommodate Wikidata and Steam;
 4. domain and ingestion architecture are reviewed;
-5. a small proof of concept confirms the assumptions.
+5. the migration is limited to concepts justified by the current iteration.
+
+Complete Wikidata and Steam field mappings are not prerequisites for the first
+IGDB persistence increment. They remain future-iteration gates before those
+sources are integrated. This preserves the multi-source product direction
+without forcing future fields into the current schema.

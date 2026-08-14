@@ -1,5 +1,8 @@
 # Refinamento do MVP de Comparable Games
 
+> Status da revisão: atualizado após a aprovação da PoC da IGDB em 14 de agosto
+> de 2026.
+
 ## MVP completo
 
 O MVP completo reúne três capacidades:
@@ -10,6 +13,14 @@ O MVP completo reúne três capacidades:
 
 ## Comparable Games
 
+Neste MVP com IGDB, o filtro de Comparable Games é a primeira entrega de valor
+do produto. O conjunto de filtros é orientado por evidências: cada campo
+incluído, restrito aos detalhes, adiado ou excluído reflete cobertura,
+semântica, comportamento operacional e limitações legais avaliadas na PoC. A
+experiência deve oferecer a maior confiança prática possível dentro da operação
+com custo zero, identificando a fonte e comunicando ao producer dados ausentes
+ou limitados.
+
 Filtros básicos:
 
 - nome;
@@ -17,15 +28,28 @@ Filtros básicos:
 - plataforma;
 - período/ano.
 
-Filtros avançados por divulgação progressiva podem incluir:
+No primeiro MVP com IGDB, a divulgação progressiva poderá acrescentar temas,
+modos, empresas envolvidas e navegação contextual por keyword, sempre
+qualificados pela fonte. As decisões atuais são:
+
+- modos podem ser filtro público, tratando ausência na fonte como desconhecido;
+- perspectivas são detalhes opcionais, não filtro público;
+- o clique numa keyword exibida pode abrir jogos relacionados com um critério
+  contextual removível;
+- seleção manual, múltiplas keywords com `AND` e autocomplete foram adiados;
+- capas são opcionais e não dominantes nos resultados e detalhes;
+- screenshots ficam nos detalhes e em galerias abertas sob demanda.
+
+Iterações futuras poderão avaliar ou acrescentar:
 
 - subgênero;
-- temas e tags;
-- modos;
-- perspectiva;
+- temas e tags mais ricos;
+- filtro de perspectiva se a cobertura se tornar suficiente ou puder ser
+  qualificada por fontes complementares;
 - developer e publisher;
 - status de lançamento;
-- single-player, multiplayer e coop.
+- características mais profundas de single-player, multiplayer e coop;
+- filtro manual com múltiplas keywords e buscas salvas.
 
 Os resultados são candidatos comparáveis, não concorrentes diretos automáticos.
 
@@ -55,4 +79,7 @@ O domínio pode exigir temas, modos, empresas, lançamentos, referências extern
 
 ## Regra de migration
 
-Nenhuma migration antes da revisão de necessidades, campos, permissões, reconciliação, domínio e impacto de ingestão.
+Nenhuma migration da iteração atual com IGDB antes da revisão de necessidades,
+campos aprovados, permissões, fronteiras de compatibilidade, domínio e impacto
+de ingestão. Decisões detalhadas de Wikidata e Steam permanecem gates das
+integrações futuras dessas fontes, não de toda persistência da IGDB.

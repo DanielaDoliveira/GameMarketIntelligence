@@ -2,7 +2,7 @@
 
 > Idioma: Português (Brasil)  
 > Status: documento vivo  
-> Revisado em: 27 de julho de 2026
+> Revisado em: 14 de agosto de 2026
 
 ## Objetivo
 
@@ -12,9 +12,9 @@ Ele complementa o documento resumido de seleção de fontes e concentra as decis
 
 | Fonte | Classificação | Status |
 |---|---|---|
-| **IGDB** | Fonte geral principal | Selecionada |
-| **Wikidata** | Fonte de reconciliação e enriquecimento | Selecionada |
-| **Steam** | Fonte oficial especializada | Selecionada |
+| **IGDB** | Fonte geral principal | Selecionada; PoC concluída e aprovada para a primeira iteração de fonte |
+| **Wikidata** | Fonte de reconciliação e enriquecimento | Selecionada; PoC detalhada adiada para iteração futura |
+| **Steam** | Fonte oficial especializada | Selecionada; PoC detalhada adiada para iteração futura |
 
 As fontes não selecionadas permanecem documentadas no benchmark comparativo.
 
@@ -621,25 +621,25 @@ Ela complementa, mas não substitui, a IGDB e a Wikidata.
 5. Proveniência será preservada por valor ou afirmação.
 6. Conflitos não serão ocultados.
 7. Dados temporais serão observações.
-8. Imagens e descrições exigirão revisão própria.
+8. Imagens e descrições exigem revisão própria por fonte; a revisão de imagens
+   da IGDB está concluída para o primeiro MVP, e fontes futuras mantêm esse gate.
 9. A API do GMI não funcionará como espelho das fontes.
 10. Acesso futuro por agentes será somente leitura.
-11. Nenhuma migration relevante será criada antes da definição final dos campos.
+11. Nenhuma migration relevante será criada antes da definição dos campos da
+    fonte e da iteração que a justificam.
 12. Mudanças de termos, custo ou escopo exigirão reavaliação.
 
 ---
 
-# Próxima etapa
+# Status de progressão
 
-Com as fontes selecionadas, a próxima etapa é definir:
+A primeira iteração de fonte com IGDB já definiu perguntas de produto, escopo
+de campos, nulabilidade, restrições de proveniência, comportamento operacional
+e aprovação da PoC. A próxima etapa imediata é o spike leve de compatibilidade
+multifonte, seguido pelo Collector definitivo e limpo e pela revisão de
+persistência da IGDB.
 
-- perguntas de produto atendidas por cada fonte;
-- campos mínimos necessários;
-- dados obrigatórios e opcionais;
-- proveniência e confiabilidade;
-- estratégia de reconciliação;
-- frequência de coleta;
-- contratos internos;
-- impacto no domínio;
-- plano de prova de conceito;
-- migrations somente após aprovação do modelo.
+Perguntas, mappings, permissões e PoCs detalhadas de Wikidata e Steam continuam
+como trabalho de iterações futuras, próximo às respectivas integrações. Assim a
+visão multifonte completa é preservada sem bloquear o MVP atual com IGDB nem
+forçar prematuramente campos futuros no modelo.

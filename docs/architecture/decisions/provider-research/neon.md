@@ -2,7 +2,12 @@
 
 ## Status
 
-Research in progress.
+Research completed; Neon was subsequently selected.
+
+Final evidence and status are recorded in
+`managed-database-provider-proof-of-concept.md` and
+`ADR-0001-database-provider-selection.md`. This file preserves the earlier
+provider-research snapshot.
 
 Last verified: 2026-07-12.
 

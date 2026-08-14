@@ -1,10 +1,16 @@
 # Comparable Games Frontend Design Brief
 
-> Status: first responsive delivery implemented; representative-data validation pending.
+> Status: first responsive delivery implemented; reviewed after IGDB PoC
+> approval on August 14, 2026; representative-data validation pending.
 
 ## Purpose
 
 Define the current responsive, interaction, accessibility, and feedback-state direction for Comparable Games without repeating the broader product vision.
+
+In the first IGDB MVP, the filtering experience is the primary product-value
+surface. Its controls and explanations must reflect the PoC-approved field
+semantics, qualify source-dependent results, and communicate missing data
+without overwhelming the producer.
 
 ## Implemented experience
 
@@ -50,7 +56,7 @@ The search control belongs to the Comparable Games form, not the global header. 
 
 Cards show only concise discovery information:
 
-- image or fallback;
+- optional cover when available and suitable for the selected display size;
 - name;
 - release date/year;
 - genres;
@@ -58,6 +64,19 @@ Cards show only concise discovery information:
 - details action.
 
 Long descriptions and analytical metrics do not belong in cards.
+
+The card layout is mobile-first and must remain visually complete without an
+image. Missing or unusable image data does not require a permanent placeholder:
+the textual content may use the available space naturally. If a neutral
+missing-image indicator is later adopted for accessibility or consistency, it
+must not dominate the card or imply that the record itself is incomplete.
+
+Images are reduced to fit predefined containers without being enlarged beyond
+an appropriate source rendition. Aspect ratio is preserved through fitting or
+cropping rules defined by the UI; source records are never stretched. Covers
+support recognition and visual breathing room but are not a filter or identity
+signal. Screenshots remain in details and on-demand galleries, with visible
+source attribution and the documented rights caveats.
 
 ## Feedback and accessibility
 
@@ -70,9 +89,17 @@ Long descriptions and analytical metrics do not belong in cards.
 
 ## Deferred
 
+The following items are deferred from the implemented frontend. Some belong to
+the remainder of the first IGDB MVP, while others remain later-iteration
+product scope and must be prioritized against the approved data decisions:
+
 - multiple genre/platform values;
-- advanced filters;
+- approved source-qualified filters not yet implemented, such as modes and
+  themes;
 - complete details page;
 - reliability filter;
 - source presentation in results;
-- market metrics, charts, recommendations, authentication, and dark theme.
+- contextual keyword navigation;
+- market metrics, charts, recommendations, authentication, and dark theme;
+- perspective filtering and manual multi-keyword filtering, which remain
+  future iterations unless later source evidence changes their coverage.

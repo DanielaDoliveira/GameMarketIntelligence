@@ -1,10 +1,17 @@
 # Brief de Design do Frontend de Comparable Games
 
-> Status: primeira entrega responsiva implementada; validação com dados representativos pendente.
+> Status: primeira entrega responsiva implementada; revisão após a aprovação da
+> PoC da IGDB em 14 de agosto de 2026; validação com dados representativos
+> pendente.
 
 ## Objetivo
 
 Definir a direção atual de responsividade, interação, acessibilidade e estados de feedback de Comparable Games sem repetir a visão geral do produto.
+
+No primeiro MVP com IGDB, a experiência de filtros é a principal superfície de
+valor do produto. Controles e explicações devem refletir a semântica dos campos
+aprovada na PoC, qualificar resultados dependentes da fonte e comunicar dados
+ausentes sem sobrecarregar o producer.
 
 ## Experiência implementada
 
@@ -50,7 +57,7 @@ A busca pertence ao formulário de Comparable Games, não ao header global. Ente
 
 Os cards exibem apenas informações concisas:
 
-- imagem ou fallback;
+- capa opcional quando disponível e adequada ao tamanho de exibição escolhido;
 - nome;
 - data/ano;
 - gêneros;
@@ -58,6 +65,19 @@ Os cards exibem apenas informações concisas:
 - ação de detalhes.
 
 Descrições longas e métricas analíticas não pertencem aos cards.
+
+O layout do card é mobile-first e deve permanecer visualmente completo sem
+imagem. Imagem ausente ou inadequada não exige placeholder permanente: o
+conteúdo textual pode ocupar naturalmente o espaço disponível. Se um indicador
+neutro de imagem ausente for adotado depois por acessibilidade ou consistência,
+ele não poderá dominar o card nem sugerir que o registro esteja incompleto.
+
+Imagens são reduzidas para containers predefinidos sem ampliar além de uma
+variação adequada da fonte. A proporção é preservada com regras de encaixe ou
+corte definidas pela UI; a imagem nunca será esticada. Capas apoiam
+reconhecimento e respiro visual, mas não são filtro nem evidência de identidade.
+Screenshots ficam nos detalhes e em galerias sob demanda, com atribuição visível
+e as ressalvas de direitos documentadas.
 
 ## Feedback e acessibilidade
 
@@ -70,9 +90,17 @@ Descrições longas e métricas analíticas não pertencem aos cards.
 
 ## Adiado
 
+Os itens abaixo estão adiados na interface já implementada. Alguns pertencem ao
+restante do primeiro MVP com IGDB; outros continuam como visão de iterações
+posteriores e devem ser priorizados conforme as decisões de dados aprovadas:
+
 - múltiplos gêneros/plataformas;
-- filtros avançados;
+- filtros qualificados pela fonte já aprovados e ainda não implementados, como
+  modos e temas;
 - página completa de detalhes;
 - filtro de confiabilidade;
 - apresentação de fontes nos resultados;
-- métricas, gráficos, recomendações, autenticação e tema escuro.
+- navegação contextual por keyword;
+- métricas, gráficos, recomendações, autenticação e tema escuro;
+- filtro de perspectiva e filtro manual com múltiplas keywords, que permanecem
+  em iterações futuras salvo nova evidência de cobertura.

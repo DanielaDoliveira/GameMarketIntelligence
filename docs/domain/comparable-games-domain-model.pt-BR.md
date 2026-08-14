@@ -1,5 +1,8 @@
 # Modelo de Domínio de Comparable Games
 
+> Status da revisão: atualizado após a aprovação da PoC da IGDB em 14 de agosto
+> de 2026.
+
 ## Objetivo
 
 Descrever a base implementada e a direção aprovada após a seleção de fontes. O domínio deve responder perguntas validadas de producers sem copiar os esquemas das APIs externas.
@@ -38,6 +41,9 @@ A data atual não representa todos os eventos por plataforma, região, Early Acc
 IDs de providers não devem virar propriedades permanentes específicas em `Game`.
 
 ## Conceitos propostos para revisão
+
+Estes conceitos descrevem uma direção extensível, não a obrigação de entregar
+todas as fontes e capacidades analíticas futuras no primeiro MVP com IGDB.
 
 ```text
 Game
@@ -80,8 +86,14 @@ Conceitos de apoio:
 
 Nenhuma migration importante antes de:
 
-1. fixar perguntas e filtros;
-2. mapear campos permitidos de IGDB, Wikidata e Steam;
-3. propor reconciliação;
-4. revisar domínio e ingestão;
-5. validar hipóteses em uma PoC pequena.
+1. fixar perguntas e filtros necessários ao MVP atual com IGDB;
+2. aprovar pela PoC concluída os campos permitidos da IGDB e sua nulabilidade;
+3. confirmar num spike leve que identidade canônica, identidades externas,
+   proveniência e contratos por fonte poderão acomodar Wikidata e Steam;
+4. revisar domínio e arquitetura de ingestão;
+5. limitar a migration aos conceitos justificados pela iteração atual.
+
+O mapping completo de Wikidata e Steam não é pré-requisito para o primeiro
+incremento de persistência da IGDB. Ele permanece como gate de iterações
+futuras antes da integração dessas fontes. Assim a visão multifonte é
+preservada sem forçar campos futuros no schema atual.

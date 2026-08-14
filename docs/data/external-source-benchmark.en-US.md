@@ -1,6 +1,10 @@
 # Game Market Intelligence — External Source Benchmark
 
 > Reviewed: July 27, 2026
+>
+> Historical-status note — August 14, 2026: this benchmark remains the source
+> selection record. Its IGDB follow-up work has progressed through a completed
+> and approved PoC; Wikidata and Steam remain planned for later iterations.
 
 ## Purpose
 
@@ -41,4 +45,7 @@ SteamDB may be mentioned as an optional external manual-research tool but will n
 
 ## Consequence
 
-The benchmarking stage is complete. The next work is field selection, source mapping, reconciliation rules, ingestion proof of concept, domain review, and only then migrations.
+At benchmark closure, the planned next work was field selection, source
+mapping, reconciliation rules, an ingestion proof of concept, domain review,
+and only then migrations. The current sequence is maintained in the
+implementation roadmap; the IGDB PoC portion is now complete.
