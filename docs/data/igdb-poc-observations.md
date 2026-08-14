@@ -2434,6 +2434,12 @@ The current proof of concept confirms that:
 - GMI-8 coverage and nullability evaluation is complete for the current PoC.
 - GMI-9 pagination, rate-limit, and bounded operational-failure evaluation is
   complete for the current PoC.
+- GMI-10 approves the IGDB investigation as sufficient to guide a definitive
+  Collector for the zero-cost MVP context, without claiming that the source is
+  complete or that the current PoC is production-ready.
+- Known source gaps must remain visible through nullability and provenance;
+  future iterations may improve them with complementary sources without making
+  Steam a dependency for identity or catalogue admission.
 
 ## Next investigations
 
@@ -2469,7 +2475,10 @@ The following points still require investigation:
 11. The evaluated external-field candidates have been classified for the MVP;
    revisit only when another source or product requirement introduces new
    evidence.
-12. Consolidate the proof-of-concept approval criteria (GMI-10).
+12. The approval criteria are consolidated: the investigation is approved,
+   conditional limitations are explicit, and persistence-related criteria were
+   transferred to the future implementation rather than treated as PoC
+   failures.
 13. Define which findings affect product decisions and which require an ADR.
 14. Define the mapping boundary between IGDB contracts and the internal model.
 15. Define the future boundary between the Worker, jobs, import services,
@@ -2480,3 +2489,5 @@ The following points still require investigation:
 17. Revisit commercial and community-origin classification in a future
     increment only after the simple Mod exclusion has been validated in the
     working MVP.
+18. Perform the final documentation consistency and status review (GMI-11),
+    then transfer only the consolidated documentation to `develop`.

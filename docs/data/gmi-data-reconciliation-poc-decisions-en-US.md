@@ -684,8 +684,53 @@ The PoC must demonstrate:
 
 > IGDB and the pipeline are sufficient for the MVP when they produce useful searches, preserve context and provenance, avoid dangerous merges, operate incrementally and idempotently, and remain compatible with free infrastructure.
 
+### 12.1 Consolidated approval — GMI-10
+
+The criteria were originally written across two different phases: what the
+exploratory PoC could demonstrate without persistence and what only a real
+pipeline can measure. Missing capabilities from the second phase do not
+invalidate the investigation; they become acceptance criteria for the future
+implementation.
+
+| Area | Classification | Conclusion |
+|---|---|---|
+| Comparable Games usefulness | Approved | IGDB provides sufficient data for MVP research, comparison, filters, and details. |
+| Coverage and nullability | Approved with limitations | Missing values were measured and must remain explicit rather than invented. |
+| Types and relationships | Approved with conditions | `game_type`, `parent_game`, and `version_parent` must be interpreted together and do not authorize automatic merging. |
+| Platform and regional dates | Approved with conditions | They are useful but may be incomplete and have variable precision. |
+| Complementary fields | Classified | Every candidate was approved, deferred, or rejected for the first MVP. |
+| Keywords | Partially approved | Ingestion, details, and contextual navigation are approved; the complete manual filter is deferred. |
+| Covers and screenshots | Approved with restrictions | Optional, non-dominant use with visible attribution and preserved rights. |
+| Pagination and pacing | Approved | Live offsets, including the last eligible record, and safe pacing were validated. |
+| HTTP resilience | Approved | HTTP 429, `Retry-After`, 5xx failures, timeout, cancellation, and retry limits were tested. |
+| Authentication | Approved | OAuth succeeded and one renewal after HTTP 401 was validated without a loop. |
+| Cross-source reconciliation | Not validated in this PoC | Rules are defined, but IGDB, Wikidata, and Steam were not jointly integrated. |
+| Persistence and idempotency | Future implementation | The PoC does not write to the database. |
+| Checkpoint and resume | Future implementation | No persistent synchronization state exists yet. |
+| `updated_at` versus checksum | Future implementation | The comparison depends on real ingestion and persistence. |
+| Neon storage | Future implementation | Volume, indexes, retention, and cost must be measured with imported data. |
+| Definitive canonical model | Outside PoC scope | It will be designed from the consolidated decisions. |
+
+IGDB is not considered a perfect or complete source. The decision concerns fit
+for the current context: for a free application with constrained
+infrastructure and budget, the observed value is satisfactory for the first
+MVP. The product must communicate missing data and provenance rather than hide
+the gaps. Future iterations may improve coverage and confidence by combining
+complementary sources without making Steam a requirement for identity or
+catalogue admission.
+
+### Investigation-closing decision
+
+> The IGDB PoC is approved as a technical and product investigation. The source
+> is suitable to support the Comparable Games MVP provided that nullable fields,
+> provenance, product relationships, incomplete dates, and image restrictions
+> are preserved. Approval authorizes the design of a definitive Collector but
+> does not represent production readiness. Persistence, idempotency,
+> checkpoints, incremental updates, checksums, storage, and cross-source
+> reconciliation must be validated while implementing the real pipeline.
+
 ## 13. Next step
 
-The next work cycle is GMI-10: consolidate which PoC approval criteria are
-already satisfied, which remain conditional, and which belong to future
-implementation, without expanding the MVP scope.
+The next work cycle is GMI-11: perform the final documentation consistency
+review, formally mark the PoC as completed, and prepare only the documented
+decisions for transfer to the `develop` branch.

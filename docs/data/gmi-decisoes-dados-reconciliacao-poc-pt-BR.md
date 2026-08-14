@@ -699,8 +699,53 @@ A PoC deverá demonstrar:
 
 > A IGDB e o pipeline serão considerados suficientes para o MVP quando produzirem pesquisas úteis, preservarem contexto e proveniência, evitarem fusões perigosas, operarem de forma incremental e idempotente e permanecerem compatíveis com a infraestrutura gratuita.
 
+### 12.1 Consolidação da aprovação — GMI-10
+
+Os critérios foram originalmente escritos reunindo duas fases diferentes: o
+que a PoC exploratória poderia demonstrar sem persistência e o que somente um
+pipeline real poderá medir. A ausência das capacidades da segunda fase não
+invalida a investigação; transforma esses itens em critérios de aceitação da
+implementação futura.
+
+| Área | Classificação | Conclusão |
+|---|---|---|
+| Utilidade para Comparable Games | Aprovada | A IGDB oferece dados suficientes para pesquisa, comparação, filtros e detalhes do MVP. |
+| Cobertura e nulabilidade | Aprovada com limitações | Ausências foram medidas e devem permanecer explícitas, sem valores inventados. |
+| Tipos e relações | Aprovada com condições | `game_type`, `parent_game` e `version_parent` devem ser interpretados em conjunto e não autorizam fusão automática. |
+| Datas por plataforma e região | Aprovada com condições | São úteis, porém podem ser incompletas e apresentar precisão variável. |
+| Campos complementares | Classificados | Cada candidato foi aprovado, adiado ou descartado para o primeiro MVP. |
+| Keywords | Aprovada parcialmente | Ingestão, detalhes e navegação contextual aprovados; filtro manual completo adiado. |
+| Capas e screenshots | Aprovada com restrições | Uso opcional e não dominante, com atribuição visível e direitos preservados. |
+| Paginação e ritmo | Aprovada | Offsets reais, incluindo o último elegível, e espaçamento seguro foram validados. |
+| Resiliência HTTP | Aprovada | HTTP 429, `Retry-After`, falhas 5xx, timeout, cancelamento e limite de tentativas foram testados. |
+| Autenticação | Aprovada | OAuth funcionou e uma renovação após HTTP 401 foi validada sem loop. |
+| Reconciliação entre fontes | Não validada nesta PoC | As regras estão definidas, mas IGDB, Wikidata e Steam não foram integradas conjuntamente. |
+| Persistência e idempotência | Implementação futura | A PoC não grava no banco. |
+| Checkpoint e retomada | Implementação futura | Ainda não existe estado persistido de sincronização. |
+| `updated_at` versus checksum | Implementação futura | A comparação depende da ingestão e persistência reais. |
+| Armazenamento no Neon | Implementação futura | Volume, índices, retenção e custo deverão ser medidos com dados importados. |
+| Modelo canônico definitivo | Fora do escopo da PoC | Será desenhado a partir das decisões consolidadas. |
+
+A IGDB não é considerada uma fonte perfeita nem completa. A decisão é de
+adequação ao contexto atual: para uma aplicação gratuita, com infraestrutura e
+orçamento limitados, o valor observado é satisfatório para o primeiro MVP. O
+produto deverá comunicar ausências e proveniência em vez de esconder as
+lacunas. Iterações futuras poderão melhorar cobertura e confiança combinando
+fontes complementares, sem tornar a Steam requisito de identidade ou inclusão.
+
+### Decisão de encerramento da investigação
+
+> A PoC da IGDB está aprovada como investigação técnica e de produto. A fonte é
+> adequada para sustentar o MVP de Comparable Games, desde que campos anuláveis,
+> proveniência, relações entre produtos, datas incompletas e restrições de
+> imagens sejam preservados. A aprovação autoriza o desenho de um Collector
+> definitivo, mas não representa prontidão para produção. Persistência,
+> idempotência, checkpoints, atualização incremental, checksum, armazenamento e
+> reconciliação entre fontes deverão ser validados durante a implementação do
+> pipeline real.
+
 ## 13. Próximo passo
 
-O próximo ciclo será dedicado à GMI-10: consolidar quais critérios de aprovação
-da PoC já foram atendidos, quais permanecem condicionais e quais pertencem à
-implementação futura, sem ampliar o escopo do MVP.
+O próximo ciclo será dedicado à GMI-11: realizar a revisão final de consistência
+da documentação, marcar formalmente a PoC como concluída e preparar somente as
+decisões documentais para transferência à branch `develop`.
