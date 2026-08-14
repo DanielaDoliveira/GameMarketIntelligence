@@ -10,6 +10,9 @@ public sealed class IgdbGameSample
     [JsonPropertyName("name")]
     public string Name { get; set; } = string.Empty;
 
+    [JsonPropertyName("summary")]
+    public string? Summary { get; set; }
+
     [JsonPropertyName("first_release_date")]
     public long? FirstReleaseDate { get; set; }
 

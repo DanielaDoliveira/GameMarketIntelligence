@@ -35,8 +35,15 @@ public sealed class Worker(
         try
         {
             logger.LogInformation(
-                "Starting IGDB cover-and-screenshot analysis: sample={SampleCount}, seed={Seed}, cutoff={Cutoff}",
-                SampleGameIds.Length, SampleSeed, SampleCutoff);
+                """
+                Starting IGDB consolidated coverage-and-nullability analysis:
+                Frozen sample size: {SampleCount}
+                Sample seed: {SampleSeed}
+                Sample cutoff: {SampleCutoff}
+                """,
+                SampleGameIds.Length,
+                SampleSeed,
+                SampleCutoff);
 
             var token = await authenticationService.GetAccessTokenAsync(stoppingToken);
             if (string.IsNullOrWhiteSpace(token.AccessToken))
@@ -45,16 +52,19 @@ public sealed class Worker(
             }
 
             var games = await igdbClient.GetGamesByIdsAsync(
-                token.AccessToken, SampleGameIds, stoppingToken);
+                token.AccessToken,
+                SampleGameIds,
+                stoppingToken);
+
             LogResults(games);
         }
         catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
         {
-            logger.LogInformation("IGDB cover-and-screenshot analysis was cancelled.");
+            logger.LogInformation("IGDB coverage-and-nullability analysis was cancelled.");
         }
         catch (Exception exception)
         {
-            logger.LogError(exception, "IGDB cover-and-screenshot analysis failed.");
+            logger.LogError(exception, "IGDB coverage-and-nullability analysis failed.");
         }
         finally
         {
@@ -64,122 +74,115 @@ public sealed class Worker(
 
     private void LogResults(IReadOnlyList<IgdbGameSample> games)
     {
-        var byId = games.ToDictionary(game => game.Id);
+        var duplicateReturnedIds = games
+            .GroupBy(game => game.Id)
+            .Count(group => group.Count() > 1);
+        var expectedIds = SampleGameIds.ToHashSet();
+        var unexpectedIds = games.Count(game => !expectedIds.Contains(game.Id));
+        var gamesById = games
+            .GroupBy(game => game.Id)
+            .ToDictionary(group => group.Key, group => group.First());
         var returned = SampleGameIds
-            .Where(byId.ContainsKey)
-            .Select(id => byId[id])
+            .Where(gamesById.ContainsKey)
+            .Select(id => gamesById[id])
             .ToArray();
 
-        var lines = SampleGameIds.Select(id => byId.TryGetValue(id, out var game)
-            ? FormatGame(game)
-            : $"- ID={id}; record=NOT RETURNED");
+        var rows = new[]
+        {
+            Row("name", returned, game => !string.IsNullOrWhiteSpace(game.Name)),
+            Row("summary", returned, game => !string.IsNullOrWhiteSpace(game.Summary)),
+            Row("first_release_date", returned, game => game.FirstReleaseDate.HasValue),
+            Row("updated_at", returned, game => game.UpdatedAt.HasValue),
+            Row("game_type", returned, game => game.GameType is not null),
+            Row("game_status", returned, game => game.GameStatus is not null),
+            Row("parent_game", returned, game => game.ParentGame is not null),
+            Row("version_parent", returned, game => game.VersionParent is not null),
+            Row("platforms", returned, game => game.Platforms.Count > 0),
+            Row("genres", returned, game => game.Genres.Count > 0),
+            Row("themes", returned, game => game.Themes.Count > 0),
+            Row("keywords", returned, game => game.Keywords.Count > 0),
+            Row("involved_companies", returned, game => game.InvolvedCompanies.Count > 0),
+            Row("collections", returned, game => game.Collections.Count > 0),
+            Row("franchises", returned, game => game.Franchises.Count > 0),
+            Row("release_dates", returned, game => game.ReleaseDates.Count > 0),
+            Row("external_games", returned, game => game.ExternalGames.Count > 0),
+            Row("websites", returned, game => game.Websites.Count > 0)
+        };
 
-        logger.LogInformation("IGDB image results:{NewLine}{Results}",
-            Environment.NewLine, string.Join(Environment.NewLine, lines));
-
-        LogCoverSummary(returned);
-        LogScreenshotSummary(returned);
-        logger.LogInformation("IGDB cover-and-screenshot analysis completed.");
-    }
-
-    private void LogCoverSummary(IReadOnlyList<IgdbGameSample> games)
-    {
-        var images = games.Where(g => g.Cover is not null).Select(g => g.Cover!).ToArray();
-
-        logger.LogInformation(
-            """
-            IGDB cover summary:
-            Frozen sample size: {SampleCount}
-            Records returned: {ReturnedCount}
-            Missing records: {MissingCount}
-            Records with a cover: {PresentCount}
-            Records without a cover: {AbsentCount}
-            Cover presence coverage: {Coverage}
-            Invalid record IDs: {InvalidIdCount}
-            Blank image IDs: {BlankImageIdCount}
-            Blank URLs: {BlankUrlCount}
-            Non-positive dimensions: {InvalidDimensionsCount}
-            Duplicate image IDs across games: {DuplicateImageIdCount}
-            Conflicting metadata for the same image ID: {ConflictCount}
-            """,
-            SampleGameIds.Length, games.Count, SampleGameIds.Length - games.Count,
-            images.Length, games.Count - images.Length,
-            Percentage(images.Length, games.Count),
-            images.Count(i => i.Id <= 0),
-            images.Count(i => string.IsNullOrWhiteSpace(i.ImageId)),
-            images.Count(i => string.IsNullOrWhiteSpace(i.Url)),
-            images.Count(i => i.Width <= 0 || i.Height <= 0),
-            DuplicateImageIds(images), ConflictingMetadata(images));
-    }
-
-    private void LogScreenshotSummary(IReadOnlyList<IgdbGameSample> games)
-    {
-        var populated = games.Where(g => g.Screenshots.Count > 0).ToArray();
-        var images = games.SelectMany(g => g.Screenshots).ToArray();
+        var matrix = string.Join(Environment.NewLine, rows.Select(row =>
+            $"- {row.Field}: present={row.Present}/{returned.Length} " +
+            $"({Percentage(row.Present, returned.Length)}); " +
+            $"absent={row.Absent}/{returned.Length} " +
+            $"({Percentage(row.Absent, returned.Length)})"));
 
         logger.LogInformation(
             """
-            IGDB screenshot summary:
+            IGDB consolidated coverage-and-nullability summary:
             Frozen sample size: {SampleCount}
             Records returned: {ReturnedCount}
-            Missing records: {MissingCount}
-            Records with screenshots: {PresentCount}
-            Records without screenshots: {AbsentCount}
-            Screenshot presence coverage: {Coverage}
-            Records with exactly one screenshot: {ExactlyOneCount}
-            Records with multiple screenshots: {MultipleCount}
-            Total screenshots: {TotalCount}
-            Minimum per populated record: {MinimumCount}
-            Maximum per populated record: {MaximumCount}
-            Average per populated record: {AverageCount:F2}
-            Invalid record IDs: {InvalidIdCount}
-            Blank image IDs: {BlankImageIdCount}
-            Blank URLs: {BlankUrlCount}
-            Non-positive dimensions: {InvalidDimensionsCount}
-            Records with duplicate image IDs: {RecordsWithDuplicates}
-            Duplicate image IDs across games: {DuplicatesAcrossGames}
-            Conflicting metadata for the same image ID: {ConflictCount}
+            Missing expected records: {MissingCount}
+            Unexpected records: {UnexpectedCount}
+            Duplicate returned IDs: {DuplicateCount}
+
+            Field presence matrix:
+            {Matrix}
+
+            Relationship combinations:
+            Records with parent_game only: {ParentOnlyCount}
+            Records with version_parent only: {VersionOnlyCount}
+            Records with both relationships: {BothRelationshipCount}
+            Records with neither relationship: {NeitherRelationshipCount}
+
+            Release consistency indicators:
+            Records with platforms but no release_dates: {PlatformsWithoutDatesCount}
+            Records with release_dates but no platforms: {DatesWithoutPlatformsCount}
+            Records with first_release_date but no release_dates: {FirstWithoutDetailsCount}
+            Records with release_dates but no first_release_date: {DetailsWithoutFirstCount}
+
+            Source-link indicators:
+            Records with external_games or websites: {AnySourceLinkCount}
+            Records with neither external_games nor websites: {NoSourceLinkCount}
             """,
-            SampleGameIds.Length, games.Count, SampleGameIds.Length - games.Count,
-            populated.Length, games.Count - populated.Length,
-            Percentage(populated.Length, games.Count),
-            games.Count(g => g.Screenshots.Count == 1),
-            games.Count(g => g.Screenshots.Count > 1), images.Length,
-            populated.Length == 0 ? 0 : populated.Min(g => g.Screenshots.Count),
-            populated.Length == 0 ? 0 : populated.Max(g => g.Screenshots.Count),
-            populated.Length == 0 ? 0 : populated.Average(g => g.Screenshots.Count),
-            images.Count(i => i.Id <= 0),
-            images.Count(i => string.IsNullOrWhiteSpace(i.ImageId)),
-            images.Count(i => string.IsNullOrWhiteSpace(i.Url)),
-            images.Count(i => i.Width <= 0 || i.Height <= 0),
-            games.Count(g => DuplicateImageIds(g.Screenshots) > 0),
-            DuplicateImageIds(images), ConflictingMetadata(images));
+            SampleGameIds.Length,
+            returned.Length,
+            SampleGameIds.Length - returned.Length,
+            unexpectedIds,
+            duplicateReturnedIds,
+            matrix,
+            returned.Count(game => game.ParentGame is not null && game.VersionParent is null),
+            returned.Count(game => game.ParentGame is null && game.VersionParent is not null),
+            returned.Count(game => game.ParentGame is not null && game.VersionParent is not null),
+            returned.Count(game => game.ParentGame is null && game.VersionParent is null),
+            returned.Count(game => game.Platforms.Count > 0 && game.ReleaseDates.Count == 0),
+            returned.Count(game => game.ReleaseDates.Count > 0 && game.Platforms.Count == 0),
+            returned.Count(game => game.FirstReleaseDate.HasValue && game.ReleaseDates.Count == 0),
+            returned.Count(game => game.ReleaseDates.Count > 0 && !game.FirstReleaseDate.HasValue),
+            returned.Count(game => game.ExternalGames.Count > 0 || game.Websites.Count > 0),
+            returned.Count(game => game.ExternalGames.Count == 0 && game.Websites.Count == 0));
+
+        var missingLines = rows
+            .Where(row => row.Absent > 0)
+            .Select(row => $"- {row.Field}: {row.Absent} absent");
+
+        logger.LogInformation(
+            "IGDB nullable-or-absent fields in the fixed sample:{NewLine}{Fields}",
+            Environment.NewLine,
+            string.Join(Environment.NewLine, missingLines));
+
+        logger.LogInformation("IGDB coverage-and-nullability analysis completed.");
     }
 
-    private static string FormatGame(IgdbGameSample game) =>
-        $"- ID={game.Id}; title={Value(game.Name)}; " +
-        $"cover={(game.Cover is null ? "not reported" : FormatImage(game.Cover))}; " +
-        $"screenshot count={game.Screenshots.Count}; screenshots=" +
-        (game.Screenshots.Count == 0
-            ? "not reported"
-            : string.Join(", ", game.Screenshots.OrderBy(i => i.Id).Select(FormatImage)));
-
-    private static string FormatImage(IgdbImageReference image) =>
-        $"{image.Id}|image_id={Value(image.ImageId)}|{image.Width}x{image.Height}|url={Value(image.Url)}";
-
-    private static int DuplicateImageIds(IEnumerable<IgdbImageReference> images) =>
-        images.Where(i => !string.IsNullOrWhiteSpace(i.ImageId))
-            .GroupBy(i => i.ImageId.Trim(), StringComparer.OrdinalIgnoreCase)
-            .Count(group => group.Count() > 1);
-
-    private static int ConflictingMetadata(IEnumerable<IgdbImageReference> images) =>
-        images.Where(i => !string.IsNullOrWhiteSpace(i.ImageId))
-            .GroupBy(i => i.ImageId.Trim(), StringComparer.OrdinalIgnoreCase)
-            .Count(group => group.Select(i => (i.Url?.Trim(), i.Width, i.Height)).Distinct().Count() > 1);
+    private static CoverageRow Row(
+        string field,
+        IReadOnlyCollection<IgdbGameSample> games,
+        Func<IgdbGameSample, bool> isPresent)
+    {
+        var present = games.Count(isPresent);
+        return new CoverageRow(field, present, games.Count - present);
+    }
 
     private static string Percentage(int numerator, int denominator) =>
         denominator == 0 ? "0.00%" : $"{(double)numerator / denominator:P2}";
 
-    private static string Value(string? value) =>
-        string.IsNullOrWhiteSpace(value) ? "not reported" : value;
+    private sealed record CoverageRow(string Field, int Present, int Absent);
 }

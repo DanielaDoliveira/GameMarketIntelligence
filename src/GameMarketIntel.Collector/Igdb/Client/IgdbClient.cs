@@ -87,6 +87,7 @@ public sealed class IgdbClient(HttpClient httpClient, IOptions<IgdbPocOptions> o
              fields
                  id,
                  name,
+                 summary,
                  first_release_date,
                  updated_at,
                  game_type.id,
@@ -148,6 +149,7 @@ public sealed class IgdbClient(HttpClient httpClient, IOptions<IgdbPocOptions> o
              fields
                  id,
                  name,
+                 summary,
                  first_release_date,
                  updated_at,
 
