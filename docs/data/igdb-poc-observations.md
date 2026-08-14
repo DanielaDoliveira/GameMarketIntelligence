@@ -1383,6 +1383,14 @@ The proof of concept currently preserves keywords as provided by IGDB.
 No keyword classification, normalization, exclusion, or weighting rule has been
 defined.
 
+The later frozen-sample coverage investigation found keywords on 43 of 100
+records. This is insufficient for a manual catalogue-wide filter that could be
+understood as exhaustive. Keywords remain approved for nullable many-to-many
+ingestion and detail display. In the first MVP, clicking one keyword opens
+Comparable Games with that source-provided keyword as a contextual, removable
+criterion. Manual keyword selection, multiple-keyword `AND`, and autocomplete
+are deferred. The related-game result must not be presented as exhaustive.
+
 ### Recently updated sample
 
 The recently updated query sorts records by:
@@ -2007,6 +2015,75 @@ The first MVP will therefore:
 Reference reviewed: <https://api-docs.igdb.com/>. This is a cautious operational
 PoC decision, not legal advice or a conclusion that GMI owns the images.
 
+## Consolidated coverage and nullability observations
+
+The frozen 100 identifiers were queried once more to consolidate top-level
+presence for the remaining MVP candidate fields. Every expected record was
+returned, with no unexpected or duplicate identifiers.
+
+| Field | Present | Absent |
+|---|---:|---:|
+| `name` | 100/100 | 0/100 |
+| `summary` | 88/100 | 12/100 |
+| `first_release_date` | 100/100 | 0/100 |
+| `updated_at` | 100/100 | 0/100 |
+| `game_type` | 100/100 | 0/100 |
+| `game_status` | 7/100 | 93/100 |
+| `parent_game` | 21/100 | 79/100 |
+| `version_parent` | 2/100 | 98/100 |
+| `platforms` | 100/100 | 0/100 |
+| `genres` | 92/100 | 8/100 |
+| `themes` | 61/100 | 39/100 |
+| `keywords` | 43/100 | 57/100 |
+| `involved_companies` | 52/100 | 48/100 |
+| `collections` | 17/100 | 83/100 |
+| `franchises` | 3/100 | 97/100 |
+| `release_dates` | 100/100 | 0/100 |
+| `external_games` | 89/100 | 11/100 |
+| `websites` | 96/100 | 4/100 |
+
+The `first_release_date` result is conditioned by sample construction: the
+eligible population required a non-null value before the fixed cutoff. It is
+not evidence of 100% IGDB catalogue coverage. The same caution applies to all
+sample rates: they describe the frozen identifiers, not a universal source
+guarantee.
+
+Absence is not equivalent to one semantic state. `summary`, genres, themes,
+keywords, involved companies, external identifiers, and websites may be
+unknown or unreported. `game_status`, parent/version relationships,
+collections, and franchises are also conditional and may legitimately be not
+applicable. All remain nullable at the ingestion boundary unless the source
+contract and admitted catalogue rules establish otherwise.
+
+Relationship combinations were:
+
+- 21 records with `parent_game` only;
+- two records with `version_parent` only;
+- zero with both;
+- 77 with neither.
+
+All 100 sampled records had platforms and detailed release dates. There were no
+platforms-without-dates or dates-without-platforms cases in this execution, but
+the earlier controlled `Resident Evil 4` case still demonstrates that detailed
+dates may omit occurrences for some listed platforms. The consolidated result
+does not override that semantic limitation.
+
+Eighty-nine records had `external_games`, 96 had websites, and 98 had at least
+one of the two. Two had neither. These fields are strong provenance and
+reconciliation candidates when present but cannot be mandatory.
+
+The 43% keyword presence led to a scope decision rather than another sampling
+exercise. Keywords are ingested and displayed, and a clicked keyword can open
+non-exhaustive related games. They are excluded from the first MVP's manual
+filter panel. The future search boundary should accept a collection-oriented
+keyword representation with source IDs and provenance so multiple-keyword
+`AND` and autocomplete can be added without remodeling the data relationship.
+
+No additional `game_type` segmentation is required for this decision. Types
+and relationships were already studied in controlled samples, and the keyword
+feature no longer depends on qualifying a catalogue-wide manual filter. GMI-8
+is complete for the current proof-of-concept scope.
+
 ## Current architectural boundaries
 
 ### `IgdbClient`
@@ -2277,6 +2354,16 @@ The current proof of concept confirms that:
 - The first MVP stores image metadata and uses size-appropriate IGDB CDN URLs;
   local binary storage is deferred, visible IGDB attribution is required, and
   image rights remain with their respective rights holders.
+- The consolidated frozen sample measured remaining field presence and
+  confirmed that optionality must be preserved for summaries, status,
+  relationships, taxonomies, companies, collections, external IDs, and
+  websites.
+- `first_release_date` had 100% presence by sample construction and must not be
+  reported as universal source coverage.
+- Keywords had 43% presence; they are approved for ingestion, details, and
+  single-keyword contextual navigation, while the manual keyword filter,
+  multi-keyword `AND`, and autocomplete are deferred.
+- GMI-8 coverage and nullability evaluation is complete for the current PoC.
 
 ## Next investigations
 
@@ -2302,8 +2389,8 @@ The following points still require investigation:
 7. Evaluate `game_localizations` independently, including coverage, region
    semantics, duplicates, relationship to the main name, and evidence of
    official use.
-8. Measure nullability and field coverage using a larger and less recency-biased
-   sample.
+8. Coverage and nullability consolidation is complete for the current PoC; a
+   larger or stratified sample is future refinement, not an MVP blocker.
 9. Compare metadata completeness between parent records and related products.
 10. Validate pagination, rate limits, token behavior, retries, and an appropriate
    synchronization strategy, including an overlapping release-date window for

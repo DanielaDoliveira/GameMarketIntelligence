@@ -140,7 +140,11 @@ Regras:
 - **Perspectivas:** ingerir como detalhe opcional em relação muitos-para-muitos;
   adiar o filtro público porque a cobertura atual produziria falsos negativos em
   excesso.
-- **Keywords:** múltiplas usam AND; são pilar central do valor do GMI; usar IDs estruturados; não criar keywords próprias nem unificar termos automaticamente.
+- **Keywords:** usar IDs estruturados da fonte; ingerir e exibir como dado
+  opcional; no primeiro MVP, uma keyword será clicável e abrirá Comparable Games
+  com essa keyword como critério contextual removível. Seleção manual,
+  múltiplas keywords com `AND`, autocomplete, keywords próprias e unificação
+  automática de termos ficam adiados.
 - **Plataformas:** múltiplas usam OR.
 - **Multiplayer:** incluir multiplayer, co-op online e multiplayer local/offline; capacidades selecionadas usam AND, sem exclusividade.
 
@@ -285,6 +289,62 @@ screenshot. A política do MVP é, portanto, uma decisão operacional cautelosa,
 não uma determinação jurídica de que o GMI possua ou possa redistribuir
 livremente as imagens.
 
+### 4.9 Cobertura e nulabilidade consolidadas
+
+A amostra congelada de 100 registros retornou todos os IDs esperados, sem
+registros inesperados nem duplicados. A matriz consolidada de presença foi:
+
+| Campo | Presente | Ausente |
+|---|---:|---:|
+| `name` | 100% | 0% |
+| `summary` | 88% | 12% |
+| `first_release_date` | 100% | 0% |
+| `updated_at` | 100% | 0% |
+| `game_type` | 100% | 0% |
+| `game_status` | 7% | 93% |
+| `parent_game` | 21% | 79% |
+| `version_parent` | 2% | 98% |
+| `platforms` | 100% | 0% |
+| `genres` | 92% | 8% |
+| `themes` | 61% | 39% |
+| `keywords` | 43% | 57% |
+| `involved_companies` | 52% | 48% |
+| `collections` | 17% | 83% |
+| `franchises` | 3% | 97% |
+| `release_dates` | 100% | 0% |
+| `external_games` | 89% | 11% |
+| `websites` | 96% | 4% |
+
+O resultado de 100% para `first_release_date` decorre da seleção e não constitui
+afirmação sobre a cobertura geral da IGDB: a população congelada exigia uma
+primeira data não nula anterior ao corte. `game_status`, relações entre
+produtos, collections e franchises são campos condicionais; ausência pode
+significar não aplicável ou não informado e não deve ser classificada
+automaticamente como defeito dos dados.
+
+As relações permaneceram separadas: 21 registros tinham somente `parent_game`,
+dois tinham somente `version_parent`, nenhum tinha ambos e 77 não tinham nenhum
+deles. Todos os registros amostrados apresentaram plataformas e datas
+detalhadas, enquanto 98 tinham ao menos `external_games` ou `websites`. Esses
+resultados da amostra não autorizam herança de campos entre produtos
+relacionados.
+
+A cobertura de 43% para keywords é insuficiente para um filtro manual em todo o
+catálogo que o usuário possa interpretar razoavelmente como exaustivo.
+Keywords continuam aprovadas para ingestão muitos-para-muitos anulável e
+exibição nos detalhes. O clique abre jogos relacionados qualificados pela fonte
+com um critério contextual removível; os resultados não serão apresentados
+como exaustivos. O modelo de dados e a fronteira de busca devem preservar IDs
+da fonte, proveniência e entrada futura em coleção para permitir filtro manual
+com múltiplas keywords sem remodelagem estrutural, mas essa interface completa
+não pertence ao primeiro MVP.
+
+Não é necessária nova segmentação por `game_type` para a decisão atual: tipos e
+relações já foram avaliados em amostras controladas, e o escopo reduzido de
+keywords deixou de depender de um limite de cobertura para um filtro manual
+global. A tarefa GMI-8 de cobertura e nulabilidade está concluída no escopo
+atual da PoC.
+
 ## 5. Pesquisa e experiência do usuário
 
 O GMI distinguirá duas intenções:
@@ -297,7 +357,7 @@ O GMI distinguirá duas intenções:
 
 ### Explorar uma ideia ou nicho
 
-- uma ou várias keywords;
+- uma keyword selecionada contextualmente nos detalhes de um jogo;
 - refinamento com gêneros, temas, modos, plataformas e período;
 - perspectivas exibidas como detalhes complementares quando disponíveis.
 
@@ -527,16 +587,18 @@ A PoC deverá demonstrar:
 
 ### Keywords
 
-- volume útil;
-- resultados relevantes;
-- combinações por AND;
-- autocomplete viável;
-- duplicidades e aliases compreensíveis;
-- valor real para exploração de nichos.
+- preservar IDs da fonte, proveniência e associações muitos-para-muitos anuláveis;
+- exibir keywords disponíveis nos detalhes do jogo;
+- permitir que uma keyword clicada abra jogos relacionados não exaustivos;
+- adiar seleção manual, múltiplas keywords com `AND` e autocomplete;
+- manter a fronteira de busca extensível sem exigir remodelagem estrutural;
+- não criar keywords próprias nem unificar termos automaticamente.
 
 ### Filtros
 
-- AND para gêneros, temas, modos, keywords e multiplayer;
+- AND para gêneros, temas, modos e multiplayer;
+- sem filtro manual de keywords no primeiro MVP; uma keyword contextual poderá
+  estar ativa pela navegação de jogos relacionados;
 - sem filtro público de perspectivas no primeiro MVP;
 - OR para plataformas;
 - AND entre categorias;
