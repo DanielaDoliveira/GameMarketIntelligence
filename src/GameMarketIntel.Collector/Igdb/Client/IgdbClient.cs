@@ -8,6 +8,8 @@ namespace GameMarketIntel.Collector.Igdb.Client;
 
 public sealed class IgdbClient(HttpClient httpClient, IOptions<IgdbPocOptions> options) : IIgdbClient
 {
+    private static readonly TimeSpan MinimumRequestStartInterval =
+        TimeSpan.FromMilliseconds(275);
     private readonly IgdbPocOptions _options = options.Value;
 
     public async Task<int> CountReleasedGamesAsync(
@@ -63,16 +65,98 @@ public sealed class IgdbClient(HttpClient httpClient, IOptions<IgdbPocOptions> o
                 "IGDB returned an empty games-count response.");
     }
 
-    public Task<IReadOnlyList<IgdbGameSample>> GetReleasedGameAtOffsetAsync(string accessToken, long releaseDateCutoff, int offset,
+    public async Task<IReadOnlyList<IgdbGameSample>> GetReleasedGameAtOffsetAsync(
+        string accessToken,
+        long releaseDateCutoff,
+        int offset,
         CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        if (releaseDateCutoff <= 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(releaseDateCutoff),
+                "The release-date cutoff must be a positive Unix timestamp.");
+        }
+
+        if (offset < 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(offset),
+                "The offset cannot be negative.");
+        }
+
+        using var request = CreateGamesRequest(
+            accessToken,
+            $"""
+             fields
+                 id,
+                 name,
+                 first_release_date,
+                 updated_at;
+             where first_release_date != null
+                 & first_release_date < {releaseDateCutoff};
+             sort id asc;
+             limit 1;
+             offset {offset};
+             """);
+
+        return await SendGamesRequestAsync(request, cancellationToken);
     }
 
-    public Task<IReadOnlyList<IgdbGameSample>> GetReleasedGamesAtOffsetsAsync(string accessToken, long releaseDateCutoff, IReadOnlyCollection<int> offsets,
+    public async Task<IReadOnlyList<IgdbGameSample>> GetReleasedGamesAtOffsetsAsync(
+        string accessToken,
+        long releaseDateCutoff,
+        IReadOnlyCollection<int> offsets,
         CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        ArgumentNullException.ThrowIfNull(offsets);
+
+        if (offsets.Count == 0)
+        {
+            return [];
+        }
+
+        if (offsets.Any(offset => offset < 0))
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(offsets),
+                "Offsets cannot be negative.");
+        }
+
+        if (offsets.Distinct().Count() != offsets.Count)
+        {
+            throw new ArgumentException(
+                "Offsets must be distinct.",
+                nameof(offsets));
+        }
+
+        var games = new List<IgdbGameSample>(offsets.Count);
+        DateTimeOffset? previousRequestStart = null;
+
+        foreach (var offset in offsets.Order())
+        {
+            if (previousRequestStart.HasValue)
+            {
+                var elapsed = DateTimeOffset.UtcNow - previousRequestStart.Value;
+                var remaining = MinimumRequestStartInterval - elapsed;
+
+                if (remaining > TimeSpan.Zero)
+                {
+                    await Task.Delay(remaining, cancellationToken);
+                }
+            }
+
+            previousRequestStart = DateTimeOffset.UtcNow;
+            var page = await GetReleasedGameAtOffsetAsync(
+                accessToken,
+                releaseDateCutoff,
+                offset,
+                cancellationToken);
+
+            games.AddRange(page);
+        }
+
+        return games;
     }
 
     public async Task<IReadOnlyList<IgdbGameSample>> GetGamesSampleAsync(string accessToken, int sampleSize, CancellationToken cancellationToken = default)
