@@ -331,6 +331,47 @@ the reduced keyword scope no longer depends on a coverage threshold for a
 global manual filter. The GMI-8 coverage-and-nullability task is complete for
 the current PoC scope.
 
+### 4.10 Pagination, rate limit, and operational execution
+
+Operational validation combines controlled live calls with simulated HTTP
+tests. The live API will not be deliberately overloaded or used to provoke an
+HTTP 429 response.
+
+The live execution found 279,206 eligible records under the frozen
+`2026-08-04T00:00:00Z` cutoff. Offsets `0`, `1`, `2`, `499`, `500`, `501`,
+`139603`, and `279205` each returned one record, with no empty pages or
+duplicate identifiers. Repeating offset `500` returned the same identifier
+`506`, confirming stability under controlled ID ordering.
+
+The Worker maintained a configured minimum interval of 275 ms between request
+starts. The smallest observed interval was approximately 594.87 ms, every live
+call returned HTTP 200, and no HTTP 429 was provoked.
+
+Eleven handler-specific automated cases approved:
+
+- respect for `Retry-After` after HTTP 429;
+- exponential backoff of 250, 500, and 1,000 ms;
+- retries for HTTP 500, 502, 503, and 504;
+- at most three retries after the original attempt;
+- retry after a transient timeout;
+- cancellation during the delay;
+- one token renewal after HTTP 401;
+- no loop when the renewed token also receives HTTP 401;
+- request cloning before every new attempt.
+
+After the focused tests, the complete solution suite also passed all 119 tests,
+with no identified regressions.
+
+The approved policy is bounded recovery, never unlimited retry. A
+server-provided delay is capped at 30 seconds per attempt. Jitter may be added
+if multiple synchronized Collector instances are ever deployed.
+
+The PoC does not yet persist checkpoints. A future import job may only advance
+a checkpoint after committing its complete unit of work; replaying a page must
+be idempotent, and a partial or failed batch must not be marked complete.
+Checkpoints, checksums, persistent resume, and the overlapping window remain
+future implementation criteria rather than proven capabilities.
+
 ## 5. Search and user experience
 
 GMI will distinguish two intentions:
@@ -615,9 +656,11 @@ The PoC must demonstrate:
 ### Worker
 
 - authentication;
-- pagination;
-- rate-limit compliance;
-- resume after failure;
+- offset pagination validated from the first through the last eligible record;
+- rate-limit compliance through controlled pacing without provoking HTTP 429;
+- bounded retries for HTTP 429, 500, 502, 503, 504, and timeout;
+- validated `Retry-After`, cancellation, and one-time renewal after HTTP 401;
+- persistent resume deferred until the import job has a checkpoint;
 - idempotency;
 - incremental updates;
 - checksum evaluation;
@@ -643,4 +686,6 @@ The PoC must demonstrate:
 
 ## 13. Next step
 
-The next work cycle will implement the IGDB PoC and validate this document without expanding the MVP scope.
+The next work cycle is GMI-10: consolidate which PoC approval criteria are
+already satisfied, which remain conditional, and which belong to future
+implementation, without expanding the MVP scope.

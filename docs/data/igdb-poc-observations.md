@@ -2084,6 +2084,63 @@ and relationships were already studied in controlled samples, and the keyword
 feature no longer depends on qualifying a catalogue-wide manual filter. GMI-8
 is complete for the current proof-of-concept scope.
 
+## Pagination, rate-limit, and operational-execution observations
+
+GMI-9 used two complementary validation layers: controlled requests against
+the live IGDB API for pagination and pacing, and deterministic automated tests
+for failure paths that must not be intentionally provoked against the service.
+
+The live execution counted 279,206 records eligible under the frozen
+`2026-08-04T00:00:00Z` release cutoff and inspected offsets `0`, `1`, `2`,
+`499`, `500`, `501`, `139603`, and `279205`, ordered by IGDB identifier.
+Every valid offset returned exactly one record. No distinct offsets produced
+duplicate identifiers, no valid offset was empty, and repeating offset `500`
+returned identifier `506` both times. This validates controlled offset access
+across the first records, the 499/500 boundary, a middle record, and the last
+eligible record for that execution.
+
+The Worker enforced a minimum interval of 275 ms between request starts. The
+smallest observed interval was approximately 594.87 ms because live response
+times exceeded the configured delay. All live requests returned HTTP 200, and
+the execution did not intentionally exceed the documented rate limit or
+provoke HTTP 429.
+
+A dedicated `IgdbResilienceHandler` and isolated Collector test project then
+validated the non-live operational paths. Eleven test cases passed, covering:
+
+- HTTP 429 with respect for `Retry-After`;
+- exponential backoff of 250, 500, and 1,000 ms when no server delay is
+  supplied;
+- transient HTTP 500, 502, 503, and 504 responses;
+- a maximum of three retries after the original attempt;
+- retry after a transient timeout;
+- immediate propagation of cancellation during a retry delay;
+- one token renewal after HTTP 401;
+- termination rather than an authentication loop when the renewed token also
+  receives HTTP 401;
+- replay of cloned requests so the same `HttpRequestMessage` and content are
+  not sent twice.
+
+After the focused project passed, the complete solution suite also passed with
+119 tests, providing regression evidence that the operational handler and its
+registration did not break the existing application tests.
+
+Server-provided retry delays are capped at 30 seconds for one attempt. A
+single Collector instance does not currently require randomized jitter; this
+must be reconsidered if multiple synchronized instances are ever deployed.
+
+The operational policy approved by this PoC is bounded retry rather than
+unlimited recovery. A failed execution must remain failed after the retry
+budget is exhausted. The current PoC has no persistent synchronization
+checkpoint, so checkpoint advancement and resume semantics cannot yet be
+tested. The future import job must only advance a checkpoint after its complete
+unit of work is committed, remain idempotent when a page is replayed, and never
+mark a partial page or failed batch as completed.
+
+GMI-9 is complete for the current proof-of-concept scope. Incremental
+checkpoints, checksums, persistence idempotency, and overlapping synchronization
+windows remain implementation criteria rather than validated capabilities.
+
 ## Current architectural boundaries
 
 ### `IgdbClient`
@@ -2106,6 +2163,8 @@ Responsible for:
 - retrieving expanded release-date data for controlled game identifiers.
 - retrieving expanded cover and screenshot metadata for controlled game
   identifiers.
+- delegating bounded retries, `Retry-After`, transient timeout handling, and
+  one-time token renewal to `IgdbResilienceHandler`.
 
 The client currently exposes separate operations for:
 
@@ -2312,9 +2371,18 @@ The current proof of concept confirms that:
   services, and repositories should contain specialized responsibilities.
 - The 100-record selection completed 100 sequential offset requests in ten
   batches of ten and produced 100 unique identifiers.
-- The batching result is functional evidence only; performance, load,
-  concurrency, rate-limit headroom, retries, and production capacity remain
-  untested.
+- A later controlled operational execution validated stable offset access from
+  the first through the last of 279,206 eligible records, including the
+  499/500 boundary, with no empty or duplicate results.
+- Live request pacing remained within the configured 275 ms minimum start
+  interval and did not intentionally provoke HTTP 429.
+- Eleven focused automated cases validated bounded retry, `Retry-After`,
+  transient server failures, timeout, cancellation, and one-time token renewal
+  without calling the live service; the complete solution suite passed all 119
+  tests afterward.
+- Persistent resume, idempotent page replay, checksums, and checkpoint
+  advancement remain future import-job responsibilities because the PoC does
+  not yet persist synchronization state.
 - Frozen identifiers are required for reproducible follow-up analysis because
   the eligible IGDB population can change retroactively even with a fixed
   release-date cutoff.
@@ -2364,6 +2432,8 @@ The current proof of concept confirms that:
   single-keyword contextual navigation, while the manual keyword filter,
   multi-keyword `AND`, and autocomplete are deferred.
 - GMI-8 coverage and nullability evaluation is complete for the current PoC.
+- GMI-9 pagination, rate-limit, and bounded operational-failure evaluation is
+  complete for the current PoC.
 
 ## Next investigations
 
@@ -2392,11 +2462,14 @@ The following points still require investigation:
 8. Coverage and nullability consolidation is complete for the current PoC; a
    larger or stratified sample is future refinement, not an MVP blocker.
 9. Compare metadata completeness between parent records and related products.
-10. Validate pagination, rate limits, token behavior, retries, and an appropriate
-   synchronization strategy, including an overlapping release-date window for
-   previously skipped future releases.
-11. Define which external fields are candidates for the MVP.
-12. Consolidate the proof-of-concept approval criteria.
+10. Pagination, live request pacing, token renewal, bounded retries, timeout,
+   and cancellation are validated for the current PoC. Define persistent,
+   idempotent checkpoint and resume behavior when the import job is designed,
+   including an overlapping release-date window for skipped future releases.
+11. The evaluated external-field candidates have been classified for the MVP;
+   revisit only when another source or product requirement introduces new
+   evidence.
+12. Consolidate the proof-of-concept approval criteria (GMI-10).
 13. Define which findings affect product decisions and which require an ADR.
 14. Define the mapping boundary between IGDB contracts and the internal model.
 15. Define the future boundary between the Worker, jobs, import services,

@@ -345,6 +345,48 @@ keywords deixou de depender de um limite de cobertura para um filtro manual
 global. A tarefa GMI-8 de cobertura e nulabilidade está concluída no escopo
 atual da PoC.
 
+### 4.10 Paginação, rate limit e execução operacional
+
+A validação operacional combina chamadas reais controladas e testes HTTP
+simulados. A API real não será submetida deliberadamente a excesso de carga ou
+a uma tentativa de provocar HTTP 429.
+
+Na execução real, a consulta encontrou 279.206 registros elegíveis no corte
+congelado de `2026-08-04T00:00:00Z`. Os offsets `0`, `1`, `2`, `499`, `500`,
+`501`, `139603` e `279205` retornaram um registro cada, sem páginas vazias nem
+IDs duplicados. A repetição do offset `500` retornou o mesmo ID `506`,
+confirmando estabilidade para a ordenação controlada por ID.
+
+O Worker manteve intervalo mínimo configurado de 275 ms entre inícios de
+requisições. O menor intervalo observado foi aproximadamente 594,87 ms, todas
+as chamadas reais retornaram HTTP 200 e nenhum HTTP 429 foi provocado.
+
+Onze casos automatizados específicos do handler aprovaram:
+
+- respeito a `Retry-After` após HTTP 429;
+- backoff exponencial de 250, 500 e 1.000 ms;
+- retries para HTTP 500, 502, 503 e 504;
+- máximo de três retries além da tentativa original;
+- retry após timeout transitório;
+- cancelamento durante a espera;
+- renovação única do token após HTTP 401;
+- ausência de loop quando o token renovado também recebe HTTP 401;
+- clonagem da requisição antes de cada nova tentativa.
+
+Depois dos testes focados, a suíte completa da solução também passou com 119
+testes, sem regressões identificadas.
+
+A política aprovada é de recuperação limitada, nunca retry infinito. O atraso
+informado pelo servidor terá teto de 30 segundos por tentativa. Jitter poderá
+ser acrescentado se houver múltiplas instâncias sincronizadas do Collector.
+
+A PoC ainda não persiste checkpoints. O futuro job de importação somente poderá
+avançar um checkpoint depois de confirmar sua unidade completa de trabalho;
+reexecutar uma página deverá ser idempotente, e lote parcial ou com falha não
+poderá ser marcado como concluído. Checkpoint, checksum, retomada persistente e
+janela de sobreposição continuam critérios da implementação futura, não
+capacidades já comprovadas.
+
 ## 5. Pesquisa e experiência do usuário
 
 O GMI distinguirá duas intenções:
@@ -629,9 +671,11 @@ A PoC deverá demonstrar:
 ### Worker
 
 - autenticação;
-- paginação;
-- rate limit;
-- retomada após falha;
+- paginação por offset validada do primeiro ao último registro elegível;
+- rate limit respeitado por espaçamento controlado, sem provocar HTTP 429;
+- retries limitados para HTTP 429, 500, 502, 503, 504 e timeout;
+- `Retry-After`, cancelamento e renovação única após HTTP 401 validados;
+- retomada persistente adiada até existir checkpoint no job de importação;
 - idempotência;
 - atualização incremental;
 - comparação de checksum;
@@ -657,4 +701,6 @@ A PoC deverá demonstrar:
 
 ## 13. Próximo passo
 
-O próximo ciclo será dedicado à implementação da PoC da IGDB, validando as decisões deste documento sem ampliar o escopo do MVP.
+O próximo ciclo será dedicado à GMI-10: consolidar quais critérios de aprovação
+da PoC já foram atendidos, quais permanecem condicionais e quais pertencem à
+implementação futura, sem ampliar o escopo do MVP.
