@@ -2,7 +2,7 @@
 
 > Language: English (United States)  
 > Status: living document  
-> Reviewed on: July 27, 2026
+> Reviewed on: August 14, 2026
 
 ## Purpose
 
@@ -12,9 +12,9 @@ It complements the concise source-selection document and focuses on the product,
 
 | Source | Classification | Status |
 |---|---|---|
-| **IGDB** | Primary general source | Selected |
-| **Wikidata** | Reconciliation and enrichment source | Selected |
-| **Steam** | Official specialized source | Selected |
+| **IGDB** | Primary general source | Selected; PoC completed and approved for the first source iteration |
+| **Wikidata** | Reconciliation and enrichment source | Selected; detailed PoC deferred to a future iteration |
+| **Steam** | Official specialized source | Selected; detailed PoC deferred to a future iteration |
 
 Sources that were not selected remain documented in the comparative benchmark.
 
@@ -621,25 +621,25 @@ It complements, but does not replace, IGDB and Wikidata.
 5. Provenance will be preserved per value or statement.
 6. Conflicts will not be hidden.
 7. Temporal data will be modeled as observations.
-8. Images and descriptions require a separate review.
+8. Images and descriptions require a separate review for each source; the IGDB
+   image review is complete for the first MVP, while future sources retain this
+   gate.
 9. The GMI API will not operate as a source mirror.
 10. Future agent access will initially be read-only.
-11. No significant migration will be created before field definition is finalized.
+11. No significant migration will be created before field definition is
+    finalized for the source and iteration that justify it.
 12. Changes in terms, cost, or scope will trigger reassessment.
 
 ---
 
-# Next stage
+# Progression status
 
-With the source set selected, the next stage is to define:
+The first-source IGDB iteration has defined its product questions, field scope,
+nullability, provenance constraints, operational behavior, and PoC approval.
+The immediate next stage is the lightweight multi-source compatibility spike,
+followed by the clean definitive Collector and IGDB persistence review.
 
-- product questions served by each source;
-- minimum required fields;
-- required and optional data;
-- provenance and reliability;
-- reconciliation strategy;
-- collection frequency;
-- internal contracts;
-- domain impact;
-- proof-of-concept plan;
-- migrations only after model approval.
+Detailed Wikidata and Steam questions, mappings, permissions, and proofs of
+concept remain future-iteration work close to their respective integrations.
+This preserves the complete multi-source vision without blocking the current
+IGDB MVP or prematurely forcing future-source fields into its model.

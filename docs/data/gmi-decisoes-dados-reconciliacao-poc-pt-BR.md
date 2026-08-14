@@ -1,9 +1,14 @@
 # Game Market Intelligence — Decisões de Dados, Reconciliação e PoC
 
+**Status da PoC da IGDB:** concluída e aprovada em 14/08/2026 como investigação
+técnica e de produto. A aprovação orienta o Collector definitivo, mas não
+representa prontidão para produção.
+
 ## 1. Objetivo
 
 Este documento consolida as decisões que orientam o MVP do **Game Market
-Intelligence (GMI)** e é atualizado conforme a PoC da IGDB produz evidências.
+Intelligence (GMI)** e foi atualizado conforme a PoC da IGDB produziu
+evidências.
 
 O GMI não pretende armazenar todos os dados possíveis sobre jogos. Seu objetivo é selecionar, organizar e apresentar apenas o que realmente ajuda producers em pesquisa inicial de mercado, descoberta de comparáveis, exploração de nichos e compreensão do contexto competitivo.
 
@@ -11,7 +16,14 @@ O GMI não pretende armazenar todos os dados possíveis sobre jogos. Seu objetiv
 
 ## 2. Escopo do MVP
 
-O MVP deverá oferecer:
+Para esta iteração, o filtro de Comparable Games é a primeira entrega de maior
+valor do produto. A seleção do que entra, sai, permanece apenas nos detalhes ou
+fica adiado resulta da análise específica de cobertura, semântica, operação e
+restrições da IGDB. Dentro do custo zero, o objetivo é oferecer a maior
+confiabilidade prática possível e ser transparente com o producer sobre fonte,
+ausências e limitações dos dados.
+
+O primeiro MVP com IGDB deverá oferecer:
 
 - pesquisa por nome; aliases poderão ser adicionados apenas a partir de campos
   e fontes com política de proveniência aprovada;
@@ -26,7 +38,8 @@ O MVP deverá oferecer:
 - proveniência e nível de confiança;
 - transparência sobre limitações, conflitos e cobertura.
 
-Ficam fora do MVP:
+Ficam fora do primeiro MVP com IGDB, sem serem removidos da visão de produto
+para iterações posteriores:
 
 - métricas financeiras, vendas e receita;
 - previsão de sucesso e pontuação automática de oportunidade;
@@ -37,13 +50,14 @@ Ficam fora do MVP:
 - comparação detalhada entre edições;
 - arquivamento ilimitado de observações antigas.
 
-Métricas financeiras poderão ser consideradas após a conclusão do MVP.
+Métricas financeiras poderão ser consideradas em iterações posteriores, após a
+conclusão e validação do primeiro MVP com dados reais.
 
 ## 3. Fontes selecionadas
 
 ### IGDB
 
-A IGDB está aprovada com ressalvas como principal fonte de catálogo e taxonomia canônica do MVP para gêneros, temas, modos, perspectivas, keywords, tipos, relações, plataformas, datas, empresas, collections e identificadores externos. Ela é adequada para validar o primeiro MVP, mas não é uma fonte autoritativa: registros e relações individuais podem estar incompletos, inconsistentes ou representar conteúdo não oficial. `franchises` permanece disponível na fonte, mas fica adiado para depois do MVP.
+A IGDB está aprovada com ressalvas como principal fonte de catálogo e taxonomia canônica do primeiro MVP para gêneros, temas, modos, perspectivas, keywords, tipos, relações, plataformas, datas, empresas, collections e identificadores externos. Ela é adequada para validar o primeiro MVP, mas não é uma fonte autoritativa: registros e relações individuais podem estar incompletos, inconsistentes ou representar conteúdo não oficial. `franchises` permanece disponível na fonte, mas fica adiado para depois do primeiro MVP.
 
 O primeiro MVP preservará proveniência e aplicará proteções básicas de catálogo sem bloquear a entrega por um sistema de comprovação de oficialidade entre fontes. Detecção mais sofisticada de conflitos, confiança por campo, quarentena e validação cruzada serão refinadas no incremento seguinte, quando uma segunda fonte for integrada.
 
@@ -619,7 +633,7 @@ Checksum será técnico e não fará parte da experiência do usuário.
 
 ## 12. Critérios de aprovação da PoC
 
-A PoC deverá demonstrar:
+Os critérios originalmente definidos para a PoC e para o pipeline futuro foram:
 
 ### Cobertura
 
@@ -695,9 +709,12 @@ A PoC deverá demonstrar:
 - índices sustentáveis;
 - nenhum payload bruto desnecessário.
 
-### Critério final
+### Critério futuro de aceitação do pipeline
 
-> A IGDB e o pipeline serão considerados suficientes para o MVP quando produzirem pesquisas úteis, preservarem contexto e proveniência, evitarem fusões perigosas, operarem de forma incremental e idempotente e permanecerem compatíveis com a infraestrutura gratuita.
+> O pipeline definitivo será considerado suficiente para o MVP quando produzir
+> pesquisas úteis, preservar contexto e proveniência, evitar fusões perigosas,
+> operar de forma incremental e idempotente e permanecer compatível com a
+> infraestrutura gratuita.
 
 ### 12.1 Consolidação da aprovação — GMI-10
 
@@ -746,6 +763,8 @@ fontes complementares, sem tornar a Steam requisito de identidade ou inclusão.
 
 ## 13. Próximo passo
 
-O próximo ciclo será dedicado à GMI-11: realizar a revisão final de consistência
-da documentação, marcar formalmente a PoC como concluída e preparar somente as
-decisões documentais para transferência à branch `develop`.
+A PoC da IGDB está encerrada. Somente a documentação consolidada será levada à
+branch `develop`; a branch temporária permanecerá como evidência técnica. A
+próxima iteração deverá desenhar e implementar um Collector definitivo e limpo,
+validando persistência, idempotência, checkpoint, atualização incremental,
+checksum, armazenamento e reconciliação entre fontes.

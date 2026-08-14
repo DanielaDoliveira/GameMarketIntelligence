@@ -1,6 +1,11 @@
 # Sequência de Implementação das Fontes Externas
 
 > Data da decisão: 29 de julho de 2026
+>
+> Revisão de status: 14 de agosto de 2026 — a PoC da IGDB está concluída e
+> aprovada. A sequência continua com o spike leve de compatibilidade e o
+> Collector definitivo e limpo; os milestones de fontes futuras permanecem
+> inalterados.
 
 ## Objetivo
 
@@ -15,7 +20,7 @@ Serão ativadas por incrementos verticais separados:
 ### Milestone 2
 
 - IGDB será a primeira fonte ativa;
-- concluir PoC IGDB;
+- PoC da IGDB concluída e aprovada;
 - executar spike leve de compatibilidade multifonte;
 - implementar coleta, mapping, persistência, deploy, API, frontend, proveniência e confiabilidade de ponta a ponta.
 
@@ -50,4 +55,6 @@ O spike não irá:
 - definir algoritmo completo de reconciliação;
 - antecipar todos os campos específicos.
 
-Seu objetivo é apenas identificar incompatibilidades estruturais antes da aprovação da implementação IGDB.
+Seu objetivo é apenas identificar incompatibilidades estruturais antes da
+aprovação do mapping canônico definitivo e de mudanças significativas de
+persistência. O spike não reabre a investigação já concluída da IGDB.

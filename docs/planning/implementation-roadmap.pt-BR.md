@@ -1,6 +1,6 @@
 # Roadmap de Implementação
 
-> Atualizado em: 29 de julho de 2026
+> Atualizado em: 14 de agosto de 2026
 
 ## Objetivo
 
@@ -98,44 +98,59 @@ Entregar o primeiro MVP funcional com dados reais usando a IGDB como primeira fo
 
 Este milestone **não abandona** a estratégia multifonte. Ele entrega uma fonte verticalmente para validar Collector, persistência, deploy, API, frontend, proveniência e operação antes da entrada das demais fontes.
 
+A primeira prioridade de valor do produto é uma experiência confiável de
+filtros em Comparable Games. O estudo concluído da IGDB determina quais filtros
+entram neste MVP, quais campos permanecem como detalhes contextuais, quais
+capacidades são adiadas e como o Collector preserva evidências anuláveis ou
+ambíguas. Dentro da restrição de custo zero, o objetivo não é completude
+perfeita do catálogo, mas a maior confiabilidade prática possível, comunicando
+ao producer as limitações da fonte com transparência.
+
 ### 2.1 Prova de conceito da IGDB
 
-Em andamento:
+Status: **Concluída e aprovada em 14 de agosto de 2026**
+
+Validado:
 
 - autenticação OAuth da Twitch;
 - integração com `/v4/games`;
 - contratos específicos da fonte;
 - amostra recente por `updated_at`;
 - amostra controlada por IDs;
-- amostra com `parent_game`;
-- inspeção de tipo, status, relações, plataformas, gêneros, temas e keywords;
+- tipos e relações entre produtos, incluindo parent, versão, DLC, remake,
+  bundle, port, remaster, Mod e casos de expansão;
+- releases por plataforma e região, precisão anulável e históricos pertencentes
+  a cada produto;
+- cobertura e nulabilidade consolidadas numa amostra congelada de 100 jogos;
+- empresas envolvidas, collections, franchises, modos, perspectivas, capas,
+  screenshots e limitações de nomes alternativos;
+- paginação por offsets controlados, ritmo de chamadas reais, renovação de
+  token, retries limitados, timeout e cancelamento;
 - diagnóstico explícito de erros HTTP;
-- documentação de nulabilidade, completude e relações.
+- documentação de decisões de campos, nulabilidade, completude, relações,
+  ressalvas legais de imagens e limites operacionais.
 
-Ainda necessário:
+Resultados para o MVP atual:
 
-- exemplos controlados de DLC e remake;
-- aprofundar edições, bundles, ports, remasters, mods e expansões;
-- avaliar releases por plataforma;
-- avaliar capas e permissões de imagem;
-- avaliar franquias, collections, aliases, modos e perspectivas;
-- medir cobertura e nulabilidade em amostra maior;
-- validar paginação, rate limit, atualização incremental, token e retomada;
-- fechar campos candidatos e critérios de aprovação.
-
-Decisão concluída sobre campo complementar:
-
-- `involved_companies` foi avaliado na amostra congelada de 100 jogos e adiado,
-  não descartado, pois somente 51% dos registros possuíam alguma empresa;
-- a cobertura de empresas será reconsiderada por comparação e reconciliação com
-  Wikidata e outras fontes adequadas;
+- `involved_companies` está incluído como relação anulável; 52% da amostra
+  congelada tinha empresas, e fontes futuras poderão ampliar a cobertura;
+- modos estão aprovados como filtro público qualificado pela fonte;
+- perspectivas ficam apenas nos detalhes; o filtro público foi adiado;
+- keywords sustentam detalhes e navegação contextual por jogos relacionados; o
+  filtro manual com múltiplas keywords foi adiado;
+- capas são visuais opcionais e não dominantes; screenshots ficam nos detalhes
+  e artworks foram adiados;
 - registros classificados como `game_type = Mod` serão excluídos do primeiro
   catálogo analítico como proteção provisória contra mods, ROM hacks e jogos de
-  fã.
+  fã;
+- a PoC aprova o desenho de um Collector definitivo e limpo, mas não afirma
+  prontidão de produção para persistência, checkpoints, checksums,
+  armazenamento ou reconciliação entre fontes.
 
 ### 2.2 Spike leve de compatibilidade multifonte
 
-Antes de aprovar o mapping IGDB para o modelo interno, realizar uma revisão arquitetural curta para Wikidata e Steam.
+Antes de aprovar o mapping canônico definitivo e mudanças significativas de
+persistência, realizar uma revisão arquitetural curta para Wikidata e Steam.
 
 O spike será documental, sem autenticação, clients produtivos ou PoCs completas.
 
@@ -358,6 +373,9 @@ Concluído quando:
 
 ### Exploração avançada de Comparable Games
 
+Este é escopo futuro do produto após o primeiro MVP com IGDB; não deve ser
+promovido silenciosamente para a iteração atual.
+
 Possíveis itens:
 
 - múltiplos gêneros com regra de todos selecionados;
@@ -404,13 +422,12 @@ Milestone 2 — MVP vertical com IGDB
 
 Sequência imediata:
 
-1. concluir PoC de relações e campos;
-2. fechar documento de observações;
-3. realizar spike multifonte;
-4. aprovar fronteira de importação independente da fonte;
-5. refatorar Collector;
-6. revisar domínio e persistência;
-7. implementar ingestão idempotente;
-8. fazer deploy e operar o Worker;
-9. validar API e frontend com dados reais;
-10. fechar MVP IGDB.
+1. realizar o spike leve de compatibilidade multifonte;
+2. aprovar a fronteira de importação independente da fonte;
+3. refatorar o Collector em Worker, Jobs, client, mapper e serviço de importação;
+4. revisar domínio e persistência conforme a PoC aprovada;
+5. implementar ingestão IGDB paginada, incremental e idempotente;
+6. validar checkpoints, checksums, armazenamento e reexecução segura com persistência;
+7. fazer deploy e operar o Worker;
+8. validar API e frontend com dados representativos;
+9. fechar o MVP IGDB com dados reais.

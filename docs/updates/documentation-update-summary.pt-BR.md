@@ -1,6 +1,11 @@
 # Resumo da Atualização da Documentação
 
 > Atualizado em: 29 de julho de 2026
+>
+> Nota de status histórico — 14 de agosto de 2026: este documento preserva a
+> atualização de planejamento registrada em 29 de julho. A PoC da IGDB citada
+> abaixo foi concluída e aprovada. A ordem atual de execução é mantida no
+> roadmap de implementação e na sequência de implementação das fontes externas.
 
 ## Objetivo
 
@@ -15,7 +20,8 @@ Registrar as alterações de sequência dos milestones e de documentação aprov
   - Milestone 3 entrega Wikidata, Steam e reconciliação multifonte.
 - O Milestone 2 inclui um spike documental leve de compatibilidade multifonte antes da aprovação de domínio e persistência.
 - As PoCs completas de Wikidata e Steam ficam para o Milestone 3, mantendo pesquisa, decisões e implementação próximas no tempo.
-- A PoC da IGDB deve ser concluída antes de remodelagem significativa ou migrations.
+- A PoC da IGDB precisava ser concluída antes de remodelagem significativa ou
+  migrations; esse pré-requisito foi atendido em 14 de agosto de 2026.
 - O Worker permanecerá um coordenador pequeno; Jobs, clients, mappers, serviços de importação e repositórios terão responsabilidades especializadas.
 - O modelo canônico de `Game` não pode virar um modelo de resposta da IGDB.
 - Identidade canônica, identidades externas, proveniência e contratos específicos por fonte devem ser preservados.
@@ -26,7 +32,7 @@ Registrar as alterações de sequência dos milestones e de documentação aprov
 
 ### Milestone 2
 
-- concluir PoC IGDB;
+- concluir PoC IGDB (concluída em 14 de agosto de 2026);
 - executar spike multifonte;
 - aprovar fronteira independente da fonte;
 - refatorar e implementar Collector;

@@ -2,7 +2,12 @@
 
 ## Status
 
-Research in progress.
+Research completed as a historical candidate assessment.
+
+The managed-database evaluation later selected Neon. Final evidence and status
+are recorded in `managed-database-provider-proof-of-concept.md` and
+`ADR-0001-database-provider-selection.md`; this file preserves the Aiven
+research snapshot rather than representing the current provider decision.
 
 Last verified: 2026-07-12.
 

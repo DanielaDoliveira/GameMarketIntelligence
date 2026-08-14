@@ -2,7 +2,12 @@
 
 ## Status
 
-Research in progress.
+Research completed.
+
+The benchmark was followed by the managed-database proof of concept, and Neon
+was selected in `ADR-0001-database-provider-selection.md`. This document
+preserves the comparison criteria and evidence that preceded the final
+decision.
 
 Last updated: 2026-07-12.
 
@@ -474,7 +479,7 @@ cost safeguards;
 historical-data growth;
 long-term sustainability.
 
-The final decision will be recorded in:
+The final decision is recorded in:
 
 ```text
 ADR-0001 — Managed Database Provider Selection

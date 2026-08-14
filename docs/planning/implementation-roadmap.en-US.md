@@ -1,6 +1,6 @@
 # Implementation Roadmap
 
-> Updated: July 29, 2026
+> Updated: August 14, 2026
 
 ## Purpose
 
@@ -98,44 +98,61 @@ Deliver the first functional real-data MVP using IGDB as the first active source
 
 This milestone does **not** abandon the multi-source strategy. It delivers one source vertically so the project can validate the Collector, persistence, deployment, API, frontend, provenance, and operational workflow before adding further sources.
 
+The first product-value priority is a trustworthy Comparable Games filtering
+experience. The completed IGDB study determines which filters enter this MVP,
+which fields remain contextual details, which capabilities are deferred, and
+how the Collector preserves nullable or ambiguous evidence. Within the
+zero-cost constraint, the goal is not perfect catalogue completeness but the
+highest practical reliability with transparent source limitations for the
+producer.
+
 ### 2.1 IGDB proof of concept
 
-In progress:
+Status: **Completed and approved on August 14, 2026**
+
+Validated:
 
 - Twitch OAuth authentication;
 - IGDB games endpoint integration;
 - source-specific contracts;
 - recently updated sample through `updated_at`;
 - controlled sample by identifiers;
-- sample filtered by `parent_game`;
-- inspection of `game_type`, `game_status`, `version_parent`, `parent_game`, platforms, genres, themes, and keywords;
+- product types and relationships, including parent, version, DLC, remake,
+  bundle, port, remaster, Mod, and expansion cases;
+- platform- and region-specific releases, nullable precision, and product-owned
+  release histories;
+- consolidated coverage and nullability in a frozen 100-game sample;
+- involved companies, collections, franchises, game modes, player
+  perspectives, covers, screenshots, and alternative-name limitations;
+- pagination across controlled offsets, live request pacing, token renewal,
+  bounded retries, timeout, and cancellation;
 - explicit HTTP error diagnostics;
-- documentation of nullability, metadata completeness, and relationship behavior.
+- documentation of field decisions, nullability, metadata completeness,
+  relationship behavior, legal image caveats, and operational limits.
 
-Still required:
+Current-MVP outcomes:
 
-- controlled DLC and remake examples;
-- further comparison of editions, bundles, ports, remasters, mods, expansions, standalone expansions, and expanded games;
-- release-date and platform-specific release evaluation;
-- covers and image-use evaluation;
-- franchises, collections, alternative names, modes, and perspectives;
-- larger-sample coverage and nullability measurement;
-- pagination, rate limits, incremental synchronization, token strategy, and failure recovery;
-- final field candidates and PoC approval criteria.
-
-Completed complementary-field decision:
-
-- `involved_companies` was evaluated in the frozen 100-game sample and deferred,
-  not discarded, because only 51% of records had any company information;
-- company coverage will be reconsidered through comparison and reconciliation
-  with Wikidata and other suitable sources;
+- `involved_companies` is included as nullable relationship data; 52% of the
+  frozen sample had company information, and future sources may improve
+  coverage;
+- game modes are approved as a source-qualified public filter;
+- player perspectives are detail-only; their public filter is deferred;
+- keywords support details and contextual related-game navigation; the manual
+  multi-keyword filter is deferred;
+- covers are optional, non-dominant visuals; screenshots are detail-only and
+  artworks are deferred;
 - records classified as `game_type = Mod` will be excluded from the first
   analytical catalogue as a provisional safeguard against mods, ROM hacks, and
-  fan games.
+  fan games;
+- the PoC approves designing a clean definitive Collector but does not claim
+  production readiness for persistence, checkpoints, checksums, storage, or
+  cross-source reconciliation.
 
 ### 2.2 Lightweight multi-source compatibility spike
 
-Before approving the IGDB-to-domain mapping, perform a small architectural compatibility review for Wikidata and Steam.
+Before approving the definitive canonical mapping and significant persistence
+changes, perform a small architectural compatibility review for Wikidata and
+Steam.
 
 The spike is documentary and does not require authentication, production clients, or full proofs of concept.
 
@@ -360,6 +377,9 @@ Milestone 3 is complete when:
 
 ### Advanced Comparable Games exploration
 
+This is future product scope after the first IGDB MVP; it is not silently
+promoted into the current iteration.
+
 Potential scope:
 
 - multiple genres with all-selected matching;
@@ -408,13 +428,12 @@ Milestone 2 — IGDB vertical MVP
 
 Immediate sequence:
 
-1. finish the IGDB relationship and field PoC;
-2. complete the IGDB PoC observation document;
-3. run the lightweight multi-source compatibility spike;
-4. approve the source-independent import boundary;
-5. refactor the Collector into Worker, Jobs, client, mapper, and import service;
-6. review domain and persistence changes;
-7. implement idempotent IGDB ingestion;
-8. deploy and operate the Worker;
-9. validate API and frontend with representative data;
-10. close the real-data IGDB MVP.
+1. run the lightweight multi-source compatibility spike;
+2. approve the source-independent import boundary;
+3. refactor the Collector into Worker, Jobs, client, mapper, and import service;
+4. review domain and persistence changes against the approved PoC;
+5. implement paginated, incremental, and idempotent IGDB ingestion;
+6. validate checkpoints, checksums, storage, and safe reruns with persistence;
+7. deploy and operate the Worker;
+8. validate API and frontend with representative data;
+9. close the real-data IGDB MVP.

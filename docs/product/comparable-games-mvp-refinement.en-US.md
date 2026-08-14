@@ -1,5 +1,7 @@
 # Comparable Games MVP Refinement
 
+> Review status: updated after IGDB PoC approval on August 14, 2026.
+
 ## Complete MVP
 
 The complete MVP consists of three connected capabilities:
@@ -10,6 +12,13 @@ The complete MVP consists of three connected capabilities:
 
 ## Comparable Games
 
+For this IGDB MVP, Comparable Games filtering is the first product-value
+delivery. The filter set is evidence-based: each included, detail-only,
+deferred, or excluded field reflects the PoC's coverage, semantics, operational
+behavior, and legal constraints. The experience must provide the highest
+practical confidence available within zero-cost operation while identifying
+the source and communicating missing or limited data to the producer.
+
 Basic filters:
 
 - name;
@@ -17,15 +26,29 @@ Basic filters:
 - platform;
 - release period/year.
 
-Advanced filters should use progressive disclosure and may include:
+For the first IGDB MVP, progressive disclosure may add source-qualified themes,
+game modes, involved companies, and contextual keyword navigation. Current
+source decisions are:
+
+- game modes may be a public filter, with missing source data treated as
+  unknown;
+- player perspectives are optional detail data, not a public filter;
+- clicking a displayed keyword may open related games with one removable
+  contextual keyword criterion;
+- manual keyword selection, multi-keyword `AND`, and autocomplete are deferred;
+- covers are optional and non-dominant in results and details;
+- screenshots are limited to details and on-demand galleries.
+
+Future iterations may evaluate or add:
 
 - subgenre;
-- themes and tags;
-- game modes;
-- perspective;
+- richer themes and tags;
+- a perspective filter if coverage becomes sufficient or can be qualified by
+  complementary sources;
 - developer and publisher;
 - release status;
-- single-player, multiplayer, and cooperative traits.
+- richer single-player, multiplayer, and cooperative traits;
+- manual multi-keyword filtering and saved searches.
 
 Results are candidate comparables, not automatically direct competitors.
 
@@ -55,4 +78,7 @@ The domain may require themes, modes, companies, releases, external references, 
 
 ## Migration rule
 
-No migration until producer needs, approved fields, source permissions, reconciliation, domain design, and ingestion impact are reviewed.
+No migration for the current IGDB increment until its producer needs, approved
+fields, source permissions, compatibility boundaries, domain design, and
+ingestion impact are reviewed. Detailed Wikidata and Steam decisions remain
+gates for their own future integrations, not for all IGDB persistence.

@@ -1,6 +1,10 @@
 # External Source Implementation Sequence
 
 > Decision date: July 29, 2026
+>
+> Status review: August 14, 2026 — the IGDB PoC is completed and approved. The
+> sequence now continues with the lightweight compatibility spike and the clean
+> definitive Collector; future-source milestones remain unchanged.
 
 ## Purpose
 
@@ -15,7 +19,7 @@ They will be activated through separate vertical increments:
 ### Milestone 2
 
 - IGDB is the first active source;
-- complete the IGDB proof of concept;
+- IGDB proof of concept completed and approved;
 - run a lightweight multi-source architecture compatibility spike;
 - implement collection, mapping, persistence, deployment, API, frontend, provenance, and reliability presentation end to end.
 
@@ -50,4 +54,6 @@ The compatibility spike will not:
 - define a complete reconciliation algorithm;
 - anticipate every source-specific field.
 
-Its purpose is only to identify structural incompatibilities before the IGDB implementation is approved.
+Its purpose is only to identify structural incompatibilities before the
+definitive canonical mapping and significant persistence changes are approved.
+It does not reopen the completed IGDB source investigation.

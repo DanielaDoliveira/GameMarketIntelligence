@@ -1,6 +1,11 @@
 # Documentation Update Summary
 
 > Updated: July 29, 2026
+>
+> Historical-status note — August 14, 2026: this document preserves the planning
+> update as recorded on July 29. The IGDB PoC referenced below has since been
+> completed and approved. Current execution order is maintained in the
+> implementation roadmap and external-source implementation sequence.
 
 ## Purpose
 
@@ -15,7 +20,8 @@ Record the milestone-sequencing and documentation changes approved during the IG
   - Milestone 3 delivers Wikidata, Steam, and multi-source reconciliation.
 - Milestone 2 includes a lightweight documentary multi-source compatibility spike before domain and persistence approval.
 - Full Wikidata and Steam proofs of concept are deferred to Milestone 3 so their research, decisions, and implementation remain close in time.
-- The IGDB PoC must be completed before significant domain remodeling or migrations.
+- The IGDB PoC had to be completed before significant domain remodeling or
+  migrations; this prerequisite was satisfied on August 14, 2026.
 - The Worker will remain a small coordinator; Jobs, clients, mappers, import services, and repositories will hold specialized responsibilities.
 - The canonical `Game` model must not become an IGDB response model.
 - Canonical identity, external identities, provenance, and source-specific contracts must be preserved.
@@ -26,7 +32,7 @@ Record the milestone-sequencing and documentation changes approved during the IG
 
 ### Milestone 2
 
-- finish the IGDB PoC;
+- finish the IGDB PoC (completed on August 14, 2026);
 - run the multi-source compatibility spike;
 - approve the source-independent import boundary;
 - refactor and implement the Collector;

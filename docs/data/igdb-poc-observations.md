@@ -2,24 +2,29 @@
 
 ## Status
 
-In progress.
+Completed on 2026-08-14.
+
+The investigation is approved as sufficient to guide the definitive Collector
+for the zero-cost MVP context. This status closes the exploratory PoC; it does
+not claim production readiness for persistence, synchronization, storage, or
+cross-source reconciliation.
 
 ## Purpose
 
 This document records technical and data-quality observations collected during
 the IGDB proof of concept for Game Market Intelligence.
 
-The proof of concept does not define the final domain model, ingestion strategy,
-or persistence structure. Its purpose is to inspect real IGDB responses before
+The proof of concept did not define the final domain model, ingestion strategy,
+or persistence structure. Its purpose was to inspect real IGDB responses before
 those decisions are made.
 
-## Current scope
+## Executed scope
 
-The Collector currently performs a one-time execution that:
+During the PoC, the Collector performed one-time executions that:
 
-1. Requests an OAuth access token from Twitch.
-2. Calls the IGDB `/v4/games` endpoint.
-3. Retrieves one of the following:
+1. Requested an OAuth access token from Twitch.
+2. Called the IGDB `/v4/games` endpoint.
+3. Retrieved one of the following:
    - a configurable sample of recently updated game records;
    - a controlled collection of games selected by IGDB identifiers;
    - a sample of records where `parent_game` is populated;
@@ -33,13 +38,13 @@ The Collector currently performs a one-time execution that:
      through company, external-distribution, and website evidence;
    - a fixed 100-game sample used to inspect `alternative_names`,
      `version_title`, and `game_localizations`.
-4. Deserializes the response into IGDB-specific contracts.
-5. Writes selected fields to the application log.
-6. Stops the application after the execution finishes.
+4. Deserialized the response into IGDB-specific contracts.
+5. Wrote selected fields to the application log.
+6. Stopped the application after each execution finished.
 
-No data is currently persisted.
+No data was persisted.
 
-## Fields currently evaluated
+## Fields evaluated
 
 The current queries retrieve:
 
@@ -2141,7 +2146,7 @@ GMI-9 is complete for the current proof-of-concept scope. Incremental
 checkpoints, checksums, persistence idempotency, and overlapping synchronization
 windows remain implementation criteria rather than validated capabilities.
 
-## Current architectural boundaries
+## PoC architectural boundaries
 
 ### `IgdbClient`
 
@@ -2166,7 +2171,7 @@ Responsible for:
 - delegating bounded retries, `Retry-After`, transient timeout handling, and
   one-time token renewal to `IgdbResilienceHandler`.
 
-The client currently exposes separate operations for:
+The PoC client exposed separate operations for:
 
 ```text
 GetGamesSampleAsync
@@ -2212,8 +2217,8 @@ Responsible for:
 - inspecting and logging the results;
 - requesting application shutdown.
 
-The formatting currently performed by the Worker exists only for
-proof-of-concept inspection.
+The formatting performed by the Worker existed only for proof-of-concept
+inspection.
 
 The Worker should remain an execution coordinator and should not accumulate
 domain mapping, filtering, reconciliation, or persistence rules.
@@ -2261,7 +2266,7 @@ Worker
 → Repository
 ```
 
-## Conclusions so far
+## Conclusions
 
 The current proof of concept confirms that:
 
@@ -2300,8 +2305,9 @@ The current proof of concept confirms that:
 - Missing `game_status` must remain unknown.
 - Explicit Alpha, Beta, and Early Access statuses can appear with missing or
   independent release-date information.
-- Game types and parent relationships require further evaluation before domain
-  or persistence decisions.
+- The completed type-and-relationship investigation is sufficient to define the
+  current mapping boundaries; deeper distinctions remain future refinements
+  when the working MVP or another source requires them.
 - Company, external-game, website, and storefront evidence is useful context,
   but no inspected field independently proves authorization or commercial
   eligibility.
@@ -2441,53 +2447,33 @@ The current proof of concept confirms that:
   future iterations may improve them with complementary sources without making
   Steam a dependency for identity or catalogue admission.
 
-## Next investigations
+## Post-PoC follow-up backlog
 
-The following points still require investigation:
+The following items are future refinements or implementation validations. They
+do not block closure of the exploratory PoC:
 
-1. Measure release-date completeness and nullability in a larger,
-   less-biased sample, including coverage by product type, platform, region,
-   precision, and historical period.
-2. Validate the provisional release-year matching semantics against additional
-   originals, regional launches, ports, remakes, remasters, and editions without
+1. Measure release-date completeness in a larger or stratified sample if a
+   later product requirement needs stronger coverage guarantees by product
+   type, platform, region, precision, or historical period.
+2. Validate release-year matching against more originals, regional launches,
+   ports, remakes, remasters, and editions during implementation without
    merging distinct product histories.
-3. Deepen the practical distinctions among product types and relationships,
+3. Deepen product-type distinctions when required by the working MVP,
    especially editions, remasters, ports, expansions, standalone expansions,
-   expanded games, bundles, DLCs, remakes, and the remaining types.
-4. Compare `version_parent` and `parent_game` behavior using additional controlled
-   records and determine whether other relationship fields are needed.
-5. Clarify the practical distinction among `Expansion`, `Standalone Expansion`,
-   and `Expanded Game`.
-6. The complementary-field investigation is complete for the current PoC
-   scope: aliases, involved companies, collections, franchises, game modes,
-   player perspectives, covers, screenshots, and the deferral of artworks have
-   been classified and documented.
-7. Evaluate `game_localizations` independently, including coverage, region
-   semantics, duplicates, relationship to the main name, and evidence of
-   official use.
-8. Coverage and nullability consolidation is complete for the current PoC; a
-   larger or stratified sample is future refinement, not an MVP blocker.
-9. Compare metadata completeness between parent records and related products.
-10. Pagination, live request pacing, token renewal, bounded retries, timeout,
-   and cancellation are validated for the current PoC. Define persistent,
-   idempotent checkpoint and resume behavior when the import job is designed,
-   including an overlapping release-date window for skipped future releases.
-11. The evaluated external-field candidates have been classified for the MVP;
-   revisit only when another source or product requirement introduces new
-   evidence.
-12. The approval criteria are consolidated: the investigation is approved,
-   conditional limitations are explicit, and persistence-related criteria were
-   transferred to the future implementation rather than treated as PoC
-   failures.
-13. Define which findings affect product decisions and which require an ADR.
-14. Define the mapping boundary between IGDB contracts and the internal model.
-15. Define the future boundary between the Worker, jobs, import services,
-    mappers, and repositories.
-16. Validate the documented IGDB attribution and image-rights presentation in
-    the definitive user interface before release and re-evaluate it before
-    monetization.
-17. Revisit commercial and community-origin classification in a future
-    increment only after the simple Mod exclusion has been validated in the
-    working MVP.
-18. Perform the final documentation consistency and status review (GMI-11),
-    then transfer only the consolidated documentation to `develop`.
+   expanded games, bundles, DLCs, and remakes.
+4. Evaluate `game_localizations` independently before adopting regional titles.
+5. Compare metadata completeness between parent records and related products.
+6. Design persistent and idempotent checkpoint/resume behavior, including an
+   overlapping release-date window for previously skipped future releases.
+7. Decide which implementation findings require an ADR.
+8. Define the mapping boundary between IGDB contracts and the canonical model.
+9. Separate Worker coordination, import jobs, mapping, persistence, and
+   reconciliation responsibilities in the definitive Collector.
+10. Validate visible IGDB attribution and image-rights presentation in the
+    definitive UI before release and re-evaluate the terms before monetization.
+11. Revisit commercial and community-origin classification only after the
+    provisional Mod exclusion has been validated in the working MVP.
+
+The temporary PoC branch remains the reproducible technical record. Only the
+consolidated documentation is intended to move to `develop`; the definitive
+Collector must be implemented cleanly from these decisions.
