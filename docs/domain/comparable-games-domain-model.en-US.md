@@ -39,28 +39,31 @@ The current release date is intentionally simplified and does not represent all 
 
 Provider identifiers must not become permanent source-specific properties on `Game`.
 
-## Proposed concepts for review
+## Approved architectural direction
 
-These concepts describe an extensible direction, not a requirement to deliver
-every future source or analytical capability in the first IGDB MVP.
+The lightweight multi-source compatibility spike confirmed the separation
+between an external source record and a canonical entity. The complete decision
+is recorded in
+[`ADR-0003`](../architecture/adr/ADR-0003-external-source-identity-and-provenance.md).
+It describes an extensible direction, not a requirement to deliver every future
+source or analytical capability in the first IGDB MVP.
 
 ```text
+DataSource
+└── ExternalGameRecord
+    ├── ExternalId
+    ├── optional GameId
+    ├── SourceUpdatedAt
+    ├── LastSeenAt
+    └── ProcessingStatus
+
 Game
+├── zero or more linked ExternalGameRecords
 ├── Genres
 ├── Themes
 ├── GameModes
 ├── Companies
-├── Releases
-│   ├── Platform
-│   ├── Region
-│   ├── ReleaseDate
-│   └── ReleaseStatus
-└── ExternalReferences
-    ├── Source
-    ├── ExternalId
-    ├── SourceUrl
-    ├── ImportedAt
-    └── LastVerifiedAt
+└── contextual releases with provenance
 ```
 
 Supporting concepts may include:
@@ -70,6 +73,16 @@ Supporting concepts may include:
 - field- or assertion-level provenance;
 - reliability and conflict status;
 - temporal `SourceObservation`.
+
+Approved identity rules:
+
+- `Game.Id` identifies the canonical GMI game;
+- `DataSource + ExternalId` safely identifies one record within a source;
+- an external record may remain unlinked to `Game` until sufficient evidence
+  exists;
+- normalized name supports search and candidate generation but does not
+  authorize automatic reconciliation;
+- provider IDs are not provider-specific properties on `Game`.
 
 ## Modeling rules
 
@@ -88,9 +101,8 @@ No major migration before:
 1. required questions and filters for the current IGDB MVP are fixed;
 2. permitted IGDB fields and their nullability are approved by the completed
    PoC;
-3. a lightweight compatibility spike confirms that canonical identity,
-   external identities, provenance, and source-specific contracts can later
-   accommodate Wikidata and Steam;
+3. apply the compatibility confirmed by the spike and `ADR-0003` to canonical
+   identity, external records, provenance, and source-specific contracts;
 4. domain and ingestion architecture are reviewed;
 5. the migration is limited to concepts justified by the current iteration.
 

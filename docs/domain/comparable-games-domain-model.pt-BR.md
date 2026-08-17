@@ -40,28 +40,30 @@ A data atual não representa todos os eventos por plataforma, região, Early Acc
 
 IDs de providers não devem virar propriedades permanentes específicas em `Game`.
 
-## Conceitos propostos para revisão
+## Direção arquitetural aprovada
 
-Estes conceitos descrevem uma direção extensível, não a obrigação de entregar
-todas as fontes e capacidades analíticas futuras no primeiro MVP com IGDB.
+O spike leve de compatibilidade multifonte confirmou a separação entre registro
+externo e entidade canônica. A decisão completa está registrada em
+[`ADR-0003`](../architecture/adr/ADR-0003-external-source-identity-and-provenance.md).
+Ela descreve uma direção extensível, não a obrigação de entregar todas as
+fontes e capacidades analíticas futuras no primeiro MVP com IGDB.
 
 ```text
+DataSource
+└── ExternalGameRecord
+    ├── ExternalId
+    ├── GameId opcional
+    ├── SourceUpdatedAt
+    ├── LastSeenAt
+    └── ProcessingStatus
+
 Game
+├── zero ou vários ExternalGameRecords vinculados
 ├── Genres
 ├── Themes
 ├── GameModes
 ├── Companies
-├── Releases
-│   ├── Platform
-│   ├── Region
-│   ├── ReleaseDate
-│   └── ReleaseStatus
-└── ExternalReferences
-    ├── Source
-    ├── ExternalId
-    ├── SourceUrl
-    ├── ImportedAt
-    └── LastVerifiedAt
+└── Releases contextuais com proveniência
 ```
 
 Conceitos de apoio:
@@ -71,6 +73,17 @@ Conceitos de apoio:
 - proveniência por campo ou afirmação;
 - confiabilidade e conflito;
 - `SourceObservation` temporal.
+
+Regras de identidade aprovadas:
+
+- `Game.Id` identifica o jogo canônico no GMI;
+- `DataSource + ExternalId` identifica com segurança um registro dentro de uma
+  fonte;
+- o vínculo de um registro externo com `Game` pode permanecer ausente enquanto
+  não houver evidência suficiente;
+- nome normalizado auxilia busca e geração de candidatos, mas não autoriza
+  reconciliação automática;
+- IDs de provider não serão propriedades específicas em `Game`.
 
 ## Regras de modelagem
 
@@ -88,8 +101,8 @@ Nenhuma migration importante antes de:
 
 1. fixar perguntas e filtros necessários ao MVP atual com IGDB;
 2. aprovar pela PoC concluída os campos permitidos da IGDB e sua nulabilidade;
-3. confirmar num spike leve que identidade canônica, identidades externas,
-   proveniência e contratos por fonte poderão acomodar Wikidata e Steam;
+3. aplicar a compatibilidade confirmada pelo spike e pelo `ADR-0003` para
+   identidade canônica, registros externos, proveniência e contratos por fonte;
 4. revisar domínio e arquitetura de ingestão;
 5. limitar a migration aos conceitos justificados pela iteração atual.
 
