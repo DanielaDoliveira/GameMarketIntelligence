@@ -36,17 +36,21 @@ The objective is to understand not only how to create infrastructure, but also h
 The project uses an automated delivery workflow:
 
 ```text
-Feature branch
+Local feature branch
       ↓
 Implementation
       ↓
 Local validation
       ↓
-Pull Request
+Local integration into develop
       ↓
-GitHub Actions
+Push develop
       ↓
-Build and automated tests
+Fast CI: build and automated tests
+      ↓
+Pull Request: develop → main
+      ↓
+Full validation
       ↓
 Merge into main
       ↓
@@ -54,6 +58,8 @@ Automatic deployment
       ↓
 Public environment validation
 ```
+
+Feature, fix, and documentation branches remain local and are not published to the remote. The remote repository normally retains only `develop`, `main`, and explicitly preserved PoC evidence branches. Completed local increments are integrated into `develop`; only a production-ready integrated set is promoted from `develop` to `main` through a Pull Request.
 
 Every deliverable version should pass through the same validation and deployment process.
 
@@ -69,7 +75,7 @@ GitHub Actions validates changes through:
 - solution build;
 - automated test execution.
 
-The `main` branch is protected and changes must be introduced through Pull Requests.
+Pushes to `develop` run fast integration validation. The `main` branch is protected, and production changes must be introduced through a Pull Request from `develop`.
 
 Required CI checks must succeed before changes can be merged.
 

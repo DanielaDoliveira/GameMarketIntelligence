@@ -1,0 +1,30 @@
+ .../adr/ADR-0003-authentication-strategy.md        |    0
+ .../adr/ADR-0004-infrastructure-as-code.md         |    0
+ .../managed-database-provider-benchmark.md         |   11 [32m+[m[31m-[m
+ .../decisions/provider-research/aiven.md           |    9 [32m+[m[31m-[m
+ .../decisions/provider-research/azure-sql.md       |    9 [32m+[m[31m-[m
+ .../decisions/provider-research/neon.md            |    9 [32m+[m[31m-[m
+ .../decisions/provider-research/supabase.md        |    9 [32m+[m[31m-[m
+ .../risks/database-and-operational-risks.md        |    8 [32m+[m[31m-[m
+ docs/data/external-source-benchmark.en-US.md       |    9 [32m+[m[31m-[m
+ docs/data/external-source-benchmark.pt-BR.md       |   10 [32m+[m[31m-[m
+ ...xternal-source-implementation-sequence.en-US.md |   59 [32m+[m
+ ...xternal-source-implementation-sequence.pt-BR.md |   60 [32m+[m
+ .../gmi-data-reconciliation-poc-decisions-en-US.md |  396 [32m+++[m[31m-[m
+ .../gmi-decisoes-dados-reconciliacao-poc-pt-BR.md  |  412 [32m+++[m[31m-[m
+ docs/data/igdb-poc-observations.md                 | 2479 [32m++++++++++++++++++++[m
+ docs/data/selected-source-assessments.en-US.md     |   36 [32m+[m[31m-[m
+ docs/data/selected-source-assessments.pt-BR.md     |   36 [32m+[m[31m-[m
+ docs/design/frontend-design-brief.en-US.md         |   35 [32m+[m[31m-[m
+ docs/design/frontend-design-brief.pt-BR.md         |   36 [32m+[m[31m-[m
+ docs/domain/comparable-games-domain-model.en-US.md |   21 [32m+[m[31m-[m
+ docs/domain/comparable-games-domain-model.pt-BR.md |   22 [32m+[m[31m-[m
+ docs/planning/implementation-roadmap.en-US.md      |  477 [32m+++[m[31m-[m
+ docs/planning/implementation-roadmap.pt-BR.md      |  463 [32m+++[m[31m-[m
+ .../comparable-games-mvp-refinement.en-US.md       |   38 [32m+[m[31m-[m
+ .../comparable-games-mvp-refinement.pt-BR.md       |   39 [32m+[m[31m-[m
+ docs/product/product-development-process.en-US.md  |  204 [32m++[m
+ docs/product/product-development-process.pt-BR.md  |  200 [32m++[m
+ docs/updates/documentation-update-summary.en-US.md |   98 [32m+[m[31m-[m
+ docs/updates/documentation-update-summary.pt-BR.md |   98 [32m+[m[31m-[m
+ 29 files changed, 4898 insertions(+), 385 deletions(-)
