@@ -99,7 +99,13 @@ product scope and must be prioritized against the approved data decisions:
 - complete details page;
 - reliability filter;
 - source presentation in results;
+- a Data Sources audit mapping selected-game fields/contexts to contributing
+  sources without duplicating values;
 - contextual keyword navigation;
 - market metrics, charts, recommendations, authentication, and dark theme;
 - perspective filtering and manual multi-keyword filtering, which remain
   future iterations unless later source evidence changes their coverage.
+
+Selecting a complete catalog copy by provider has been removed from the vision.
+The interface presents GMI's selected canonical result and makes its provenance
+auditable.
