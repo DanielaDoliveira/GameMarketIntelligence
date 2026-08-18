@@ -7,7 +7,9 @@
 The complete MVP consists of three connected capabilities:
 
 1. Comparable Games with basic and advanced filters supported by approved data.
-2. Data Sources with provenance, reliability, limitations, attribution, update method, and original URLs.
+2. Data Sources with selected-game field origins and institutional information
+   about integration reliability, limitations, attribution, update method, and
+   original URLs.
 3. Reliability modes: High confidence, Balanced, and Broad coverage.
 
 ## Comparable Games
@@ -54,7 +56,12 @@ Results are candidate comparables, not automatically direct competitors.
 
 ## Data Sources
 
-For each source, show:
+Data Sources is no longer only an institutional catalog. For the selected game,
+it shows contributing sources and maps every relevant field or context to its
+origin without repeating values already displayed in game details. A details
+link may open this audit directly.
+
+In a complementary section, for each source, show:
 
 - organization and official/independent status;
 - supplied categories;
@@ -64,13 +71,19 @@ For each source, show:
 - attribution and restrictions;
 - original URL.
 
+GMI materializes one canonical result through field- and context-specific rules.
+Producers do not select alternative catalog copies by provider because those
+copies are not retained. Official, curated, or community nature remains visible
+as evidence and a limitation.
+
 ## Reliability modes
 
 - **High confidence:** official, primary, strongly verified, or reliable agreement; lower coverage is expected.
 - **Balanced:** official, curated, and normalized data with acceptable provenance; likely default.
 - **Broad coverage:** may include recognized estimates, community data, and conflicts, always labeled.
 
-Reliability filtering precedes source filtering because producers usually need a quality threshold before provider-level auditing.
+Reliability modes qualify the canonical result; they do not select another
+catalog copy or replace field-level provenance.
 
 ## Domain direction
 

@@ -23,7 +23,8 @@ A pesquisa fica fragmentada entre buscadores, lojas, bancos, páginas oficiais, 
 ## Valor do MVP
 
 1. Comparable Games com filtros básicos e avançados por divulgação progressiva.
-2. Data Sources com cobertura, confiabilidade, restrições, atribuição e links.
+2. Data Sources com a origem dos campos do jogo selecionado, além de cobertura,
+   confiabilidade, restrições, atribuição e links das integrações.
 3. Modos de confiabilidade que tornam explícito o trade-off entre confiança e cobertura.
 
 ## Limites
@@ -33,6 +34,7 @@ O GMI não:
 - substitui julgamento nem fontes originais;
 - declara todo resultado como concorrente direto;
 - reproduz bases completas;
+- oferece cópias intercambiáveis do catálogo por fonte;
 - apresenta estimativas como fatos;
 - infere vendas por reviews, rankings ou jogadores simultâneos;
 - promete cobertura total.

@@ -23,7 +23,8 @@ Research is fragmented across search engines, stores, databases, official pages,
 ## MVP value
 
 1. Comparable Games with basic and progressively disclosed advanced filters.
-2. Data Sources with coverage, reliability, restrictions, attribution, and original links.
+2. Data Sources with selected-game field origins plus integration coverage,
+   reliability, restrictions, attribution, and original links.
 3. Reliability modes that make the confidence-versus-coverage trade-off explicit.
 
 ## Boundaries
@@ -33,6 +34,7 @@ GMI does not:
 - replace producer judgment or original sources;
 - declare every result a direct competitor;
 - reproduce complete upstream databases;
+- offer interchangeable catalog copies by source;
 - present estimates as official facts;
 - infer sales from reviews, rankings, or concurrent players;
 - promise complete market coverage.

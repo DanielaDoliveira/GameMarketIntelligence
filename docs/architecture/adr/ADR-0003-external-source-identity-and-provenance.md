@@ -149,6 +149,20 @@ Provider response
 
 Provider responses must not be mapped directly into Entity Framework entities.
 
+## Canonical Materialization
+
+The canonical database belongs to GMI. IGDB is the base source and general
+fallback for the first MVP, but canonical values may later be selected from
+multiple sources through field- and context-specific rules. Steam is preferred
+only for authorized facts about its own ecosystem; Wikidata may fill gaps,
+enrich records, preserve cross-identifiers, or raise inconsistencies for
+evaluation.
+
+GMI does not retain complete interchangeable catalog copies and does not allow
+the producer to replace the displayed dataset by selecting a provider. It
+stores the accepted value plus the minimum external identity and provenance
+required to explain, synchronize, remove, or recompose it.
+
 ## Provenance Boundaries
 
 Canonical entities and source assertions do not have identical provenance
@@ -166,6 +180,15 @@ needs.
   the intended use;
 - source absence marks a source record missing or inactive and does not cause
   immediate physical deletion of the canonical game.
+- source-specific retention or termination rules may require deleting that
+  source's contributions; provenance must make those values locatable and
+  allow an authorized fallback to be materialized without changing `Game.Id`.
+
+`DataSource` also carries operational metadata needed by the integration, such
+as public attribution, official links, status, and retention/removal rules.
+Every integration must use authorized endpoints and honor its own license and
+terms. SteamDB remains a manual research reference and cannot feed collection,
+persistence, or public API responses.
 
 The implementation may use entity-specific external-identity mappings when
 needed to retain foreign-key integrity. A single polymorphic table with an
@@ -218,6 +241,7 @@ The following remain outside this ADR and must not block the first IGDB MVP:
 
 - complete Wikidata and Steam mappings;
 - production cross-source reconciliation algorithms;
+- producer selection among complete source catalogs;
 - final confidence scoring;
 - manual reconciliation workflows;
 - full field-level temporal observation history;

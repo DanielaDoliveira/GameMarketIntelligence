@@ -8,7 +8,9 @@
 O MVP completo reúne três capacidades:
 
 1. Comparable Games com filtros básicos e avançados sustentados por dados aprovados.
-2. Data Sources com proveniência, confiabilidade, limitações, atribuição, atualização e URLs.
+2. Data Sources com a origem dos campos do jogo selecionado e informações
+   institucionais sobre confiabilidade, limitações, atribuição, atualização e
+   URLs das integrações.
 3. Modos Alta confiança, Equilibrado e Cobertura ampla.
 
 ## Comparable Games
@@ -55,7 +57,12 @@ Os resultados são candidatos comparáveis, não concorrentes diretos automátic
 
 ## Data Sources
 
-Para cada fonte, mostrar:
+Data Sources deixa de ser apenas um catálogo institucional. Para o jogo
+selecionado, mostra quais fontes contribuíram e relaciona cada campo ou contexto
+relevante à sua origem, sem repetir os valores já apresentados nos detalhes do
+jogo. Um link nos detalhes poderá abrir essa auditoria diretamente.
+
+Em uma seção complementar, para cada fonte, mostrar:
 
 - organização e status oficial/independente;
 - categorias fornecidas;
@@ -65,13 +72,19 @@ Para cada fonte, mostrar:
 - atribuição e restrições;
 - URL original.
 
+O GMI materializa um resultado canônico segundo regras por campo e contexto. O
+producer não escolhe entre cópias alternativas do catálogo por provider porque
+essas cópias não serão mantidas. A natureza oficial, curada ou comunitária
+continua visível como evidência e limitação.
+
 ## Modos de confiabilidade
 
 - **Alta confiança:** oficial, primário, fortemente verificado ou concordância confiável; cobertura menor é esperada.
 - **Equilibrado:** dados oficiais, curados e normalizados com proveniência aceitável; provável padrão.
 - **Cobertura ampla:** pode incluir estimativas reconhecidas, comunidade e conflitos, sempre identificados.
 
-O filtro de confiabilidade precede o filtro por fonte porque o producer normalmente precisa definir qualidade antes de auditar providers.
+Os modos de confiabilidade qualificam o resultado canônico; não selecionam uma
+cópia diferente do catálogo nem substituem a proveniência por campo.
 
 ## Direção de domínio
 

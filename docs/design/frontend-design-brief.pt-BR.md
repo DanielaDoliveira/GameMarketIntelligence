@@ -100,7 +100,13 @@ posteriores e devem ser priorizados conforme as decisões de dados aprovadas:
 - página completa de detalhes;
 - filtro de confiabilidade;
 - apresentação de fontes nos resultados;
+- auditoria em Data Sources relacionando campos/contextos do jogo selecionado às
+  fontes contribuintes, sem duplicar os valores;
 - navegação contextual por keyword;
 - métricas, gráficos, recomendações, autenticação e tema escuro;
 - filtro de perspectiva e filtro manual com múltiplas keywords, que permanecem
   em iterações futuras salvo nova evidência de cobertura.
+
+A seleção de uma cópia completa do catálogo por provider foi removida da visão.
+A interface apresenta o resultado canônico escolhido pelo GMI e permite auditar
+sua proveniência.
