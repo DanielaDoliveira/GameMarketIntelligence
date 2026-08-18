@@ -16,6 +16,7 @@ public sealed class DataSourceServiceTests
         var reliability = new SourceReliability(ReliabilityLevel.Official, "Dados fornecidos pela fonte oficial.", "Pode haver limites de requisições.");
 
         var dataSource = new DataSource(
+            "steam",
                 "Steam Web API",
                 "https://partner.steamgames.com",
                 reliability,

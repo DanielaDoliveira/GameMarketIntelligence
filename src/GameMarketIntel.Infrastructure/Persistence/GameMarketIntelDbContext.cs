@@ -7,6 +7,8 @@ public sealed class GameMarketIntelDbContext(DbContextOptions<GameMarketIntelDbC
 {
     public DbSet<DataSource> DataSources => Set<DataSource>();
 
+    public DbSet<ExternalGameRecord> ExternalGameRecords => Set<ExternalGameRecord>();
+
     public DbSet<Game> Games => Set<Game>();
 
     public DbSet<Genre> Genres => Set<Genre>();
@@ -15,10 +17,7 @@ public sealed class GameMarketIntelDbContext(DbContextOptions<GameMarketIntelDbC
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.ApplyConfigurationsFromAssembly
-            (
-                typeof(GameMarketIntelDbContext).Assembly
-            );
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(GameMarketIntelDbContext).Assembly);
 
         base.OnModelCreating(modelBuilder);
     }
