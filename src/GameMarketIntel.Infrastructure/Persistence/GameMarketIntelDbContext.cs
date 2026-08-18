@@ -8,6 +8,7 @@ public sealed class GameMarketIntelDbContext(DbContextOptions<GameMarketIntelDbC
     public DbSet<DataSource> DataSources => Set<DataSource>();
 
     public DbSet<ExternalGameRecord> ExternalGameRecords => Set<ExternalGameRecord>();
+    public DbSet<GameRelease> GameReleases => Set<GameRelease>();
 
     public DbSet<Game> Games => Set<Game>();
 
