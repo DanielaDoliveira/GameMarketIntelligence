@@ -12,6 +12,14 @@ public sealed class DataSourceConfiguration : IEntityTypeConfiguration<DataSourc
         builder.ToTable("data_sources");
         builder.HasKey(source => source.Id);
         builder.Property(source => source.Id).HasColumnName("id");
+        builder.Property(source => source.Code)
+            .HasColumnName("code")
+            .HasMaxLength(DataSource.MaxCodeLength)
+            .IsRequired();
+
+        builder.HasIndex(source => source.Code)
+            .IsUnique()
+            .HasDatabaseName("ux_data_sources_code");
 
         builder.Property(source => source.Name)
            .HasColumnName("name")

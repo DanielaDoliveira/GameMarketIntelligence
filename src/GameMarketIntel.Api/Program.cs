@@ -76,6 +76,7 @@ if (app.Environment.IsDevelopment())
                 "Os dados não representam vendas ou receita.");
 
             var dataSource = new DataSource(
+                "steam",
                 "Steam Web API",
                 "https://partner.steamgames.com/",
                 reliability,

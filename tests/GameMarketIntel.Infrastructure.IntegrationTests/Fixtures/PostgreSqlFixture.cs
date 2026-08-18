@@ -43,11 +43,15 @@ public sealed class PostgreSqlFixture : IAsyncLifetime
 
         await dbContext.Database.ExecuteSqlRawAsync(
             """
-        TRUNCATE TABLE
-            "Games",
-            "Platforms",
-            "Genres"
-        RESTART IDENTITY CASCADE;
-        """);
+            TRUNCATE TABLE
+                external_game_records,
+                data_sources,
+                "GameGenres",
+                "GamePlatforms",
+                "Games",
+                "Platforms",
+                "Genres"
+            RESTART IDENTITY CASCADE;
+            """);
     }
 }
