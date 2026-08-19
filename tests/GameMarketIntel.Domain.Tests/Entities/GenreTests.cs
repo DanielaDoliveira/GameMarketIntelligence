@@ -8,7 +8,7 @@ public class GenreTests
     [Fact]
     public void Constructor_ShouldGenerateId()
     {
-        // Arrange & Act
+        // Arrange e Act
         var genre = new Genre("Action");
 
         // Assert
