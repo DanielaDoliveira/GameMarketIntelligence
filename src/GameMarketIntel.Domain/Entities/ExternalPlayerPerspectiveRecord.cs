@@ -1,8 +1,6 @@
-using GameMarketIntel.Domain.Enums;
-
 namespace GameMarketIntel.Domain.Entities;
 
-public sealed class ExternalGameRecord
+public sealed class ExternalPlayerPerspectiveRecord
 {
     public const int MaxExternalIdLength = 100;
 
@@ -12,22 +10,27 @@ public sealed class ExternalGameRecord
 
     public string ExternalId { get; private set; } = string.Empty;
 
-    public Guid? GameId { get; private set; }
+    public Guid? PlayerPerspectiveId { get; private set; }
+
     public DateTimeOffset FirstSeenAt { get; private set; }
+
     public DateTimeOffset LastSeenAt { get; private set; }
+
     public DateTimeOffset? SourceUpdatedAt { get; private set; }
-    public ExternalGameRecordStatus Status { get; private set; }
 
-    private ExternalGameRecord() { }
+    private ExternalPlayerPerspectiveRecord() { }
 
-    public ExternalGameRecord(Guid dataSourceId, string externalId, DateTimeOffset observedAt, DateTimeOffset? sourceUpdatedAt = null)
+    public ExternalPlayerPerspectiveRecord(Guid dataSourceId, string externalId, DateTimeOffset observedAt,
+        DateTimeOffset? sourceUpdatedAt = null)
     {
         if (dataSourceId == Guid.Empty)
             throw new ArgumentException
-            ("The data source ID is required.",
+            (
+                "The data source ID is required.",
                 nameof(dataSourceId)
             );
-        
+
+
         ExternalId = NormalizeAndValidateExternalId(externalId);
 
         var normalizedObservedAt = NormalizeTimestamp(observedAt, nameof(observedAt));
@@ -36,38 +39,26 @@ public sealed class ExternalGameRecord
         DataSourceId = dataSourceId;
         FirstSeenAt = normalizedObservedAt;
         LastSeenAt = normalizedObservedAt;
-        Status = ExternalGameRecordStatus.Unlinked;
-        SourceUpdatedAt =
-            sourceUpdatedAt.HasValue
-                ? NormalizeTimestamp(sourceUpdatedAt.Value, nameof(sourceUpdatedAt))
-                : null;
+        SourceUpdatedAt = sourceUpdatedAt.HasValue
+            ? NormalizeTimestamp(sourceUpdatedAt.Value, nameof(sourceUpdatedAt))
+            : null;
     }
 
-    public void LinkToGame(Guid gameId)
+    public void LinkToPlayerPerspective(Guid playerPerspectiveId)
     {
-        if (gameId == Guid.Empty)
+        if (playerPerspectiveId == Guid.Empty)
             throw new ArgumentException
             (
-                "The game ID is required.",
-                nameof(gameId)
+                "The player perspective ID is required.",
+                nameof(playerPerspectiveId)
             );
-        
 
-        GameId = gameId;
-        Status = ExternalGameRecordStatus.Linked;
+
+        PlayerPerspectiveId = playerPerspectiveId;
     }
 
-    public void Unlink()
-    {
-        GameId = null;
-        Status = ExternalGameRecordStatus.Unlinked;
-    }
+    public void Unlink() => PlayerPerspectiveId = null;
 
-    public void Reject()
-    {
-        GameId = null;
-        Status = ExternalGameRecordStatus.Rejected;
-    }
 
     public void MarkSeen(DateTimeOffset observedAt, DateTimeOffset? sourceUpdatedAt = null)
     {
@@ -79,17 +70,16 @@ public sealed class ExternalGameRecord
                 "The observation timestamp cannot be earlier than the last observation.",
                 nameof(observedAt)
             );
-        
+
         LastSeenAt = normalizedObservedAt;
 
         if (!sourceUpdatedAt.HasValue) return;
-        
+
 
         var normalizedSourceUpdatedAt = NormalizeTimestamp(sourceUpdatedAt.Value, nameof(sourceUpdatedAt));
 
         if (!SourceUpdatedAt.HasValue || normalizedSourceUpdatedAt > SourceUpdatedAt.Value)
             SourceUpdatedAt = normalizedSourceUpdatedAt;
-        
     }
 
     private static string NormalizeAndValidateExternalId(string externalId)
@@ -100,17 +90,17 @@ public sealed class ExternalGameRecord
                 "The external ID is required.",
                 nameof(externalId)
             );
-        
+
+
         var normalizedExternalId = externalId.Trim();
 
         if (normalizedExternalId.Length > MaxExternalIdLength)
-
             throw new ArgumentException
             (
                 $"The external ID cannot exceed {MaxExternalIdLength} characters.",
                 nameof(externalId)
             );
-        
+
 
         return normalizedExternalId;
     }
@@ -123,7 +113,6 @@ public sealed class ExternalGameRecord
                 "The timestamp is required.",
                 parameterName
             );
-        
 
         return timestamp.ToUniversalTime();
     }

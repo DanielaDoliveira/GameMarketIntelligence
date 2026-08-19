@@ -1,8 +1,6 @@
-using GameMarketIntel.Domain.Enums;
-
 namespace GameMarketIntel.Domain.Entities;
 
-public sealed class ExternalGameRecord
+public sealed class ExternalThemeRecord
 {
     public const int MaxExternalIdLength = 100;
 
@@ -12,22 +10,26 @@ public sealed class ExternalGameRecord
 
     public string ExternalId { get; private set; } = string.Empty;
 
-    public Guid? GameId { get; private set; }
+    public Guid? ThemeId { get; private set; }
+
     public DateTimeOffset FirstSeenAt { get; private set; }
+
     public DateTimeOffset LastSeenAt { get; private set; }
+
     public DateTimeOffset? SourceUpdatedAt { get; private set; }
-    public ExternalGameRecordStatus Status { get; private set; }
 
-    private ExternalGameRecord() { }
+    private ExternalThemeRecord() { }
 
-    public ExternalGameRecord(Guid dataSourceId, string externalId, DateTimeOffset observedAt, DateTimeOffset? sourceUpdatedAt = null)
+    public ExternalThemeRecord(Guid dataSourceId, string externalId, DateTimeOffset observedAt, DateTimeOffset? sourceUpdatedAt = null)
     {
         if (dataSourceId == Guid.Empty)
             throw new ArgumentException
-            ("The data source ID is required.",
+            (
+                "The data source ID is required.",
                 nameof(dataSourceId)
             );
         
+
         ExternalId = NormalizeAndValidateExternalId(externalId);
 
         var normalizedObservedAt = NormalizeTimestamp(observedAt, nameof(observedAt));
@@ -36,38 +38,26 @@ public sealed class ExternalGameRecord
         DataSourceId = dataSourceId;
         FirstSeenAt = normalizedObservedAt;
         LastSeenAt = normalizedObservedAt;
-        Status = ExternalGameRecordStatus.Unlinked;
         SourceUpdatedAt =
             sourceUpdatedAt.HasValue
                 ? NormalizeTimestamp(sourceUpdatedAt.Value, nameof(sourceUpdatedAt))
                 : null;
     }
 
-    public void LinkToGame(Guid gameId)
+    public void LinkToTheme(Guid themeId)
     {
-        if (gameId == Guid.Empty)
+        if (themeId == Guid.Empty)
             throw new ArgumentException
             (
-                "The game ID is required.",
-                nameof(gameId)
+                "The theme ID is required.",
+                nameof(themeId)
             );
         
-
-        GameId = gameId;
-        Status = ExternalGameRecordStatus.Linked;
+        ThemeId = themeId;
     }
 
-    public void Unlink()
-    {
-        GameId = null;
-        Status = ExternalGameRecordStatus.Unlinked;
-    }
-
-    public void Reject()
-    {
-        GameId = null;
-        Status = ExternalGameRecordStatus.Rejected;
-    }
+    public void Unlink()=>ThemeId = null;
+    
 
     public void MarkSeen(DateTimeOffset observedAt, DateTimeOffset? sourceUpdatedAt = null)
     {
@@ -80,16 +70,16 @@ public sealed class ExternalGameRecord
                 nameof(observedAt)
             );
         
+
         LastSeenAt = normalizedObservedAt;
 
         if (!sourceUpdatedAt.HasValue) return;
-        
+
 
         var normalizedSourceUpdatedAt = NormalizeTimestamp(sourceUpdatedAt.Value, nameof(sourceUpdatedAt));
 
         if (!SourceUpdatedAt.HasValue || normalizedSourceUpdatedAt > SourceUpdatedAt.Value)
             SourceUpdatedAt = normalizedSourceUpdatedAt;
-        
     }
 
     private static string NormalizeAndValidateExternalId(string externalId)
@@ -100,31 +90,30 @@ public sealed class ExternalGameRecord
                 "The external ID is required.",
                 nameof(externalId)
             );
-        
+
+
         var normalizedExternalId = externalId.Trim();
 
         if (normalizedExternalId.Length > MaxExternalIdLength)
-
             throw new ArgumentException
             (
                 $"The external ID cannot exceed {MaxExternalIdLength} characters.",
                 nameof(externalId)
             );
         
-
         return normalizedExternalId;
     }
 
     private static DateTimeOffset NormalizeTimestamp(DateTimeOffset timestamp, string parameterName)
     {
         if (timestamp == default)
+
             throw new ArgumentException
             (
                 "The timestamp is required.",
                 parameterName
             );
         
-
         return timestamp.ToUniversalTime();
     }
 }
