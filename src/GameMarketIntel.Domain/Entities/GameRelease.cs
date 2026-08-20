@@ -9,7 +9,6 @@ public sealed class GameRelease
     public const int MaximumEcosystemLength = 100;
     public const int MaximumExternalReleaseIdLength = 100;
 
-
     public Guid Id { get; private set; }
 
     public Guid GameId { get; private set; }
@@ -27,14 +26,14 @@ public sealed class GameRelease
     public string? Ecosystem { get; private set; }
 
     public DateTimeOffset ObservedAt { get; private set; }
+
     public string ExternalReleaseId { get; private set; } = null!;
 
     private GameRelease()
     {
-
     }
 
-    private GameRelease(Guid id, Guid gameId, Guid platformId, Guid externalGameRecordId,string externalReleaseId, ReleaseDateValue releaseDate, DateTimeOffset observedAt)
+    private GameRelease(Guid id, Guid gameId, Guid platformId, Guid externalGameRecordId, string externalReleaseId, ReleaseDateValue releaseDate, DateTimeOffset observedAt)
     {
         Id = id;
         GameId = gameId;
@@ -45,16 +44,33 @@ public sealed class GameRelease
         ObservedAt = observedAt;
     }
 
-    public static GameRelease Create(Guid gameId, Guid platformId, Guid externalGameRecordId, string externalReleaseId, ReleaseDateValue releaseDate, DateTimeOffset observedAt)
+    public static GameRelease Create(Guid gameId, Guid platformId, ExternalGameRecord externalGameRecord, string externalReleaseId, ReleaseDateValue releaseDate, DateTimeOffset observedAt)
     {
         ValidateRequiredId(gameId, nameof(gameId));
         ValidateRequiredId(platformId, nameof(platformId));
 
-        ValidateRequiredId(externalGameRecordId, nameof(externalGameRecordId));
+        ArgumentNullException.ThrowIfNull(externalGameRecord);
+
+        if (!externalGameRecord.GameId.HasValue)
+            throw new ArgumentException
+            (
+                "The external game record must be linked to a game.",
+                nameof(externalGameRecord)
+            );
+
+
+        if (externalGameRecord.GameId.Value != gameId)
+            throw new ArgumentException
+            (
+                "The external game record must be linked to the same game.",
+                nameof(externalGameRecord)
+            );
+        
 
         var normalizedExternalReleaseId = NormalizeExternalReleaseId(externalReleaseId);
 
         ArgumentNullException.ThrowIfNull(releaseDate);
+
         ValidateObservedAt(observedAt);
 
         return new GameRelease
@@ -62,7 +78,7 @@ public sealed class GameRelease
             Guid.NewGuid(),
             gameId,
             platformId,
-            externalGameRecordId,
+            externalGameRecord.Id,
             normalizedExternalReleaseId,
             releaseDate,
             observedAt
@@ -77,8 +93,10 @@ public sealed class GameRelease
                 "The external release identifier is required.",
                 nameof(externalReleaseId)
             );
+        
 
         var normalizedExternalReleaseId = externalReleaseId.Trim();
+
         if (normalizedExternalReleaseId.Length > MaximumExternalReleaseIdLength)
             throw new ArgumentException
             (
@@ -86,16 +104,23 @@ public sealed class GameRelease
                 $"{MaximumExternalReleaseIdLength} characters.",
                 nameof(externalReleaseId)
             );
+        
+
         return normalizedExternalReleaseId;
     }
 
     public void SetStatus(GameReleaseStatus? status)
     {
         if (status.HasValue && !Enum.IsDefined(status.Value))
-            throw new ArgumentOutOfRangeException(nameof(status), status, "The release status is invalid.");
+            throw new ArgumentOutOfRangeException
+            (
+                nameof(status),
+                status,
+                "The release status is invalid."
+            );
+        
         Status = status;
     }
-
 
     public void SetRegionCode(string? regionCode)
     {
@@ -108,8 +133,12 @@ public sealed class GameRelease
         var normalizedRegionCode = regionCode.Trim().ToUpperInvariant();
 
         if (normalizedRegionCode.Length > MaximumRegionCodeLength)
-            throw new ArgumentException($"The region code cannot exceed {MaximumRegionCodeLength} characters.", nameof(regionCode));
-
+        {
+            throw new ArgumentException(
+                $"The region code cannot exceed " +
+                $"{MaximumRegionCodeLength} characters.",
+                nameof(regionCode));
+        }
 
         RegionCode = normalizedRegionCode;
     }
@@ -124,26 +153,23 @@ public sealed class GameRelease
 
         var normalizedEcosystem = ecosystem.Trim();
 
-        if (normalizedEcosystem.Length >
-            MaximumEcosystemLength)
-        {
-            throw new ArgumentException($"The ecosystem cannot exceed {MaximumEcosystemLength} characters.", nameof(ecosystem));
-        }
+        if (normalizedEcosystem.Length > MaximumEcosystemLength)
+
+            throw new ArgumentException
+            (
+                $"The ecosystem cannot exceed " +
+                $"{MaximumEcosystemLength} characters.",
+                nameof(ecosystem)
+            );
+        
 
         Ecosystem = normalizedEcosystem;
-    }
-
-    private static void ValidateRequiredId(Guid id, string parameterName)
-    {
-        if (id == Guid.Empty)
-            throw new ArgumentException("The identifier cannot be empty.", parameterName);
-
-
     }
 
     public void UpdateReleaseDate(ReleaseDateValue releaseDate, DateTimeOffset observedAt)
     {
         ArgumentNullException.ThrowIfNull(releaseDate);
+
         ValidateObservedAt(observedAt);
 
         if (observedAt < ObservedAt)
@@ -153,9 +179,22 @@ public sealed class GameRelease
                 "than the current observation date.",
                 nameof(observedAt)
             );
+        
 
         ReleaseDate = releaseDate;
         ObservedAt = observedAt;
+    }
+
+    private static void ValidateRequiredId(Guid id, string parameterName)
+    {
+        if (id == Guid.Empty)
+
+            throw new ArgumentException
+            (
+                "The identifier cannot be empty.",
+                parameterName
+            );
+        
     }
 
     private static void ValidateObservedAt(DateTimeOffset observedAt)
@@ -166,6 +205,6 @@ public sealed class GameRelease
                 "The observation date must be provided.",
                 nameof(observedAt)
             );
-
+        
     }
 }

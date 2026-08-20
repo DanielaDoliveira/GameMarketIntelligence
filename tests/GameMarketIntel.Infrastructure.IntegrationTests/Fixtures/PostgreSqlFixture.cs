@@ -44,8 +44,20 @@ public sealed class PostgreSqlFixture : IAsyncLifetime
         await dbContext.Database.ExecuteSqlRawAsync(
             """
             TRUNCATE TABLE
+                game_themes,
+                game_game_modes,
+                game_player_perspectives,
+                game_keywords,
                 game_releases,
+                external_theme_records,
+                external_game_mode_records,
+                external_player_perspective_records,
+                external_keyword_records,
                 external_game_records,
+                themes,
+                game_modes,
+                player_perspectives,
+                keywords,
                 data_sources,
                 "GameGenres",
                 "GamePlatforms",

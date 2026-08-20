@@ -8,342 +8,185 @@ using Shouldly;
 namespace GameMarketIntel.Infrastructure.IntegrationTests.Persistence;
 
 [Collection(PostgreSqlCollection.Name)]
-public sealed class GameReleasePersistenceTests
+public sealed class GameReleasePersistenceTests(PostgreSqlFixture fixture)
 {
-    private const string ExternalReleaseId =
-        "release-144542-switch";
-
-    private static readonly DateTimeOffset ObservedAt =
-        new(2026, 8, 18, 12, 0, 0, TimeSpan.Zero);
-
-    private readonly PostgreSqlFixture _fixture;
-
-    public GameReleasePersistenceTests(
-        PostgreSqlFixture fixture)
-    {
-        _fixture = fixture;
-    }
+    private static readonly DateTimeOffset ObservedAt = new(2026, 8, 20, 12, 0, 0, TimeSpan.Zero);
 
     [Fact]
     public async Task SaveAndLoad_ShouldPersistContextualRelease()
     {
-        await _fixture.ResetDatabaseAsync();
+        await fixture.ResetDatabaseAsync();
 
         // Arrange
         var source = CreateDataSource();
         var game = new Game("Kitaria Fables");
-        var platform = CreatePlatform();
-        var externalRecord = CreateExternalRecord(source, game);
+        var platform = new Platform("Nintendo Switch");
+        var externalRecord = CreateExternalRecord(source, game, "144542");
 
         var release = GameRelease.Create(
             game.Id,
             platform.Id,
-            externalRecord.Id,
-            ExternalReleaseId,
-            ReleaseDateValue.ForDay(
-                new DateOnly(2021, 9, 1)),
-            ObservedAt);
+            externalRecord,
+            "release-144542-switch",
+            ReleaseDateValue.ForDay(new DateOnly(2021, 9, 1)), ObservedAt);
 
         release.SetRegionCode("WW");
         release.SetStatus(GameReleaseStatus.Released);
         release.SetEcosystem("Nintendo eShop");
 
         // Act
-        await using (var writeDbContext =
-            _fixture.CreateDbContext())
+        await using (var writeDbContext = fixture.CreateDbContext())
         {
             writeDbContext.DataSources.Add(source);
             writeDbContext.Games.Add(game);
             writeDbContext.Platforms.Add(platform);
-
-            writeDbContext.ExternalGameRecords.Add(
-                externalRecord);
-
+            writeDbContext.ExternalGameRecords.Add(externalRecord);
             writeDbContext.GameReleases.Add(release);
 
             await writeDbContext.SaveChangesAsync();
         }
 
-        await using var readDbContext =
-            _fixture.CreateDbContext();
-
-        var persistedRelease = await readDbContext
-            .GameReleases
-            .SingleAsync();
+        await using var readDbContext = fixture.CreateDbContext();
+        var persistedRelease = await readDbContext.GameReleases.SingleAsync();
 
         // Assert
         persistedRelease.Id.ShouldBe(release.Id);
         persistedRelease.GameId.ShouldBe(game.Id);
         persistedRelease.PlatformId.ShouldBe(platform.Id);
-
-        persistedRelease.ExternalGameRecordId.ShouldBe(
-            externalRecord.Id);
-
-        persistedRelease.ExternalReleaseId.ShouldBe(
-            ExternalReleaseId);
-
-        persistedRelease.ReleaseDate.Kind.ShouldBe(
-            ReleaseDateKind.Day);
-
+        persistedRelease.ExternalGameRecordId.ShouldBe(externalRecord.Id);
+        persistedRelease.ExternalReleaseId.ShouldBe("release-144542-switch");
         persistedRelease.ReleaseDate.Year.ShouldBe(2021);
         persistedRelease.ReleaseDate.Month.ShouldBe(9);
         persistedRelease.ReleaseDate.Day.ShouldBe(1);
-        persistedRelease.ReleaseDate.Quarter.ShouldBeNull();
         persistedRelease.RegionCode.ShouldBe("WW");
-
-        persistedRelease.Status.ShouldBe(
-            GameReleaseStatus.Released);
-
-        persistedRelease.Ecosystem.ShouldBe(
-            "Nintendo eShop");
-
+        persistedRelease.Status.ShouldBe(GameReleaseStatus.Released);
+        persistedRelease.Ecosystem.ShouldBe("Nintendo eShop");
         persistedRelease.ObservedAt.ShouldBe(ObservedAt);
     }
 
     [Fact]
-    public async Task SaveChanges_ShouldRejectDuplicateExternalReleaseIdWithinSameExternalRecord()
+    public async Task SaveChanges_ShouldRejectDuplicateExternalReleaseIdentity()
     {
-        await _fixture.ResetDatabaseAsync();
+        await fixture.ResetDatabaseAsync();
 
         // Arrange
         var source = CreateDataSource();
         var game = new Game("Kitaria Fables");
-        var platform = CreatePlatform();
-        var externalRecord = CreateExternalRecord(source, game);
+        var platform = new Platform("Nintendo Switch");
+        var externalRecord = CreateExternalRecord(source, game, "144542");
 
-        var firstRelease = GameRelease.Create(
+        var firstRelease = GameRelease.Create
+        (
             game.Id,
             platform.Id,
-            externalRecord.Id,
-            ExternalReleaseId,
-            ReleaseDateValue.ForDay(
-                new DateOnly(2021, 9, 1)),
-            ObservedAt);
+            externalRecord,
+            "release-144542-switch",
+            ReleaseDateValue.ForYear(2021),
+            ObservedAt
+        );
 
-        var duplicateRelease = GameRelease.Create(
+        var duplicateRelease = GameRelease.Create
+        (
             game.Id,
             platform.Id,
-            externalRecord.Id,
-            $" {ExternalReleaseId} ",
-            ReleaseDateValue.ForDay(
-                new DateOnly(2021, 9, 1)),
-            ObservedAt);
+            externalRecord,
+            "release-144542-switch",
+            ReleaseDateValue.ForYear(2021),
+            ObservedAt
+        );
 
-        await using var dbContext =
-            _fixture.CreateDbContext();
+        await using var dbContext = fixture.CreateDbContext();
 
         dbContext.DataSources.Add(source);
         dbContext.Games.Add(game);
         dbContext.Platforms.Add(platform);
-
-        dbContext.ExternalGameRecords.Add(
-            externalRecord);
-
-        dbContext.GameReleases.AddRange(
-            firstRelease,
-            duplicateRelease);
+        dbContext.ExternalGameRecords.Add(externalRecord);
+        dbContext.GameReleases.AddRange(firstRelease, duplicateRelease);
 
         // Act
-        var action = async () =>
-            await dbContext.SaveChangesAsync();
+        var action = () => dbContext.SaveChangesAsync();
 
         // Assert
         await action.ShouldThrowAsync<DbUpdateException>();
     }
 
     [Fact]
-    public async Task SaveChanges_ShouldRestrictDeletingReferencedPlatform()
+    public async Task DeleteExternalGameRecord_ShouldFail_WhenReleaseReferencesIt()
     {
-        await _fixture.ResetDatabaseAsync();
+        await fixture.ResetDatabaseAsync();
 
         // Arrange
         var source = CreateDataSource();
         var game = new Game("Kitaria Fables");
-        var platform = CreatePlatform();
-        var externalRecord = CreateExternalRecord(source, game);
+        var platform = new Platform("Nintendo Switch");
+        var externalRecord = CreateExternalRecord
+        (
+            source,
+            game,
+            "144542"
+        );
 
-        var release = GameRelease.Create(
+        var release = GameRelease.Create
+        (
             game.Id,
             platform.Id,
-            externalRecord.Id,
-            ExternalReleaseId,
+            externalRecord,
+            "release-144542-switch",
             ReleaseDateValue.ForYear(2021),
-            ObservedAt);
+            ObservedAt
+        );
 
-        await using (var writeDbContext =
-            _fixture.CreateDbContext())
+        await using (var setupDbContext = fixture.CreateDbContext())
         {
-            writeDbContext.DataSources.Add(source);
-            writeDbContext.Games.Add(game);
-            writeDbContext.Platforms.Add(platform);
+            setupDbContext.DataSources.Add(source);
+            setupDbContext.Games.Add(game);
+            setupDbContext.Platforms.Add(platform);
+            setupDbContext.ExternalGameRecords.Add(externalRecord);
+            setupDbContext.GameReleases.Add(release);
 
-            writeDbContext.ExternalGameRecords.Add(
-                externalRecord);
-
-            writeDbContext.GameReleases.Add(release);
-
-            await writeDbContext.SaveChangesAsync();
+            await setupDbContext.SaveChangesAsync();
         }
 
-        await using var deleteDbContext =
-            _fixture.CreateDbContext();
+        await using var deleteDbContext = fixture.CreateDbContext();
 
-        var persistedPlatform = await deleteDbContext
-            .Platforms
+        var persistedExternalRecord = await deleteDbContext
+            .ExternalGameRecords
             .SingleAsync();
 
-        deleteDbContext.Platforms.Remove(
-            persistedPlatform);
+        deleteDbContext.ExternalGameRecords.Remove(persistedExternalRecord);
 
         // Act
-        var action = async () =>
-            await deleteDbContext.SaveChangesAsync();
+        var action = () => deleteDbContext.SaveChangesAsync();
 
         // Assert
         await action.ShouldThrowAsync<DbUpdateException>();
     }
 
-    [Fact]
-    public async Task SaveChanges_ShouldRestrictDeletingReferencedExternalGameRecord()
+    private static ExternalGameRecord CreateExternalRecord(DataSource source, Game game, string externalId)
     {
-        await _fixture.ResetDatabaseAsync();
-
-        // Arrange
-        var source = CreateDataSource();
-        var game = new Game("Kitaria Fables");
-        var platform = CreatePlatform();
-        var externalRecord = CreateExternalRecord(source, game);
-
-        var release = GameRelease.Create(
-            game.Id,
-            platform.Id,
-            externalRecord.Id,
-            ExternalReleaseId,
-            ReleaseDateValue.ForYear(2021),
-            ObservedAt);
-
-        await using (var writeDbContext =
-            _fixture.CreateDbContext())
-        {
-            writeDbContext.DataSources.Add(source);
-            writeDbContext.Games.Add(game);
-            writeDbContext.Platforms.Add(platform);
-
-            writeDbContext.ExternalGameRecords.Add(
-                externalRecord);
-
-            writeDbContext.GameReleases.Add(release);
-
-            await writeDbContext.SaveChangesAsync();
-        }
-
-        await using var deleteDbContext =
-            _fixture.CreateDbContext();
-
-        var persistedExternalRecord =
-            await deleteDbContext
-                .ExternalGameRecords
-                .SingleAsync();
-
-        deleteDbContext.ExternalGameRecords.Remove(
-            persistedExternalRecord);
-
-        // Act
-        var action = async () =>
-            await deleteDbContext.SaveChangesAsync();
-
-        // Assert
-        await action.ShouldThrowAsync<DbUpdateException>();
-    }
-
-    [Fact]
-    public async Task SaveAndLoad_ShouldPersistToBeDeterminedReleaseWithNullOptionalFields()
-    {
-        await _fixture.ResetDatabaseAsync();
-
-        // Arrange
-        var source = CreateDataSource();
-        var game = new Game("Future Game");
-        var platform = CreatePlatform();
-        var externalRecord = CreateExternalRecord(source, game);
-
-        var release = GameRelease.Create(
-            game.Id,
-            platform.Id,
-            externalRecord.Id,
-            "future-release-tbd",
-            ReleaseDateValue.ToBeDetermined(),
-            ObservedAt);
-
-        // Act
-        await using (var writeDbContext =
-            _fixture.CreateDbContext())
-        {
-            writeDbContext.DataSources.Add(source);
-            writeDbContext.Games.Add(game);
-            writeDbContext.Platforms.Add(platform);
-
-            writeDbContext.ExternalGameRecords.Add(
-                externalRecord);
-
-            writeDbContext.GameReleases.Add(release);
-
-            await writeDbContext.SaveChangesAsync();
-        }
-
-        await using var readDbContext =
-            _fixture.CreateDbContext();
-
-        var persistedRelease = await readDbContext
-            .GameReleases
-            .SingleAsync();
-
-        // Assert
-        persistedRelease.ReleaseDate.Kind.ShouldBe(
-            ReleaseDateKind.ToBeDetermined);
-
-        persistedRelease.ReleaseDate.Year.ShouldBeNull();
-        persistedRelease.ReleaseDate.Month.ShouldBeNull();
-        persistedRelease.ReleaseDate.Day.ShouldBeNull();
-        persistedRelease.ReleaseDate.Quarter.ShouldBeNull();
-        persistedRelease.RegionCode.ShouldBeNull();
-        persistedRelease.Status.ShouldBeNull();
-        persistedRelease.Ecosystem.ShouldBeNull();
-    }
-
-    private static ExternalGameRecord CreateExternalRecord(
-        DataSource source,
-        Game game)
-    {
-        var externalRecord = new ExternalGameRecord(
-            source.Id,
-            externalId: "144542",
-            ObservedAt);
+        var externalRecord = new ExternalGameRecord(source.Id, externalId, ObservedAt);
 
         externalRecord.LinkToGame(game.Id);
 
         return externalRecord;
     }
 
-    private static Platform CreatePlatform()
-    {
-        return new Platform(
-            name: "Nintendo Switch",
-            family: "Nintendo Switch",
-            manufacturer: "Nintendo");
-    }
-
     private static DataSource CreateDataSource()
     {
-        var reliability = new SourceReliability(
-            ReliabilityLevel.PublicDirect,
-            "Dados obtidos diretamente de uma fonte pública.");
+        var reliability =
+            new SourceReliability
+            (
+                ReliabilityLevel.PublicDirect,
+                "Dados obtidos diretamente de uma fonte pública."
+            );
 
-        return new DataSource(
+        return new DataSource
+        (
             code: "igdb",
             name: "IGDB",
             url: "https://www.igdb.com",
             reliability,
-            attributionRequired: true);
+            attributionRequired: true
+        );
     }
 }

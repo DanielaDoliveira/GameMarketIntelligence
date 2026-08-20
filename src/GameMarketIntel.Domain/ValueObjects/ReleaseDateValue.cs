@@ -20,7 +20,7 @@ public sealed record ReleaseDateValue
 
     private ReleaseDateValue() { }
 
-private ReleaseDateValue(ReleaseDateKind kind, int? year, int? month, int? day, int? quarter)
+public ReleaseDateValue(ReleaseDateKind kind, int? year, int? month, int? day, int? quarter)
 {
     Kind = kind;
     Year = year;

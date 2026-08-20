@@ -10,10 +10,8 @@ public sealed class GamePersistenceTests
 {
     private readonly PostgreSqlFixture _fixture;
 
-    public GamePersistenceTests(PostgreSqlFixture fixture)
-    {
-        _fixture = fixture;
-    }
+    public GamePersistenceTests(PostgreSqlFixture fixture)=>_fixture = fixture;
+    
 
     [Fact]
     public async Task SaveAndLoad_ShouldPersistGameWithGenresAndPlatforms()

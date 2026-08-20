@@ -8,14 +8,14 @@ public sealed class GameTheme
 
     private GameTheme() { }
 
-    public GameTheme(Guid gameId, Guid themeId, Guid externalGameRecordId)
+    public GameTheme(Guid gameId, Guid themeId, ExternalGameRecord externalGameRecord)
     {
         if (gameId == Guid.Empty)
             throw new ArgumentException
             (
                 "The Game Id is Required.", nameof(gameId)
             );
-        
+
         if (themeId == Guid.Empty)
             throw new ArgumentException
             (
@@ -23,15 +23,27 @@ public sealed class GameTheme
             );
 
 
-        if (externalGameRecordId == Guid.Empty)
+        ArgumentNullException.ThrowIfNull(externalGameRecord);
+
+
+        if (!externalGameRecord.GameId.HasValue)
             throw new ArgumentException
             (
-                "The External Id is Required.", nameof(externalGameRecordId)
+                "The External Game Record must be linked to a Game.",
+                nameof(externalGameRecord)
             );
-        
+
+
+        if (externalGameRecord.GameId.Value != gameId)
+            throw new ArgumentException
+            (
+                "The External Game Record must be linked to the same Game.",
+                nameof(externalGameRecord)
+            );
+
+
         GameId = gameId;
         ThemeId = themeId;
-        ExternalGameRecordId = externalGameRecordId;
-        
+        ExternalGameRecordId = externalGameRecord.Id;
     }
 }

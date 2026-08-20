@@ -10,7 +10,7 @@ public sealed class GameGameMode
 
     private GameGameMode() { }
 
-    public GameGameMode(Guid gameId, Guid gameModeId, Guid externalGameRecordId)
+    public GameGameMode(Guid gameId, Guid gameModeId,ExternalGameRecord externalGameRecord)
     {
         if (gameId == Guid.Empty)
             throw new ArgumentException
@@ -28,16 +28,27 @@ public sealed class GameGameMode
             );
 
 
-        if (externalGameRecordId == Guid.Empty)
+        ArgumentNullException.ThrowIfNull(externalGameRecord);
+
+        if (!externalGameRecord.GameId.HasValue)
             throw new ArgumentException
             (
-                "The external game record ID is required.",
-                nameof(externalGameRecordId)
+                "The External Game Record must be linked to a Game.",
+                nameof(externalGameRecord)
             );
+
+
+        if (externalGameRecord.GameId.Value != gameId)
+            throw new ArgumentException
+            (
+                "The External Game Record must be linked to the same Game.",
+                nameof(externalGameRecord)
+            );
+        
 
 
         GameId = gameId;
         GameModeId = gameModeId;
-        ExternalGameRecordId = externalGameRecordId;
+        ExternalGameRecordId = externalGameRecord.Id;
     }
 }

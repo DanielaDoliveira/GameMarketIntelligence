@@ -3,22 +3,17 @@ namespace GameMarketIntel.Domain.Entities;
 public sealed class GamePlayerPerspective
 {
     public Guid GameId { get; private set; }
-
     public Guid PlayerPerspectiveId { get; private set; }
-
     public Guid ExternalGameRecordId { get; private set; }
 
     private GamePlayerPerspective() { }
 
-    public GamePlayerPerspective(
-        Guid gameId,
-        Guid playerPerspectiveId,
-        Guid externalGameRecordId)
+    public GamePlayerPerspective(Guid gameId, Guid playerPerspectiveId, ExternalGameRecord externalGameRecord)
     {
         if (gameId == Guid.Empty)
             throw new ArgumentException
             (
-                "The game ID is required.",
+                "The Game Id is Required.",
                 nameof(gameId)
             );
 
@@ -26,21 +21,31 @@ public sealed class GamePlayerPerspective
         if (playerPerspectiveId == Guid.Empty)
             throw new ArgumentException
             (
-                "The player perspective ID is required.",
+                "The Player Perspective Id is Required.",
                 nameof(playerPerspectiveId)
             );
 
 
-        if (externalGameRecordId == Guid.Empty)
+        ArgumentNullException.ThrowIfNull(externalGameRecord);
+
+        if (!externalGameRecord.GameId.HasValue)
             throw new ArgumentException
             (
-                "The external game record ID is required.",
-                nameof(externalGameRecordId)
+                "The External Game Record must be linked to a Game.",
+                nameof(externalGameRecord)
+            );
+
+
+        if (externalGameRecord.GameId.Value != gameId)
+            throw new ArgumentException
+            (
+                "The External Game Record must be linked to the same Game.",
+                nameof(externalGameRecord)
             );
 
 
         GameId = gameId;
         PlayerPerspectiveId = playerPerspectiveId;
-        ExternalGameRecordId = externalGameRecordId;
+        ExternalGameRecordId = externalGameRecord.Id;
     }
 }
