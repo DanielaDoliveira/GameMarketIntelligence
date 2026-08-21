@@ -24,7 +24,7 @@ public sealed class GameServiceTests
         var game = new Game(
             "Astro Bot",
             description: "A platform adventure game.",
-            releaseDate: new DateOnly(2024, 9, 6),
+            firstReleaseDate: new DateOnly(2024, 9, 6),
             imageUrl: "https://example.com/astro-bot.png");
 
         game.AddGenre(genre);

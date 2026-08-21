@@ -4,8 +4,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace GameMarketIntel.Infrastructure.Persistence.Configurations;
 
-public sealed class GameConfiguration
-    : IEntityTypeConfiguration<Game>
+public sealed class GameConfiguration : IEntityTypeConfiguration<Game>
 {
     public void Configure(EntityTypeBuilder<Game> builder)
     {
@@ -20,7 +19,7 @@ public sealed class GameConfiguration
         builder.Property(game => game.Description)
             .HasMaxLength(4000);
 
-        builder.Property(game => game.ReleaseDate);
+        builder.Property(game => game.FirstReleaseDate);
 
         builder.Property(game => game.ImageUrl)
             .HasMaxLength(2048);

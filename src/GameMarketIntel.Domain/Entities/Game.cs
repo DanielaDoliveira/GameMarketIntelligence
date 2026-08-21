@@ -11,7 +11,7 @@ public sealed class Game
 
     public string? Description { get; private set; }
 
-    public DateOnly? ReleaseDate { get; private set; }
+    public DateOnly? FirstReleaseDate { get; private set; }
 
     public string? ImageUrl { get; private set; }
 
@@ -28,7 +28,7 @@ public sealed class Game
     public Game(
         string name,
         string? description = null,
-        DateOnly? releaseDate = null,
+        DateOnly? firstReleaseDate = null,
         string? imageUrl = null)
     {
 
@@ -38,7 +38,7 @@ public sealed class Game
         Id = Guid.NewGuid();
         Name = name.Trim();
         Description = NormalizeOptionalText(description);
-        ReleaseDate = releaseDate;
+        FirstReleaseDate = firstReleaseDate;
         ImageUrl = ValidateAndNormalizeOptionalUrl(imageUrl);
 
 

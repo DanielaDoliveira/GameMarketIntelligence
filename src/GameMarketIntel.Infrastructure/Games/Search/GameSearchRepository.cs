@@ -38,7 +38,7 @@ public sealed class GameSearchRepository : IGameSearchRepository
 
         if (query.ReleaseYear.HasValue)
         {
-            gamesQuery = gamesQuery.Where(game =>game.ReleaseDate.HasValue &&  game.ReleaseDate.Value.Year == query.ReleaseYear.Value);
+            gamesQuery = gamesQuery.Where(game =>game.FirstReleaseDate.HasValue &&  game.FirstReleaseDate.Value.Year == query.ReleaseYear.Value);
         }
 
         var totalItems = await gamesQuery.CountAsync(cancellationToken);
@@ -51,7 +51,7 @@ public sealed class GameSearchRepository : IGameSearchRepository
                 game.Id,
                 game.Name,
                 game.Description,
-                game.ReleaseDate,
+                game.FirstReleaseDate,
                 game.ImageUrl,
                 game.Genres
                     .OrderBy(genre => genre.Name)

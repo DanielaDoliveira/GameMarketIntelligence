@@ -35,13 +35,13 @@ public sealed class GameSearchRepositoryTests : IAsyncLifetime
             arrangeDbContext.Games.AddRange(
                 new Game(
                     name: "Celeste",
-                    releaseDate: new DateOnly(2018, 1, 25)),
+                    firstReleaseDate: new DateOnly(2018, 1, 25)),
                 new Game(
                     name: "Hades",
-                    releaseDate: new DateOnly(2020, 9, 17)),
+                    firstReleaseDate: new DateOnly(2020, 9, 17)),
                 new Game(
                     name: "Inside",
-                    releaseDate: new DateOnly(2016, 6, 29)));
+                    firstReleaseDate: new DateOnly(2016, 6, 29)));
 
             await arrangeDbContext.SaveChangesAsync();
         }
@@ -80,13 +80,13 @@ public sealed class GameSearchRepositoryTests : IAsyncLifetime
             arrangeDbContext.Games.AddRange(
                 new Game(
                     name: "The Legend of Zelda",
-                    releaseDate: new DateOnly(1986, 2, 21)),
+                    firstReleaseDate: new DateOnly(1986, 2, 21)),
                 new Game(
                     name: "Zelda II: The Adventure of Link",
-                    releaseDate: new DateOnly(1987, 1, 14)),
+                    firstReleaseDate: new DateOnly(1987, 1, 14)),
                 new Game(
                     name: "Hades",
-                    releaseDate: new DateOnly(2020, 9, 17)));
+                    firstReleaseDate: new DateOnly(2020, 9, 17)));
 
             await arrangeDbContext.SaveChangesAsync();
         }
@@ -133,11 +133,11 @@ public sealed class GameSearchRepositoryTests : IAsyncLifetime
 
             var hades = new Game(
                 name: "Hades",
-                releaseDate: new DateOnly(2020, 9, 17));
+                firstReleaseDate: new DateOnly(2020, 9, 17));
 
             var portal = new Game(
                 name: "Portal",
-                releaseDate: new DateOnly(2007, 10, 10));
+                firstReleaseDate: new DateOnly(2007, 10, 10));
 
             hades.AddGenre(action);
             portal.AddGenre(puzzle);
@@ -189,11 +189,11 @@ public sealed class GameSearchRepositoryTests : IAsyncLifetime
 
             var zelda = new Game(
                 name: "The Legend of Zelda: Breath of the Wild",
-                releaseDate: new DateOnly(2017, 3, 3));
+                firstReleaseDate: new DateOnly(2017, 3, 3));
 
             var returnal = new Game(
                 name: "Returnal",
-                releaseDate: new DateOnly(2021, 4, 30));
+                firstReleaseDate: new DateOnly(2021, 4, 30));
 
             zelda.AddPlatform(nintendoSwitch);
             returnal.AddPlatform(playStation5);
@@ -241,16 +241,16 @@ public sealed class GameSearchRepositoryTests : IAsyncLifetime
             arrangeDbContext.Games.AddRange(
                 new Game(
                     name: "Hades",
-                    releaseDate: new DateOnly(2020, 9, 17)),
+                    firstReleaseDate: new DateOnly(2020, 9, 17)),
                 new Game(
                     name: "The Last of Us Part II",
-                    releaseDate: new DateOnly(2020, 6, 19)),
+                    firstReleaseDate: new DateOnly(2020, 6, 19)),
                 new Game(
                     name: "Returnal",
-                    releaseDate: new DateOnly(2021, 4, 30)),
+                    firstReleaseDate: new DateOnly(2021, 4, 30)),
                 new Game(
                     name: "Unreleased Game",
-                    releaseDate: null));
+                    firstReleaseDate: null));
 
             await arrangeDbContext.SaveChangesAsync();
         }
@@ -305,21 +305,21 @@ public sealed class GameSearchRepositoryTests : IAsyncLifetime
 
             var hades = new Game(
                 name: "Hades",
-                releaseDate: new DateOnly(2020, 9, 17));
+                firstReleaseDate: new DateOnly(2020, 9, 17));
 
             hades.AddGenre(action);
             hades.AddPlatform(pc);
 
             var celeste = new Game(
                 name: "Celeste",
-                releaseDate: new DateOnly(2018, 1, 25));
+                firstReleaseDate: new DateOnly(2018, 1, 25));
 
             celeste.AddGenre(action);
             celeste.AddPlatform(nintendoSwitch);
 
             var portal = new Game(
                 name: "Portal",
-                releaseDate: new DateOnly(2007, 10, 10));
+                firstReleaseDate: new DateOnly(2007, 10, 10));
 
             portal.AddGenre(puzzle);
             portal.AddPlatform(pc);
@@ -365,10 +365,10 @@ public sealed class GameSearchRepositoryTests : IAsyncLifetime
             arrangeDbContext.Games.AddRange(
                 new Game(
                     name: "Hades",
-                    releaseDate: new DateOnly(2020, 9, 17)),
+                    firstReleaseDate: new DateOnly(2020, 9, 17)),
                 new Game(
                     name: "Celeste",
-                    releaseDate: new DateOnly(2018, 1, 25)));
+                    firstReleaseDate: new DateOnly(2018, 1, 25)));
 
             await arrangeDbContext.SaveChangesAsync();
         }

@@ -21,7 +21,7 @@ public sealed class GamePersistenceTests
         var game = new Game(
             name: "Hades",
             description: "A roguelike action game.",
-            releaseDate: new DateOnly(2020, 9, 17),
+            firstReleaseDate: new DateOnly(2020, 9, 17),
             imageUrl: "https://example.com/hades.png");
 
         var genre = new Genre("Action");
@@ -55,7 +55,7 @@ public sealed class GamePersistenceTests
         persistedGame.Description.ShouldBe(
             "A roguelike action game.");
 
-        persistedGame.ReleaseDate.ShouldBe(
+        persistedGame.FirstReleaseDate.ShouldBe(
             new DateOnly(2020, 9, 17));
 
         persistedGame.Genres.Count.ShouldBe(1);

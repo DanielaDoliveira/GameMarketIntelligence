@@ -59,8 +59,8 @@ public sealed class GameRepository( GameMarketIntelDbContext dbContext): IGameRe
             .Include(game => game.Genres)
             .Include(game => game.Platforms)
             .AsSplitQuery()
-            .OrderBy(game => game.ReleaseDate == null)
-            .ThenByDescending(game => game.ReleaseDate)
+            .OrderBy(game => game.FirstReleaseDate == null)
+            .ThenByDescending(game => game.FirstReleaseDate)
             .ThenBy(game => game.Name)
             .ToListAsync(cancellationToken);
     }
