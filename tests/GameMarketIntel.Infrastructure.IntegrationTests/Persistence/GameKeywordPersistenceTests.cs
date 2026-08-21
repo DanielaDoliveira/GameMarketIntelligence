@@ -10,91 +10,117 @@ namespace GameMarketIntel.Infrastructure.IntegrationTests.Persistence;
 [Collection(PostgreSqlCollection.Name)]
 public sealed class GameKeywordPersistenceTests(PostgreSqlFixture fixture)
 {
-    private static readonly DateTimeOffset ObservedAt =
-        new(2026, 8, 20, 12, 0, 0, TimeSpan.Zero);
-
+    private static readonly DateTimeOffset ObservedAt = new(2026, 8, 20, 12, 0, 0, TimeSpan.Zero);
 
     [Fact]
-    public async Task SaveAndLoad_ShouldPersistGameKeywordWithProvenance()
+    public async Task SaveAndLoad_ShouldPersistGameKeywordWithCompleteProvenance()
     {
+        // Arrange
         await fixture.ResetDatabaseAsync();
 
-        // Arrange
         var source = CreateDataSource();
         var game = new Game("Kitaria Fables");
         var keyword = new Keyword("Animal protagonist");
-        var externalRecord = CreateExternalRecord(source, game, "144542");
 
-        var association = new GameKeyword(game.Id, keyword.Id, externalRecord);
+        var externalGameRecord = CreateExternalGameRecord(source, game, "144542");
 
-        // Act
+        var externalKeywordRecord = CreateExternalKeywordRecord(source, keyword, "42");
+
+        var association = new GameKeyword(game.Id, keyword.Id, externalGameRecord, externalKeywordRecord);
+
         await using (var writeDbContext = fixture.CreateDbContext())
         {
             writeDbContext.DataSources.Add(source);
             writeDbContext.Games.Add(game);
             writeDbContext.Keywords.Add(keyword);
-            writeDbContext.ExternalGameRecords.Add(externalRecord);
+            writeDbContext.ExternalGameRecords.Add(externalGameRecord);
+            writeDbContext.ExternalKeywordRecords.Add(externalKeywordRecord);
             writeDbContext.GameKeywords.Add(association);
 
             await writeDbContext.SaveChangesAsync();
         }
 
+        // Act
         await using var readDbContext = fixture.CreateDbContext();
+
         var persistedAssociation = await readDbContext.GameKeywords.SingleAsync();
 
         // Assert
         persistedAssociation.GameId.ShouldBe(game.Id);
         persistedAssociation.KeywordId.ShouldBe(keyword.Id);
-        persistedAssociation.ExternalGameRecordId.ShouldBe(externalRecord.Id);
+        persistedAssociation.ExternalGameRecordId.ShouldBe(externalGameRecord.Id);
+        persistedAssociation.ExternalKeywordRecordId.ShouldBe(externalKeywordRecord.Id);
     }
 
     [Fact]
-    public async Task SaveChanges_ShouldRejectDuplicateGameKeywordContribution()
+    public async Task SaveChanges_ShouldRejectDuplicateExternalContribution()
     {
+        // Arrange
         await fixture.ResetDatabaseAsync();
 
-        // Arrange
         var source = CreateDataSource();
         var game = new Game("Kitaria Fables");
         var keyword = new Keyword("Animal protagonist");
-        var externalRecord = CreateExternalRecord(source, game, "144542");
 
-        var firstAssociation = new GameKeyword(game.Id, keyword.Id, externalRecord);
+        var externalGameRecord = CreateExternalGameRecord(source, game, "144542");
 
-        var duplicateAssociation = new GameKeyword(game.Id, keyword.Id, externalRecord);
+        var externalKeywordRecord = CreateExternalKeywordRecord(source, keyword, "42");
 
-        await using var dbContext = fixture.CreateDbContext();
+        var firstAssociation = new GameKeyword(game.Id, keyword.Id, externalGameRecord, externalKeywordRecord);
 
-        dbContext.DataSources.Add(source);
-        dbContext.Games.Add(game);
-        dbContext.Keywords.Add(keyword);
-        dbContext.ExternalGameRecords.Add(externalRecord);
-        dbContext.GameKeywords.AddRange(firstAssociation, duplicateAssociation);
+        await using (var firstDbContext = fixture.CreateDbContext())
+        {
+            firstDbContext.DataSources.Add(source);
+            firstDbContext.Games.Add(game);
+            firstDbContext.Keywords.Add(keyword);
+            firstDbContext.ExternalGameRecords.Add(externalGameRecord);
+            firstDbContext.ExternalKeywordRecords.Add(externalKeywordRecord);
+            firstDbContext.GameKeywords.Add(firstAssociation);
+
+            await firstDbContext.SaveChangesAsync();
+        }
+
+        await using var duplicateDbContext = fixture.CreateDbContext();
+
+        var persistedExternalGameRecord = await duplicateDbContext.ExternalGameRecords.SingleAsync();
+
+        var persistedExternalKeywordRecord = await duplicateDbContext.ExternalKeywordRecords.SingleAsync();
+
+        var duplicateAssociation = new GameKeyword(game.Id, keyword.Id, persistedExternalGameRecord,
+            persistedExternalKeywordRecord);
+
+        duplicateDbContext.GameKeywords.Add(duplicateAssociation);
 
         // Act
-        var action = async () => await dbContext.SaveChangesAsync();
+        var action = () => duplicateDbContext.SaveChangesAsync();
 
         // Assert
-        await action.ShouldThrowAsync<InvalidOperationException>();
+        await action.ShouldThrowAsync<DbUpdateException>();
     }
 
     [Fact]
-    public async Task SaveChanges_ShouldAllowSameGameAndKeywordFromDifferentExternalRecords()
+    public async Task SaveChanges_ShouldAllowSameCanonicalKeywordFromDifferentExternalContributions()
     {
+        // Arrange
         await fixture.ResetDatabaseAsync();
 
-        // Arrange
         var source = CreateDataSource();
         var game = new Game("Kitaria Fables");
         var keyword = new Keyword("Animal protagonist");
 
-        var firstExternalRecord = CreateExternalRecord(source, game, "144542");
+        var firstExternalGameRecord = CreateExternalGameRecord(source, game, "144542");
 
-        var secondExternalRecord = CreateExternalRecord(source, game, "398521");
+        var secondExternalGameRecord = CreateExternalGameRecord(source, game, "398521");
 
-        var firstAssociation = new GameKeyword(game.Id, keyword.Id, firstExternalRecord);
+        var firstExternalKeywordRecord = CreateExternalKeywordRecord(source, keyword, "42");
 
-        var secondAssociation = new GameKeyword(game.Id, keyword.Id, secondExternalRecord);
+        var secondExternalKeywordRecord = CreateExternalKeywordRecord(source, keyword, "142");
+
+        var firstAssociation =
+            new GameKeyword(game.Id, keyword.Id, firstExternalGameRecord, firstExternalKeywordRecord);
+
+        var secondAssociation =
+            new GameKeyword(game.Id, keyword.Id, secondExternalGameRecord, secondExternalKeywordRecord);
 
         // Act
         await using (var dbContext = fixture.CreateDbContext())
@@ -102,7 +128,11 @@ public sealed class GameKeywordPersistenceTests(PostgreSqlFixture fixture)
             dbContext.DataSources.Add(source);
             dbContext.Games.Add(game);
             dbContext.Keywords.Add(keyword);
-            dbContext.ExternalGameRecords.AddRange(firstExternalRecord, secondExternalRecord);
+
+            dbContext.ExternalGameRecords.AddRange(firstExternalGameRecord, secondExternalGameRecord);
+
+            dbContext.ExternalKeywordRecords.AddRange(firstExternalKeywordRecord, secondExternalKeywordRecord);
+
             dbContext.GameKeywords.AddRange(firstAssociation, secondAssociation);
 
             await dbContext.SaveChangesAsync();
@@ -110,37 +140,60 @@ public sealed class GameKeywordPersistenceTests(PostgreSqlFixture fixture)
 
         await using var readDbContext = fixture.CreateDbContext();
 
+        var associationCount = await readDbContext.GameKeywords.CountAsync();
+
         // Assert
-        (await readDbContext.GameKeywords.CountAsync()).ShouldBe(2);
+        associationCount.ShouldBe(2);
     }
 
     [Fact]
-    public async Task SaveChanges_ShouldRestrictDeletingReferencedExternalGameRecord()
+    public async Task DeleteExternalGameRecord_ShouldFail_WhenAssociationReferencesIt()
     {
+        // Arrange
         await fixture.ResetDatabaseAsync();
 
-        // Arrange
         await SeedAssociationAsync();
 
         await using var deleteDbContext = fixture.CreateDbContext();
 
-        var persistedExternalRecord = await deleteDbContext.ExternalGameRecords.SingleAsync();
+        var persistedExternalGameRecord = await deleteDbContext.ExternalGameRecords.SingleAsync();
 
-        deleteDbContext.ExternalGameRecords.Remove(persistedExternalRecord);
+        deleteDbContext.ExternalGameRecords.Remove(persistedExternalGameRecord);
 
         // Act
-        var action = async () => await deleteDbContext.SaveChangesAsync();
+        var action = () => deleteDbContext.SaveChangesAsync();
 
         // Assert
         await action.ShouldThrowAsync<DbUpdateException>();
     }
 
     [Fact]
-    public async Task SaveChanges_ShouldRestrictDeletingReferencedKeyword()
+    public async Task DeleteExternalKeywordRecord_ShouldFail_WhenAssociationReferencesIt()
     {
+        // Arrange
         await fixture.ResetDatabaseAsync();
 
+        await SeedAssociationAsync();
+
+        await using var deleteDbContext = fixture.CreateDbContext();
+
+        var persistedExternalKeywordRecord = await deleteDbContext.ExternalKeywordRecords.SingleAsync();
+
+        deleteDbContext.ExternalKeywordRecords.Remove(persistedExternalKeywordRecord);
+
+        // Act
+        var action = () => deleteDbContext.SaveChangesAsync();
+
+        // Assert
+        await action.ShouldThrowAsync<DbUpdateException>();
+    }
+
+    [Fact]
+    public async Task DeleteKeyword_ShouldFail_WhenAssociationReferencesIt()
+    {
         // Arrange
+        await fixture.ResetDatabaseAsync();
+
         await SeedAssociationAsync();
 
         await using var deleteDbContext = fixture.CreateDbContext();
@@ -150,7 +203,7 @@ public sealed class GameKeywordPersistenceTests(PostgreSqlFixture fixture)
         deleteDbContext.Keywords.Remove(persistedKeyword);
 
         // Act
-        var action = async () => await deleteDbContext.SaveChangesAsync();
+        var action = () => deleteDbContext.SaveChangesAsync();
 
         // Assert
         await action.ShouldThrowAsync<DbUpdateException>();
@@ -161,28 +214,45 @@ public sealed class GameKeywordPersistenceTests(PostgreSqlFixture fixture)
         var source = CreateDataSource();
         var game = new Game("Kitaria Fables");
         var keyword = new Keyword("Animal protagonist");
-        var externalRecord = CreateExternalRecord(source, game, "144542");
 
-        var association = new GameKeyword(game.Id, keyword.Id, externalRecord);
+        var externalGameRecord = CreateExternalGameRecord(source, game, "144542");
+
+        var externalKeywordRecord = CreateExternalKeywordRecord(source, keyword, "42");
+
+        var association = new GameKeyword(game.Id, keyword.Id, externalGameRecord, externalKeywordRecord);
 
         await using var dbContext = fixture.CreateDbContext();
 
         dbContext.DataSources.Add(source);
         dbContext.Games.Add(game);
         dbContext.Keywords.Add(keyword);
-        dbContext.ExternalGameRecords.Add(externalRecord);
+        dbContext.ExternalGameRecords.Add(externalGameRecord);
+        dbContext.ExternalKeywordRecords.Add(externalKeywordRecord);
         dbContext.GameKeywords.Add(association);
 
         await dbContext.SaveChangesAsync();
     }
 
-    private static ExternalGameRecord CreateExternalRecord(DataSource source, Game game, string externalId)
+    private static ExternalGameRecord CreateExternalGameRecord(DataSource source, Game game, string externalId)
     {
-        var externalRecord = new ExternalGameRecord(source.Id, externalId, ObservedAt);
+        var externalGameRecord = new ExternalGameRecord(
+            source.Id,
+            externalId,
+            ObservedAt);
 
-        externalRecord.LinkToGame(game.Id);
+        externalGameRecord.LinkToGame(game.Id);
 
-        return externalRecord;
+        return externalGameRecord;
+    }
+
+    private static ExternalKeywordRecord CreateExternalKeywordRecord(DataSource source, Keyword keyword,
+        string externalId)
+    {
+        var externalKeywordRecord = new ExternalKeywordRecord(source.Id, externalId, ObservedAt);
+
+        externalKeywordRecord.LinkToKeyword(keyword.Id);
+
+        return externalKeywordRecord;
     }
 
     private static DataSource CreateDataSource()

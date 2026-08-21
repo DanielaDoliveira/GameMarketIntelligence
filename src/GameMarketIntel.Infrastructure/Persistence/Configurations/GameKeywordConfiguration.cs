@@ -12,9 +12,8 @@ public sealed class GameKeywordConfiguration : IEntityTypeConfiguration<GameKeyw
 
         builder.HasKey(gameKeyword => new
         {
-            gameKeyword.GameId,
-            gameKeyword.KeywordId,
-            gameKeyword.ExternalGameRecordId
+            gameKeyword.ExternalGameRecordId,
+            gameKeyword.ExternalKeywordRecordId
         });
 
         builder.Property(gameKeyword => gameKeyword.GameId)
@@ -25,6 +24,9 @@ public sealed class GameKeywordConfiguration : IEntityTypeConfiguration<GameKeyw
 
         builder.Property(gameKeyword => gameKeyword.ExternalGameRecordId)
             .HasColumnName("external_game_record_id");
+
+        builder.Property(gameKeyword => gameKeyword.ExternalKeywordRecordId)
+            .HasColumnName("external_keyword_record_id");
 
         builder.HasOne<Game>()
             .WithMany()
@@ -39,6 +41,11 @@ public sealed class GameKeywordConfiguration : IEntityTypeConfiguration<GameKeyw
         builder.HasOne<ExternalGameRecord>()
             .WithMany()
             .HasForeignKey(gameKeyword => gameKeyword.ExternalGameRecordId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne<ExternalKeywordRecord>()
+            .WithMany()
+            .HasForeignKey(gameKeyword => gameKeyword.ExternalKeywordRecordId)
             .OnDelete(DeleteBehavior.Restrict);
     }
 }

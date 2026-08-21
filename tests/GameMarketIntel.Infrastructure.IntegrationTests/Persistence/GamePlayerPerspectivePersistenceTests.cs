@@ -12,98 +12,124 @@ public sealed class GamePlayerPerspectivePersistenceTests(PostgreSqlFixture fixt
 {
     private static readonly DateTimeOffset ObservedAt = new(2026, 8, 20, 12, 0, 0, TimeSpan.Zero);
 
-
     [Fact]
-    public async Task SaveAndLoad_ShouldPersistGamePlayerPerspectiveWithProvenance()
+    public async Task SaveAndLoad_ShouldPersistGamePlayerPerspectiveWithCompleteProvenance()
     {
+        // Arrange
         await fixture.ResetDatabaseAsync();
 
-        // Arrange
         var source = CreateDataSource();
         var game = new Game("Kitaria Fables");
-        var playerPerspective = new PlayerPerspective("Bird view");
-        var externalRecord = CreateExternalRecord(source, game, "144542");
+        var perspective = new PlayerPerspective("Third person");
 
-        var association = new GamePlayerPerspective(game.Id, playerPerspective.Id, externalRecord);
+        var externalGameRecord = CreateExternalGameRecord(source, game, "144542");
 
-        // Act
+        var externalPerspectiveRecord = CreateExternalPlayerPerspectiveRecord(source, perspective, "1");
+
+        var association = new GamePlayerPerspective(game.Id, perspective.Id, externalGameRecord, externalPerspectiveRecord);
+
         await using (var writeDbContext = fixture.CreateDbContext())
         {
             writeDbContext.DataSources.Add(source);
             writeDbContext.Games.Add(game);
-            writeDbContext.PlayerPerspectives.Add(playerPerspective);
-            writeDbContext.ExternalGameRecords.Add(externalRecord);
+            writeDbContext.PlayerPerspectives.Add(perspective);
+            writeDbContext.ExternalGameRecords.Add(externalGameRecord);
+            writeDbContext.ExternalPlayerPerspectiveRecords.Add(externalPerspectiveRecord);
             writeDbContext.GamePlayerPerspectives.Add(association);
 
             await writeDbContext.SaveChangesAsync();
         }
 
+        // Act
         await using var readDbContext = fixture.CreateDbContext();
+
         var persistedAssociation = await readDbContext.GamePlayerPerspectives.SingleAsync();
 
         // Assert
         persistedAssociation.GameId.ShouldBe(game.Id);
-        persistedAssociation.PlayerPerspectiveId.ShouldBe(playerPerspective.Id); persistedAssociation.ExternalGameRecordId.ShouldBe(externalRecord.Id);
+        persistedAssociation.PlayerPerspectiveId.ShouldBe(perspective.Id);
+        persistedAssociation.ExternalGameRecordId.ShouldBe(externalGameRecord.Id);
+        persistedAssociation.ExternalPlayerPerspectiveRecordId.ShouldBe(externalPerspectiveRecord.Id);
     }
 
     [Fact]
-    public async Task SaveChanges_ShouldRejectDuplicateGamePlayerPerspectiveContribution()
+    public async Task SaveChanges_ShouldRejectDuplicateExternalContribution()
     {
+        // Arrange
         await fixture.ResetDatabaseAsync();
 
-        // Arrange
         var source = CreateDataSource();
         var game = new Game("Kitaria Fables");
-        var playerPerspective = new PlayerPerspective("Bird view");
-        var externalRecord = CreateExternalRecord(source, game, "144542");
+        var perspective = new PlayerPerspective("Third person");
 
-        var firstAssociation = new GamePlayerPerspective(game.Id, playerPerspective.Id, externalRecord);
+        var externalGameRecord = CreateExternalGameRecord(source, game, "144542");
 
-        var duplicateAssociation = new GamePlayerPerspective(game.Id, playerPerspective.Id, externalRecord);
+        var externalPerspectiveRecord = CreateExternalPlayerPerspectiveRecord(source, perspective, "1");
 
-        await using var dbContext = fixture.CreateDbContext();
+        var firstAssociation = new GamePlayerPerspective(game.Id, perspective.Id, externalGameRecord, externalPerspectiveRecord);
 
-        dbContext.DataSources.Add(source);
-        dbContext.Games.Add(game);
-        dbContext.PlayerPerspectives.Add(playerPerspective);
-        dbContext.ExternalGameRecords.Add(externalRecord);
-        dbContext.GamePlayerPerspectives.AddRange(firstAssociation, duplicateAssociation);
+        await using (var firstDbContext = fixture.CreateDbContext())
+        {
+            firstDbContext.DataSources.Add(source);
+            firstDbContext.Games.Add(game);
+            firstDbContext.PlayerPerspectives.Add(perspective);
+            firstDbContext.ExternalGameRecords.Add(externalGameRecord);
+            firstDbContext.ExternalPlayerPerspectiveRecords.Add(externalPerspectiveRecord);
+            firstDbContext.GamePlayerPerspectives.Add(firstAssociation);
+
+            await firstDbContext.SaveChangesAsync();
+        }
+
+        await using var duplicateDbContext = fixture.CreateDbContext();
+
+        var persistedExternalGameRecord = await duplicateDbContext.ExternalGameRecords.SingleAsync();
+
+        var persistedExternalPerspectiveRecord = await duplicateDbContext.ExternalPlayerPerspectiveRecords.SingleAsync();
+
+        var duplicateAssociation = new GamePlayerPerspective(game.Id, perspective.Id, persistedExternalGameRecord, persistedExternalPerspectiveRecord);
+
+        duplicateDbContext.GamePlayerPerspectives.Add(duplicateAssociation);
 
         // Act
-        var action = async () => await dbContext.SaveChangesAsync();
+        var action = () => duplicateDbContext.SaveChangesAsync();
 
         // Assert
-        await action.ShouldThrowAsync<InvalidOperationException>();
+        await action.ShouldThrowAsync<DbUpdateException>();
     }
 
     [Fact]
-    public async Task SaveChanges_ShouldAllowSameGameAndPerspectiveFromDifferentExternalRecords()
+    public async Task SaveChanges_ShouldAllowSameCanonicalPerspectiveFromDifferentExternalContributions()
     {
+        // Arrange
         await fixture.ResetDatabaseAsync();
 
-        // Arrange
         var source = CreateDataSource();
         var game = new Game("Kitaria Fables");
-        var playerPerspective = new PlayerPerspective("Bird view");
+        var perspective = new PlayerPerspective("Third person");
 
-        var firstExternalRecord = CreateExternalRecord(
-            source,
-            game,
-            "144542");
+        var firstExternalGameRecord = CreateExternalGameRecord(source, game, "144542");
 
-        var secondExternalRecord = CreateExternalRecord(source, game, "398521");
+        var secondExternalGameRecord = CreateExternalGameRecord(source, game, "398521");
 
-        var firstAssociation = new GamePlayerPerspective(game.Id, playerPerspective.Id, firstExternalRecord);
+        var firstExternalPerspectiveRecord = CreateExternalPlayerPerspectiveRecord(source, perspective, "1");
 
-        var secondAssociation = new GamePlayerPerspective(game.Id, playerPerspective.Id, secondExternalRecord);
+        var secondExternalPerspectiveRecord = CreateExternalPlayerPerspectiveRecord(source, perspective, "101");
+
+        var firstAssociation = new GamePlayerPerspective(game.Id, perspective.Id, firstExternalGameRecord, firstExternalPerspectiveRecord);
+
+        var secondAssociation = new GamePlayerPerspective(game.Id, perspective.Id, secondExternalGameRecord, secondExternalPerspectiveRecord);
 
         // Act
         await using (var dbContext = fixture.CreateDbContext())
         {
             dbContext.DataSources.Add(source);
             dbContext.Games.Add(game);
-            dbContext.PlayerPerspectives.Add(playerPerspective);
-            dbContext.ExternalGameRecords.AddRange(firstExternalRecord, secondExternalRecord);
+            dbContext.PlayerPerspectives.Add(perspective);
+
+            dbContext.ExternalGameRecords.AddRange(firstExternalGameRecord, secondExternalGameRecord);
+
+            dbContext.ExternalPlayerPerspectiveRecords.AddRange(firstExternalPerspectiveRecord, secondExternalPerspectiveRecord);
+
             dbContext.GamePlayerPerspectives.AddRange(firstAssociation, secondAssociation);
 
             await dbContext.SaveChangesAsync();
@@ -111,47 +137,72 @@ public sealed class GamePlayerPerspectivePersistenceTests(PostgreSqlFixture fixt
 
         await using var readDbContext = fixture.CreateDbContext();
 
+        var associationCount = await readDbContext.GamePlayerPerspectives.CountAsync();
+
         // Assert
-        (await readDbContext.GamePlayerPerspectives.CountAsync()).ShouldBe(2);
+        associationCount.ShouldBe(2);
     }
 
     [Fact]
-    public async Task SaveChanges_ShouldRestrictDeletingReferencedExternalGameRecord()
+    public async Task DeleteExternalGameRecord_ShouldFail_WhenAssociationReferencesIt()
     {
+        // Arrange
         await fixture.ResetDatabaseAsync();
 
-        // Arrange
         await SeedAssociationAsync();
 
         await using var deleteDbContext = fixture.CreateDbContext();
 
-        var persistedExternalRecord = await deleteDbContext.ExternalGameRecords.SingleAsync();
+        var persistedExternalGameRecord = await deleteDbContext.ExternalGameRecords.SingleAsync();
 
-        deleteDbContext.ExternalGameRecords.Remove(persistedExternalRecord);
+        deleteDbContext.ExternalGameRecords.Remove(persistedExternalGameRecord);
 
         // Act
-        var action = async () => await deleteDbContext.SaveChangesAsync();
+        var action = () => deleteDbContext.SaveChangesAsync();
 
         // Assert
         await action.ShouldThrowAsync<DbUpdateException>();
     }
 
     [Fact]
-    public async Task SaveChanges_ShouldRestrictDeletingReferencedPlayerPerspective()
+    public async Task DeleteExternalPlayerPerspectiveRecord_ShouldFail_WhenAssociationReferencesIt()
     {
+        // Arrange
         await fixture.ResetDatabaseAsync();
 
-        // Arrange
         await SeedAssociationAsync();
 
         await using var deleteDbContext = fixture.CreateDbContext();
 
-        var persistedPlayerPerspective = await deleteDbContext.PlayerPerspectives.SingleAsync();
+        var persistedExternalPerspectiveRecord = await deleteDbContext
+            .ExternalPlayerPerspectiveRecords
+            .SingleAsync();
 
-        deleteDbContext.PlayerPerspectives.Remove(persistedPlayerPerspective);
+        deleteDbContext.ExternalPlayerPerspectiveRecords.Remove(persistedExternalPerspectiveRecord);
 
         // Act
-        var action = async () => await deleteDbContext.SaveChangesAsync();
+        var action = () => deleteDbContext.SaveChangesAsync();
+
+        // Assert
+        await action.ShouldThrowAsync<DbUpdateException>();
+    }
+
+    [Fact]
+    public async Task DeletePlayerPerspective_ShouldFail_WhenAssociationReferencesIt()
+    {
+        // Arrange
+        await fixture.ResetDatabaseAsync();
+
+        await SeedAssociationAsync();
+
+        await using var deleteDbContext = fixture.CreateDbContext();
+
+        var persistedPerspective = await deleteDbContext.PlayerPerspectives.SingleAsync();
+
+        deleteDbContext.PlayerPerspectives.Remove(persistedPerspective);
+
+        // Act
+        var action = () => deleteDbContext.SaveChangesAsync();
 
         // Assert
         await action.ShouldThrowAsync<DbUpdateException>();
@@ -161,35 +212,47 @@ public sealed class GamePlayerPerspectivePersistenceTests(PostgreSqlFixture fixt
     {
         var source = CreateDataSource();
         var game = new Game("Kitaria Fables");
-        var playerPerspective = new PlayerPerspective("Bird view");
-        var externalRecord = CreateExternalRecord(source, game, "144542");
+        var perspective = new PlayerPerspective("Third person");
 
-        var association = new GamePlayerPerspective(game.Id, playerPerspective.Id, externalRecord);
+        var externalGameRecord = CreateExternalGameRecord(source, game, "144542");
+
+        var externalPerspectiveRecord = CreateExternalPlayerPerspectiveRecord(source, perspective, "1");
+
+        var association = new GamePlayerPerspective(game.Id, perspective.Id, externalGameRecord, externalPerspectiveRecord);
+
         await using var dbContext = fixture.CreateDbContext();
 
         dbContext.DataSources.Add(source);
         dbContext.Games.Add(game);
-        dbContext.PlayerPerspectives.Add(playerPerspective);
-        dbContext.ExternalGameRecords.Add(externalRecord);
+        dbContext.PlayerPerspectives.Add(perspective);
+        dbContext.ExternalGameRecords.Add(externalGameRecord);
+        dbContext.ExternalPlayerPerspectiveRecords.Add(externalPerspectiveRecord);
         dbContext.GamePlayerPerspectives.Add(association);
 
         await dbContext.SaveChangesAsync();
     }
 
-    private static ExternalGameRecord CreateExternalRecord(DataSource source, Game game, string externalId)
+    private static ExternalGameRecord CreateExternalGameRecord(DataSource source, Game game, string externalId)
     {
-        var externalRecord = new ExternalGameRecord(source.Id, externalId, ObservedAt);
+        var externalGameRecord = new ExternalGameRecord(source.Id, externalId, ObservedAt);
 
-        externalRecord.LinkToGame(game.Id);
+        externalGameRecord.LinkToGame(game.Id);
 
-        return externalRecord;
+        return externalGameRecord;
+    }
+
+    private static ExternalPlayerPerspectiveRecord CreateExternalPlayerPerspectiveRecord(DataSource source, PlayerPerspective perspective, string externalId)
+    {
+        var externalPerspectiveRecord = new ExternalPlayerPerspectiveRecord(source.Id, externalId, ObservedAt);
+
+        externalPerspectiveRecord.LinkToPlayerPerspective(perspective.Id);
+
+        return externalPerspectiveRecord;
     }
 
     private static DataSource CreateDataSource()
     {
-        var reliability = new SourceReliability(
-            ReliabilityLevel.PublicDirect,
-            "Dados obtidos diretamente de uma fonte pública.");
+        var reliability = new SourceReliability(ReliabilityLevel.PublicDirect, "Dados obtidos diretamente de uma fonte pública.");
 
         return new DataSource(
             code: "igdb",

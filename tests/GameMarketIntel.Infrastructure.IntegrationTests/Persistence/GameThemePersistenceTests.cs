@@ -8,152 +8,199 @@ using Shouldly;
 namespace GameMarketIntel.Infrastructure.IntegrationTests.Persistence;
 
 [Collection(PostgreSqlCollection.Name)]
-public sealed class GameThemePersistenceTests
+public sealed class GameThemePersistenceTests(PostgreSqlFixture fixture)
 {
     private static readonly DateTimeOffset ObservedAt = new(2026, 8, 20, 12, 0, 0, TimeSpan.Zero);
 
-    private readonly PostgreSqlFixture _fixture;
-
-    public GameThemePersistenceTests(PostgreSqlFixture fixture)=>_fixture = fixture;
-    
-
     [Fact]
-    public async Task SaveAndLoad_ShouldPersistGameThemeWithProvenance()
+    public async Task SaveAndLoad_ShouldPersistGameThemeWithCompleteProvenance()
     {
-        await _fixture.ResetDatabaseAsync();
-
         // Arrange
+        await fixture.ResetDatabaseAsync();
+
         var source = CreateDataSource();
         var game = new Game("Kitaria Fables");
         var theme = new Theme("Fantasy");
-        var externalRecord = CreateExternalRecord(source, game, "144542");
 
-        var gameTheme = new GameTheme(game.Id, theme.Id, externalRecord);
+        var externalGameRecord = CreateExternalGameRecord(source, game, "144542");
 
-        // Act
-        await using (var writeDbContext = _fixture.CreateDbContext())
+        var externalThemeRecord = CreateExternalThemeRecord(source, theme, "17");
+
+        var association = new GameTheme(game.Id, theme.Id, externalGameRecord, externalThemeRecord);
+
+        await using (var writeDbContext = fixture.CreateDbContext())
         {
             writeDbContext.DataSources.Add(source);
             writeDbContext.Games.Add(game);
             writeDbContext.Themes.Add(theme);
-            writeDbContext.ExternalGameRecords.Add(externalRecord);
-            writeDbContext.GameThemes.Add(gameTheme);
+            writeDbContext.ExternalGameRecords.Add(externalGameRecord);
+            writeDbContext.ExternalThemeRecords.Add(externalThemeRecord);
+            writeDbContext.GameThemes.Add(association);
 
             await writeDbContext.SaveChangesAsync();
         }
 
-        await using var readDbContext = _fixture.CreateDbContext();
-        var persistedGameTheme = await readDbContext.GameThemes .SingleAsync();
-
-        // Assert
-        persistedGameTheme.GameId.ShouldBe(game.Id);
-        persistedGameTheme.ThemeId.ShouldBe(theme.Id);
-        persistedGameTheme.ExternalGameRecordId.ShouldBe(externalRecord.Id);
-    }
-
-    [Fact]
-    public async Task SaveChanges_ShouldRejectDuplicateGameThemeContribution()
-    {
-        await _fixture.ResetDatabaseAsync();
-
-        // Arrange
-        var source = CreateDataSource();
-        var game = new Game("Kitaria Fables");
-        var theme = new Theme("Fantasy");
-        var externalRecord = CreateExternalRecord(source, game, "144542");
-
-        var firstAssociation = new GameTheme(game.Id, theme.Id, externalRecord);
-
-        var duplicateAssociation = new GameTheme(game.Id, theme.Id, externalRecord);
-
-        await using var dbContext = _fixture.CreateDbContext();
-
-        dbContext.DataSources.Add(source);
-        dbContext.Games.Add(game);
-        dbContext.Themes.Add(theme);
-        dbContext.ExternalGameRecords.Add(externalRecord);
-        dbContext.GameThemes.AddRange(firstAssociation, duplicateAssociation);
-
         // Act
-        var action = async () => await dbContext.SaveChangesAsync();
+        await using var readDbContext = fixture.CreateDbContext();
+
+        var persistedAssociation = await readDbContext.GameThemes.SingleAsync();
 
         // Assert
-        await action.ShouldThrowAsync<InvalidOperationException>();
+        persistedAssociation.GameId.ShouldBe(game.Id);
+        persistedAssociation.ThemeId.ShouldBe(theme.Id);
+        persistedAssociation.ExternalGameRecordId.ShouldBe(externalGameRecord.Id);
+        persistedAssociation.ExternalThemeRecordId.ShouldBe(externalThemeRecord.Id);
     }
 
     [Fact]
-    public async Task SaveChanges_ShouldAllowSameGameAndThemeFromDifferentExternalRecords()
+    public async Task SaveChanges_ShouldRejectDuplicateExternalContribution()
     {
-        await _fixture.ResetDatabaseAsync();
-
         // Arrange
+        await fixture.ResetDatabaseAsync();
+
         var source = CreateDataSource();
         var game = new Game("Kitaria Fables");
         var theme = new Theme("Fantasy");
 
-        var firstExternalRecord = CreateExternalRecord(source, game, "144542");
+        var externalGameRecord = CreateExternalGameRecord(source, game, "144542");
 
-        var secondExternalRecord = CreateExternalRecord(source, game, "398521");
+        var externalThemeRecord = CreateExternalThemeRecord(source, theme, "17");
 
-        var firstAssociation = new GameTheme(game.Id, theme.Id, firstExternalRecord);
+        var firstAssociation = new GameTheme(game.Id, theme.Id, externalGameRecord, externalThemeRecord);
 
-        var secondAssociation = new GameTheme(game.Id, theme.Id, secondExternalRecord);
-
-        // Act
-        await using (var dbContext = _fixture.CreateDbContext())
+        await using (var firstDbContext = fixture.CreateDbContext())
         {
-            dbContext.DataSources.Add(source);
-            dbContext.Games.Add(game);
-            dbContext.Themes.Add(theme);
-            dbContext.ExternalGameRecords.AddRange(firstExternalRecord, secondExternalRecord);
-            dbContext.GameThemes.AddRange(firstAssociation, secondAssociation);
+            firstDbContext.DataSources.Add(source);
+            firstDbContext.Games.Add(game);
+            firstDbContext.Themes.Add(theme);
+            firstDbContext.ExternalGameRecords.Add(externalGameRecord);
+            firstDbContext.ExternalThemeRecords.Add(externalThemeRecord);
+            firstDbContext.GameThemes.Add(firstAssociation);
 
-            await dbContext.SaveChangesAsync();
+            await firstDbContext.SaveChangesAsync();
         }
 
-        await using var readDbContext = _fixture.CreateDbContext();
+        await using var duplicateDbContext = fixture.CreateDbContext();
 
-        // Assert
-        (await readDbContext.GameThemes.CountAsync()).ShouldBe(2);
-    }
+        var persistedExternalGameRecord = await duplicateDbContext.ExternalGameRecords.SingleAsync();
 
-    [Fact]
-    public async Task SaveChanges_ShouldRestrictDeletingReferencedExternalGameRecord()
-    {
-        await _fixture.ResetDatabaseAsync();
+        var persistedExternalThemeRecord = await duplicateDbContext.ExternalThemeRecords.SingleAsync();
 
-        // Arrange
-        await SeedAssociationAsync();
+        var duplicateAssociation = new GameTheme(game.Id, theme.Id, persistedExternalGameRecord, persistedExternalThemeRecord);
 
-        await using var deleteDbContext = _fixture.CreateDbContext();
-
-        var persistedExternalRecord = await deleteDbContext.ExternalGameRecords.SingleAsync();
-
-        deleteDbContext.ExternalGameRecords.Remove(persistedExternalRecord);
+        duplicateDbContext.GameThemes.Add(duplicateAssociation);
 
         // Act
-        var action = async () => await deleteDbContext.SaveChangesAsync();
+        var action = () => duplicateDbContext.SaveChangesAsync();
 
         // Assert
         await action.ShouldThrowAsync<DbUpdateException>();
     }
 
     [Fact]
-    public async Task SaveChanges_ShouldRestrictDeletingReferencedTheme()
+    public async Task SaveChanges_ShouldAllowSameCanonicalThemeFromDifferentExternalContributions()
     {
-        await _fixture.ResetDatabaseAsync();
-
         // Arrange
+        await fixture.ResetDatabaseAsync();
+
+        var source = CreateDataSource();
+        var game = new Game("Kitaria Fables");
+        var theme = new Theme("Fantasy");
+
+        var firstExternalGameRecord = CreateExternalGameRecord(source, game, "144542");
+
+        var secondExternalGameRecord = CreateExternalGameRecord(source, game, "398521");
+
+        var firstExternalThemeRecord = CreateExternalThemeRecord(source, theme, "17");
+
+        var secondExternalThemeRecord = CreateExternalThemeRecord(source, theme, "117");
+
+        var firstAssociation = new GameTheme(game.Id, theme.Id, firstExternalGameRecord, firstExternalThemeRecord);
+
+        var secondAssociation = new GameTheme(game.Id, theme.Id, secondExternalGameRecord, secondExternalThemeRecord);
+
+        // Act
+        await using (var dbContext = fixture.CreateDbContext())
+        {
+            dbContext.DataSources.Add(source);
+            dbContext.Games.Add(game);
+            dbContext.Themes.Add(theme);
+
+            dbContext.ExternalGameRecords.AddRange(firstExternalGameRecord, secondExternalGameRecord);
+
+            dbContext.ExternalThemeRecords.AddRange(firstExternalThemeRecord, secondExternalThemeRecord);
+
+            dbContext.GameThemes.AddRange(firstAssociation, secondAssociation);
+
+            await dbContext.SaveChangesAsync();
+        }
+
+        await using var readDbContext = fixture.CreateDbContext();
+
+        var associationCount = await readDbContext.GameThemes.CountAsync();
+
+        // Assert
+        associationCount.ShouldBe(2);
+    }
+
+    [Fact]
+    public async Task DeleteExternalGameRecord_ShouldFail_WhenAssociationReferencesIt()
+    {
+        // Arrange
+        await fixture.ResetDatabaseAsync();
+
         await SeedAssociationAsync();
 
-        await using var deleteDbContext = _fixture.CreateDbContext();
+        await using var deleteDbContext = fixture.CreateDbContext();
+
+        var persistedExternalGameRecord = await deleteDbContext.ExternalGameRecords.SingleAsync();
+
+        deleteDbContext.ExternalGameRecords.Remove(persistedExternalGameRecord);
+
+        // Act
+        var action = () => deleteDbContext.SaveChangesAsync();
+
+        // Assert
+        await action.ShouldThrowAsync<DbUpdateException>();
+    }
+
+    [Fact]
+    public async Task DeleteExternalThemeRecord_ShouldFail_WhenAssociationReferencesIt()
+    {
+        // Arrange
+        await fixture.ResetDatabaseAsync();
+
+        await SeedAssociationAsync();
+
+        await using var deleteDbContext = fixture.CreateDbContext();
+
+        var persistedExternalThemeRecord = await deleteDbContext.ExternalThemeRecords.SingleAsync();
+
+        deleteDbContext.ExternalThemeRecords.Remove(persistedExternalThemeRecord);
+
+        // Act
+        var action = () => deleteDbContext.SaveChangesAsync();
+
+        // Assert
+        await action.ShouldThrowAsync<DbUpdateException>();
+    }
+
+    [Fact]
+    public async Task DeleteTheme_ShouldFail_WhenAssociationReferencesIt()
+    {
+        // Arrange
+        await fixture.ResetDatabaseAsync();
+
+        await SeedAssociationAsync();
+
+        await using var deleteDbContext = fixture.CreateDbContext();
 
         var persistedTheme = await deleteDbContext.Themes.SingleAsync();
 
         deleteDbContext.Themes.Remove(persistedTheme);
 
         // Act
-        var action = async () => await deleteDbContext.SaveChangesAsync();
+        var action = () => deleteDbContext.SaveChangesAsync();
 
         // Assert
         await action.ShouldThrowAsync<DbUpdateException>();
@@ -164,28 +211,41 @@ public sealed class GameThemePersistenceTests
         var source = CreateDataSource();
         var game = new Game("Kitaria Fables");
         var theme = new Theme("Fantasy");
-        var externalRecord = CreateExternalRecord(source, game, "144542");
 
-        var gameTheme = new GameTheme(game.Id, theme.Id, externalRecord);
+        var externalGameRecord = CreateExternalGameRecord(source, game, "144542");
 
-        await using var dbContext = _fixture.CreateDbContext();
+        var externalThemeRecord = CreateExternalThemeRecord(source, theme, "17");
+
+        var association = new GameTheme(game.Id, theme.Id, externalGameRecord, externalThemeRecord);
+
+        await using var dbContext = fixture.CreateDbContext();
 
         dbContext.DataSources.Add(source);
         dbContext.Games.Add(game);
         dbContext.Themes.Add(theme);
-        dbContext.ExternalGameRecords.Add(externalRecord);
-        dbContext.GameThemes.Add(gameTheme);
+        dbContext.ExternalGameRecords.Add(externalGameRecord);
+        dbContext.ExternalThemeRecords.Add(externalThemeRecord);
+        dbContext.GameThemes.Add(association);
 
         await dbContext.SaveChangesAsync();
     }
 
-    private static ExternalGameRecord CreateExternalRecord(DataSource source, Game game, string externalId)
+    private static ExternalGameRecord CreateExternalGameRecord(DataSource source, Game game, string externalId)
     {
-        var externalRecord = new ExternalGameRecord(source.Id, externalId, ObservedAt);
+        var externalGameRecord = new ExternalGameRecord(source.Id, externalId, ObservedAt);
 
-        externalRecord.LinkToGame(game.Id);
+        externalGameRecord.LinkToGame(game.Id);
 
-        return externalRecord;
+        return externalGameRecord;
+    }
+
+    private static ExternalThemeRecord CreateExternalThemeRecord(DataSource source, Theme theme, string externalId)
+    {
+        var externalThemeRecord = new ExternalThemeRecord(source.Id, externalId, ObservedAt);
+
+        externalThemeRecord.LinkToTheme(theme.Id);
+
+        return externalThemeRecord;
     }
 
     private static DataSource CreateDataSource()

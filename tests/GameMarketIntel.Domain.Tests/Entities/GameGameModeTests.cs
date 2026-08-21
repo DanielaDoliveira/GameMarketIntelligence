@@ -8,103 +8,179 @@ public sealed class GameGameModeTests
     [Fact]
     public void Constructor_ShouldCreateGameGameMode_WhenValuesAreValid()
     {
-        // Arrange
+        var dataSourceId = Guid.NewGuid();
         var gameId = Guid.NewGuid();
         var gameModeId = Guid.NewGuid();
-        var externalGameRecord = CreateLinkedExternalGameRecord(gameId);
 
-        // Act
-        var gameGameMode = new GameGameMode(gameId,gameModeId, externalGameRecord);
+        var externalGameRecord = CreateLinkedExternalGameRecord(dataSourceId, gameId);
 
-        // Assert
-        gameGameMode.GameId.ShouldBe(gameId);
-        gameGameMode.GameModeId.ShouldBe(gameModeId);
-        gameGameMode.ExternalGameRecordId.ShouldBe(externalGameRecord.Id);
+        var externalGameModeRecord = CreateLinkedExternalGameModeRecord(dataSourceId, gameModeId);
+
+        var association = new GameGameMode(gameId, gameModeId, externalGameRecord, externalGameModeRecord);
+
+        association.GameId.ShouldBe(gameId);
+        association.GameModeId.ShouldBe(gameModeId);
+        association.ExternalGameRecordId.ShouldBe(externalGameRecord.Id);
+        association.ExternalGameModeRecordId.ShouldBe(externalGameModeRecord.Id);
     }
 
     [Fact]
     public void Constructor_ShouldThrow_WhenGameIdIsEmpty()
     {
-        // Arrange
+        var dataSourceId = Guid.NewGuid();
         var gameModeId = Guid.NewGuid();
-        var externalGameRecord = CreateLinkedExternalGameRecord(
-            Guid.NewGuid());
 
-        // Act
-        var action = () => new GameGameMode(Guid.Empty, gameModeId, externalGameRecord);
+        var externalGameRecord = CreateLinkedExternalGameRecord(dataSourceId, Guid.NewGuid());
 
-        // Assert
+        var externalGameModeRecord = CreateLinkedExternalGameModeRecord(dataSourceId, gameModeId);
+
+        var action = () => new GameGameMode(Guid.Empty, gameModeId, externalGameRecord, externalGameModeRecord);
+
         action.ShouldThrow<ArgumentException>().ParamName.ShouldBe("gameId");
     }
 
     [Fact]
     public void Constructor_ShouldThrow_WhenGameModeIdIsEmpty()
     {
-        // Arrange
+        var dataSourceId = Guid.NewGuid();
         var gameId = Guid.NewGuid();
-        var externalGameRecord = CreateLinkedExternalGameRecord(gameId);
 
-        // Act
-        var action = () => new GameGameMode(gameId, Guid.Empty, externalGameRecord);
+        var externalGameRecord = CreateLinkedExternalGameRecord(dataSourceId, gameId);
 
-        // Assert
+        var externalGameModeRecord = CreateLinkedExternalGameModeRecord(dataSourceId, Guid.NewGuid());
+
+        var action = () => new GameGameMode(gameId, Guid.Empty, externalGameRecord, externalGameModeRecord);
+
         action.ShouldThrow<ArgumentException>().ParamName.ShouldBe("gameModeId");
     }
 
     [Fact]
     public void Constructor_ShouldThrow_WhenExternalGameRecordIsNull()
     {
-        // Arrange
+        var dataSourceId = Guid.NewGuid();
         var gameId = Guid.NewGuid();
         var gameModeId = Guid.NewGuid();
 
-        // Act
-        var action = () => new GameGameMode(gameId, gameModeId, null!);
+        var externalGameModeRecord = CreateLinkedExternalGameModeRecord(dataSourceId, gameModeId);
 
-        // Assert
+        var action = () => new GameGameMode(gameId, gameModeId, null!, externalGameModeRecord);
+
         action.ShouldThrow<ArgumentNullException>().ParamName.ShouldBe("externalGameRecord");
+    }
+
+    [Fact]
+    public void Constructor_ShouldThrow_WhenExternalGameModeRecordIsNull()
+    {
+        var dataSourceId = Guid.NewGuid();
+        var gameId = Guid.NewGuid();
+        var gameModeId = Guid.NewGuid();
+
+        var externalGameRecord = CreateLinkedExternalGameRecord(dataSourceId, gameId);
+
+        var action = () => new GameGameMode(gameId, gameModeId, externalGameRecord,
+            null!);
+
+        action.ShouldThrow<ArgumentNullException>().ParamName.ShouldBe("externalGameModeRecord");
     }
 
     [Fact]
     public void Constructor_ShouldThrow_WhenExternalGameRecordIsNotLinked()
     {
-        // Arrange
+        var dataSourceId = Guid.NewGuid();
         var gameId = Guid.NewGuid();
         var gameModeId = Guid.NewGuid();
 
-        var externalGameRecord = new ExternalGameRecord(Guid.NewGuid(), "144542", DateTimeOffset.UtcNow);
+        var externalGameRecord = new ExternalGameRecord(dataSourceId, "144542", DateTimeOffset.UtcNow);
 
-        // Act
-        var action = () => new GameGameMode(gameId, gameModeId, externalGameRecord);
+        var externalGameModeRecord = CreateLinkedExternalGameModeRecord(dataSourceId, gameModeId);
 
-        // Assert
+        var action = () => new GameGameMode(gameId, gameModeId, externalGameRecord, externalGameModeRecord);
+
         action.ShouldThrow<ArgumentException>().ParamName.ShouldBe("externalGameRecord");
     }
 
     [Fact]
     public void Constructor_ShouldThrow_WhenExternalGameRecordIsLinkedToDifferentGame()
     {
-        // Arrange
+        var dataSourceId = Guid.NewGuid();
         var gameId = Guid.NewGuid();
         var differentGameId = Guid.NewGuid();
         var gameModeId = Guid.NewGuid();
 
-        var externalGameRecord =
-            CreateLinkedExternalGameRecord(differentGameId);
+        var externalGameRecord = CreateLinkedExternalGameRecord(dataSourceId, differentGameId);
 
-        // Act
-        var action = () => new GameGameMode(gameId, gameModeId, externalGameRecord);
+        var externalGameModeRecord = CreateLinkedExternalGameModeRecord(dataSourceId, gameModeId);
 
-        // Assert
+        var action = () => new GameGameMode(gameId, gameModeId, externalGameRecord, externalGameModeRecord);
+
         action.ShouldThrow<ArgumentException>().ParamName.ShouldBe("externalGameRecord");
     }
 
-    private static ExternalGameRecord CreateLinkedExternalGameRecord(Guid gameId)
+    [Fact]
+    public void Constructor_ShouldThrow_WhenExternalGameModeRecordIsNotLinked()
     {
-        var externalGameRecord = new ExternalGameRecord(Guid.NewGuid(), "144542", DateTimeOffset.UtcNow);
+        var dataSourceId = Guid.NewGuid();
+        var gameId = Guid.NewGuid();
+        var gameModeId = Guid.NewGuid();
+
+        var externalGameRecord = CreateLinkedExternalGameRecord(dataSourceId, gameId);
+
+        var externalGameModeRecord = new ExternalGameModeRecord(dataSourceId, "1", DateTimeOffset.UtcNow);
+
+        var action = () => new GameGameMode(gameId, gameModeId, externalGameRecord, externalGameModeRecord);
+
+        action.ShouldThrow<ArgumentException>().ParamName.ShouldBe("externalGameModeRecord");
+    }
+
+    [Fact]
+    public void Constructor_ShouldThrow_WhenExternalGameModeRecordIsLinkedToDifferentGameMode()
+    {
+        var dataSourceId = Guid.NewGuid();
+        var gameId = Guid.NewGuid();
+        var gameModeId = Guid.NewGuid();
+        var differentGameModeId = Guid.NewGuid();
+
+        var externalGameRecord = CreateLinkedExternalGameRecord(dataSourceId, gameId);
+
+        var externalGameModeRecord = CreateLinkedExternalGameModeRecord(dataSourceId, differentGameModeId);
+
+        var action = () => new GameGameMode(gameId, gameModeId, externalGameRecord, externalGameModeRecord);
+
+        action.ShouldThrow<ArgumentException>().ParamName.ShouldBe("externalGameModeRecord");
+    }
+
+    [Fact]
+    public void Constructor_ShouldThrow_WhenExternalRecordsBelongToDifferentDataSources()
+    {
+        var gameDataSourceId = Guid.NewGuid();
+        var gameModeDataSourceId = Guid.NewGuid();
+        var gameId = Guid.NewGuid();
+        var gameModeId = Guid.NewGuid();
+
+        var externalGameRecord = CreateLinkedExternalGameRecord(gameDataSourceId, gameId);
+
+        var externalGameModeRecord = CreateLinkedExternalGameModeRecord(gameModeDataSourceId, gameModeId);
+
+        var action = () => new GameGameMode(gameId, gameModeId, externalGameRecord, externalGameModeRecord);
+
+        action.ShouldThrow<ArgumentException>().ParamName.ShouldBe("externalGameModeRecord");
+    }
+
+    private static ExternalGameRecord CreateLinkedExternalGameRecord(Guid dataSourceId, Guid gameId)
+    {
+        var externalGameRecord = new ExternalGameRecord(dataSourceId, "144542", DateTimeOffset.UtcNow);
 
         externalGameRecord.LinkToGame(gameId);
 
         return externalGameRecord;
+    }
+
+    private static ExternalGameModeRecord CreateLinkedExternalGameModeRecord(Guid dataSourceId, Guid gameModeId)
+    {
+        var externalGameModeRecord = new ExternalGameModeRecord(dataSourceId, "1", DateTimeOffset.UtcNow);
+
+        externalGameModeRecord.LinkToGameMode(gameModeId);
+
+        return externalGameModeRecord;
     }
 }

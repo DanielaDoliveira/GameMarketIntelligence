@@ -12,9 +12,8 @@ public sealed class GameThemeConfiguration : IEntityTypeConfiguration<GameTheme>
 
         builder.HasKey(gameTheme => new
         {
-            gameTheme.GameId,
-            gameTheme.ThemeId,
-            gameTheme.ExternalGameRecordId
+            gameTheme.ExternalGameRecordId,
+            gameTheme.ExternalThemeRecordId
         });
 
         builder.Property(gameTheme => gameTheme.GameId)
@@ -25,6 +24,9 @@ public sealed class GameThemeConfiguration : IEntityTypeConfiguration<GameTheme>
 
         builder.Property(gameTheme => gameTheme.ExternalGameRecordId)
             .HasColumnName("external_game_record_id");
+
+        builder.Property(gameTheme => gameTheme.ExternalThemeRecordId)
+            .HasColumnName("external_theme_record_id");
 
         builder.HasOne<Game>()
             .WithMany()
@@ -39,6 +41,11 @@ public sealed class GameThemeConfiguration : IEntityTypeConfiguration<GameTheme>
         builder.HasOne<ExternalGameRecord>()
             .WithMany()
             .HasForeignKey(gameTheme => gameTheme.ExternalGameRecordId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne<ExternalThemeRecord>()
+            .WithMany()
+            .HasForeignKey(gameTheme => gameTheme.ExternalThemeRecordId)
             .OnDelete(DeleteBehavior.Restrict);
     }
 }

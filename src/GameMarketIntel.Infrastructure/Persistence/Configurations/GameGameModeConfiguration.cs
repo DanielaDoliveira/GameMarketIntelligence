@@ -12,9 +12,8 @@ public sealed class GameGameModeConfiguration : IEntityTypeConfiguration<GameGam
 
         builder.HasKey(gameGameMode => new
         {
-            gameGameMode.GameId,
-            gameGameMode.GameModeId,
-            gameGameMode.ExternalGameRecordId
+            gameGameMode.ExternalGameRecordId,
+            gameGameMode.ExternalGameModeRecordId
         });
 
         builder.Property(gameGameMode => gameGameMode.GameId)
@@ -25,6 +24,9 @@ public sealed class GameGameModeConfiguration : IEntityTypeConfiguration<GameGam
 
         builder.Property(gameGameMode => gameGameMode.ExternalGameRecordId)
             .HasColumnName("external_game_record_id");
+
+        builder.Property(gameGameMode => gameGameMode.ExternalGameModeRecordId)
+            .HasColumnName("external_game_mode_record_id");
 
         builder.HasOne<Game>()
             .WithMany()
@@ -39,6 +41,11 @@ public sealed class GameGameModeConfiguration : IEntityTypeConfiguration<GameGam
         builder.HasOne<ExternalGameRecord>()
             .WithMany()
             .HasForeignKey(gameGameMode => gameGameMode.ExternalGameRecordId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne<ExternalGameModeRecord>()
+            .WithMany()
+            .HasForeignKey(gameGameMode => gameGameMode.ExternalGameModeRecordId)
             .OnDelete(DeleteBehavior.Restrict);
     }
 }

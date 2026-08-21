@@ -10,90 +10,115 @@ namespace GameMarketIntel.Infrastructure.IntegrationTests.Persistence;
 [Collection(PostgreSqlCollection.Name)]
 public sealed class GameGameModePersistenceTests(PostgreSqlFixture fixture)
 {
-    private static readonly DateTimeOffset ObservedAt = new(2026, 8, 20, 12, 0, 0, TimeSpan.Zero);
-
+    private static readonly DateTimeOffset ObservedAt =
+        new(2026, 8, 20, 12, 0, 0, TimeSpan.Zero);
 
     [Fact]
-    public async Task SaveAndLoad_ShouldPersistGameGameModeWithProvenance()
+    public async Task SaveAndLoad_ShouldPersistGameGameModeWithCompleteProvenance()
     {
+        // Arrange
         await fixture.ResetDatabaseAsync();
 
-        // Arrange
         var source = CreateDataSource();
         var game = new Game("Kitaria Fables");
         var gameMode = new GameMode("Single player");
-        var externalRecord = CreateExternalRecord(source, game, "144542");
 
-        var gameGameMode = new GameGameMode(game.Id, gameMode.Id, externalRecord);
+        var externalGameRecord = CreateExternalGameRecord(source, game, "144542");
 
-        // Act
+        var externalGameModeRecord = CreateExternalGameModeRecord(source, gameMode, "1");
+
+        var association = new GameGameMode(game.Id, gameMode.Id, externalGameRecord, externalGameModeRecord);
+
         await using (var writeDbContext = fixture.CreateDbContext())
         {
             writeDbContext.DataSources.Add(source);
             writeDbContext.Games.Add(game);
             writeDbContext.GameModes.Add(gameMode);
-            writeDbContext.ExternalGameRecords.Add(externalRecord);
-            writeDbContext.GameGameModes.Add(gameGameMode);
+            writeDbContext.ExternalGameRecords.Add(externalGameRecord);
+            writeDbContext.ExternalGameModeRecords.Add(externalGameModeRecord);
+            writeDbContext.GameGameModes.Add(association);
 
             await writeDbContext.SaveChangesAsync();
         }
 
+        // Act
         await using var readDbContext = fixture.CreateDbContext();
-        var persistedGameGameMode = await readDbContext.GameGameModes.SingleAsync();
+
+        var persistedAssociation = await readDbContext.GameGameModes.SingleAsync();
 
         // Assert
-        persistedGameGameMode.GameId.ShouldBe(game.Id);
-        persistedGameGameMode.GameModeId.ShouldBe(gameMode.Id);
-        persistedGameGameMode.ExternalGameRecordId.ShouldBe(externalRecord.Id);
+        persistedAssociation.GameId.ShouldBe(game.Id);
+        persistedAssociation.GameModeId.ShouldBe(gameMode.Id);
+        persistedAssociation.ExternalGameRecordId.ShouldBe(externalGameRecord.Id);
+        persistedAssociation.ExternalGameModeRecordId.ShouldBe(externalGameModeRecord.Id);
     }
 
     [Fact]
-    public async Task SaveChanges_ShouldRejectDuplicateGameGameModeContribution()
+    public async Task SaveChanges_ShouldRejectDuplicateExternalContribution()
     {
+        // Arrange
         await fixture.ResetDatabaseAsync();
 
-        // Arrange
         var source = CreateDataSource();
         var game = new Game("Kitaria Fables");
         var gameMode = new GameMode("Single player");
-        var externalRecord = CreateExternalRecord(source, game, "144542");
 
-        var firstAssociation = new GameGameMode(game.Id, gameMode.Id, externalRecord);
+        var externalGameRecord = CreateExternalGameRecord(source, game, "144542");
 
-        var duplicateAssociation = new GameGameMode(game.Id, gameMode.Id, externalRecord);
+        var externalGameModeRecord = CreateExternalGameModeRecord(source, gameMode, "1");
 
-        await using var dbContext = fixture.CreateDbContext();
+        var firstAssociation = new GameGameMode(game.Id, gameMode.Id, externalGameRecord, externalGameModeRecord);
 
-        dbContext.DataSources.Add(source);
-        dbContext.Games.Add(game);
-        dbContext.GameModes.Add(gameMode);
-        dbContext.ExternalGameRecords.Add(externalRecord);
-        dbContext.GameGameModes.AddRange(firstAssociation, duplicateAssociation);
+        await using (var firstDbContext = fixture.CreateDbContext())
+        {
+            firstDbContext.DataSources.Add(source);
+            firstDbContext.Games.Add(game);
+            firstDbContext.GameModes.Add(gameMode);
+            firstDbContext.ExternalGameRecords.Add(externalGameRecord);
+            firstDbContext.ExternalGameModeRecords.Add(externalGameModeRecord);
+            firstDbContext.GameGameModes.Add(firstAssociation);
+
+            await firstDbContext.SaveChangesAsync();
+        }
+
+        await using var duplicateDbContext = fixture.CreateDbContext();
+
+        var persistedExternalGameRecord = await duplicateDbContext.ExternalGameRecords.SingleAsync();
+
+        var persistedExternalGameModeRecord = await duplicateDbContext.ExternalGameModeRecords.SingleAsync();
+
+        var duplicateAssociation = new GameGameMode(game.Id, gameMode.Id, persistedExternalGameRecord, persistedExternalGameModeRecord);
+
+        duplicateDbContext.GameGameModes.Add(duplicateAssociation);
 
         // Act
-        var action = async () => await dbContext.SaveChangesAsync();
+        var action = () => duplicateDbContext.SaveChangesAsync();
 
         // Assert
-        await action.ShouldThrowAsync<InvalidOperationException>();
+        await action.ShouldThrowAsync<DbUpdateException>();
     }
 
     [Fact]
-    public async Task SaveChanges_ShouldAllowSameGameAndGameModeFromDifferentExternalRecords()
+    public async Task SaveChanges_ShouldAllowSameCanonicalGameModeFromDifferentExternalContributions()
     {
+        // Arrange
         await fixture.ResetDatabaseAsync();
 
-        // Arrange
         var source = CreateDataSource();
         var game = new Game("Kitaria Fables");
         var gameMode = new GameMode("Single player");
 
-        var firstExternalRecord = CreateExternalRecord(source, game, "144542");
+        var firstExternalGameRecord = CreateExternalGameRecord(source, game, "144542");
 
-        var secondExternalRecord = CreateExternalRecord(source, game, "398521");
+        var secondExternalGameRecord = CreateExternalGameRecord(source, game, "398521");
 
-        var firstAssociation = new GameGameMode(game.Id, gameMode.Id, firstExternalRecord);
+        var firstExternalGameModeRecord = CreateExternalGameModeRecord(source, gameMode, "1");
 
-        var secondAssociation = new GameGameMode(game.Id, gameMode.Id, secondExternalRecord);
+        var secondExternalGameModeRecord = CreateExternalGameModeRecord(source, gameMode, "101");
+
+        var firstAssociation = new GameGameMode(game.Id, gameMode.Id, firstExternalGameRecord, firstExternalGameModeRecord);
+
+        var secondAssociation = new GameGameMode(game.Id, gameMode.Id, secondExternalGameRecord, secondExternalGameModeRecord);
 
         // Act
         await using (var dbContext = fixture.CreateDbContext())
@@ -101,7 +126,11 @@ public sealed class GameGameModePersistenceTests(PostgreSqlFixture fixture)
             dbContext.DataSources.Add(source);
             dbContext.Games.Add(game);
             dbContext.GameModes.Add(gameMode);
-            dbContext.ExternalGameRecords.AddRange(firstExternalRecord, secondExternalRecord);
+
+            dbContext.ExternalGameRecords.AddRange(firstExternalGameRecord, secondExternalGameRecord);
+
+            dbContext.ExternalGameModeRecords.AddRange(firstExternalGameModeRecord, secondExternalGameModeRecord);
+
             dbContext.GameGameModes.AddRange(firstAssociation, secondAssociation);
 
             await dbContext.SaveChangesAsync();
@@ -109,37 +138,60 @@ public sealed class GameGameModePersistenceTests(PostgreSqlFixture fixture)
 
         await using var readDbContext = fixture.CreateDbContext();
 
+        var associationCount = await readDbContext.GameGameModes.CountAsync();
+
         // Assert
-        (await readDbContext.GameGameModes.CountAsync()).ShouldBe(2);
+        associationCount.ShouldBe(2);
     }
 
     [Fact]
-    public async Task SaveChanges_ShouldRestrictDeletingReferencedExternalGameRecord()
+    public async Task DeleteExternalGameRecord_ShouldFail_WhenAssociationReferencesIt()
     {
+        // Arrange
         await fixture.ResetDatabaseAsync();
 
-        // Arrange
         await SeedAssociationAsync();
 
         await using var deleteDbContext = fixture.CreateDbContext();
 
-        var persistedExternalRecord = await deleteDbContext.ExternalGameRecords.SingleAsync();
+        var persistedExternalGameRecord = await deleteDbContext.ExternalGameRecords.SingleAsync();
 
-        deleteDbContext.ExternalGameRecords.Remove(persistedExternalRecord);
+        deleteDbContext.ExternalGameRecords.Remove(persistedExternalGameRecord);
 
         // Act
-        var action = async () => await deleteDbContext.SaveChangesAsync();
+        var action = () => deleteDbContext.SaveChangesAsync();
 
         // Assert
         await action.ShouldThrowAsync<DbUpdateException>();
     }
 
     [Fact]
-    public async Task SaveChanges_ShouldRestrictDeletingReferencedGameMode()
+    public async Task DeleteExternalGameModeRecord_ShouldFail_WhenAssociationReferencesIt()
     {
+        // Arrange
         await fixture.ResetDatabaseAsync();
 
+        await SeedAssociationAsync();
+
+        await using var deleteDbContext = fixture.CreateDbContext();
+
+        var persistedExternalGameModeRecord = await deleteDbContext.ExternalGameModeRecords.SingleAsync();
+
+        deleteDbContext.ExternalGameModeRecords.Remove(persistedExternalGameModeRecord);
+
+        // Act
+        var action = () => deleteDbContext.SaveChangesAsync();
+
+        // Assert
+        await action.ShouldThrowAsync<DbUpdateException>();
+    }
+
+    [Fact]
+    public async Task DeleteGameMode_ShouldFail_WhenAssociationReferencesIt()
+    {
         // Arrange
+        await fixture.ResetDatabaseAsync();
+
         await SeedAssociationAsync();
 
         await using var deleteDbContext = fixture.CreateDbContext();
@@ -149,7 +201,7 @@ public sealed class GameGameModePersistenceTests(PostgreSqlFixture fixture)
         deleteDbContext.GameModes.Remove(persistedGameMode);
 
         // Act
-        var action = async () => await deleteDbContext.SaveChangesAsync();
+        var action = () => deleteDbContext.SaveChangesAsync();
 
         // Assert
         await action.ShouldThrowAsync<DbUpdateException>();
@@ -160,35 +212,46 @@ public sealed class GameGameModePersistenceTests(PostgreSqlFixture fixture)
         var source = CreateDataSource();
         var game = new Game("Kitaria Fables");
         var gameMode = new GameMode("Single player");
-        var externalRecord = CreateExternalRecord(source, game, "144542");
 
-        var gameGameMode = new GameGameMode(game.Id, gameMode.Id, externalRecord);
+        var externalGameRecord = CreateExternalGameRecord(source, game, "144542");
+
+        var externalGameModeRecord = CreateExternalGameModeRecord(source, gameMode, "1");
+
+        var association = new GameGameMode(game.Id, gameMode.Id, externalGameRecord, externalGameModeRecord);
 
         await using var dbContext = fixture.CreateDbContext();
 
         dbContext.DataSources.Add(source);
         dbContext.Games.Add(game);
         dbContext.GameModes.Add(gameMode);
-        dbContext.ExternalGameRecords.Add(externalRecord);
-        dbContext.GameGameModes.Add(gameGameMode);
+        dbContext.ExternalGameRecords.Add(externalGameRecord);
+        dbContext.ExternalGameModeRecords.Add(externalGameModeRecord);
+        dbContext.GameGameModes.Add(association);
 
         await dbContext.SaveChangesAsync();
     }
 
-    private static ExternalGameRecord CreateExternalRecord(DataSource source, Game game, string externalId)
+    private static ExternalGameRecord CreateExternalGameRecord(DataSource source, Game game, string externalId)
     {
-        var externalRecord = new ExternalGameRecord(source.Id, externalId, ObservedAt);
+        var externalGameRecord = new ExternalGameRecord(source.Id, externalId, ObservedAt);
 
-        externalRecord.LinkToGame(game.Id);
+        externalGameRecord.LinkToGame(game.Id);
 
-        return externalRecord;
+        return externalGameRecord;
+    }
+
+    private static ExternalGameModeRecord CreateExternalGameModeRecord(DataSource source, GameMode gameMode, string externalId)
+    {
+        var externalGameModeRecord = new ExternalGameModeRecord(source.Id, externalId, ObservedAt);
+
+        externalGameModeRecord.LinkToGameMode(gameMode.Id);
+
+        return externalGameModeRecord;
     }
 
     private static DataSource CreateDataSource()
     {
-        var reliability = new SourceReliability(
-            ReliabilityLevel.PublicDirect,
-            "Dados obtidos diretamente de uma fonte pública.");
+        var reliability = new SourceReliability(ReliabilityLevel.PublicDirect, "Dados obtidos diretamente de uma fonte pública.");
 
         return new DataSource(
             code: "igdb",

@@ -6,15 +6,15 @@ namespace GameMarketIntel.Infrastructure.Persistence.Configurations;
 
 public sealed class GamePlayerPerspectiveConfiguration : IEntityTypeConfiguration<GamePlayerPerspective>
 {
-    public void Configure(EntityTypeBuilder<GamePlayerPerspective> builder)
+    public void Configure(
+        EntityTypeBuilder<GamePlayerPerspective> builder)
     {
         builder.ToTable("game_player_perspectives");
 
         builder.HasKey(gamePlayerPerspective => new
         {
-            gamePlayerPerspective.GameId,
-            gamePlayerPerspective.PlayerPerspectiveId,
-            gamePlayerPerspective.ExternalGameRecordId
+            gamePlayerPerspective.ExternalGameRecordId,
+            gamePlayerPerspective.ExternalPlayerPerspectiveRecordId
         });
 
         builder.Property(gamePlayerPerspective => gamePlayerPerspective.GameId)
@@ -25,6 +25,9 @@ public sealed class GamePlayerPerspectiveConfiguration : IEntityTypeConfiguratio
 
         builder.Property(gamePlayerPerspective => gamePlayerPerspective.ExternalGameRecordId)
             .HasColumnName("external_game_record_id");
+
+        builder.Property(gamePlayerPerspective => gamePlayerPerspective.ExternalPlayerPerspectiveRecordId)
+            .HasColumnName("external_player_perspective_record_id");
 
         builder.HasOne<Game>()
             .WithMany()
@@ -39,6 +42,11 @@ public sealed class GamePlayerPerspectiveConfiguration : IEntityTypeConfiguratio
         builder.HasOne<ExternalGameRecord>()
             .WithMany()
             .HasForeignKey(gamePlayerPerspective => gamePlayerPerspective.ExternalGameRecordId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne<ExternalPlayerPerspectiveRecord>()
+            .WithMany()
+            .HasForeignKey(gamePlayerPerspective => gamePlayerPerspective.ExternalPlayerPerspectiveRecordId)
             .OnDelete(DeleteBehavior.Restrict);
     }
 }

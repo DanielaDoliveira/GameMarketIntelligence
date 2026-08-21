@@ -5,10 +5,11 @@ public sealed class GamePlayerPerspective
     public Guid GameId { get; private set; }
     public Guid PlayerPerspectiveId { get; private set; }
     public Guid ExternalGameRecordId { get; private set; }
+    public Guid ExternalPlayerPerspectiveRecordId { get; private set; }
 
     private GamePlayerPerspective() { }
 
-    public GamePlayerPerspective(Guid gameId, Guid playerPerspectiveId, ExternalGameRecord externalGameRecord)
+    public GamePlayerPerspective(Guid gameId, Guid playerPerspectiveId, ExternalGameRecord externalGameRecord, ExternalPlayerPerspectiveRecord externalPlayerPerspectiveRecord)
     {
         if (gameId == Guid.Empty)
             throw new ArgumentException
@@ -27,6 +28,7 @@ public sealed class GamePlayerPerspective
 
 
         ArgumentNullException.ThrowIfNull(externalGameRecord);
+        ArgumentNullException.ThrowIfNull(externalPlayerPerspectiveRecord);
 
         if (!externalGameRecord.GameId.HasValue)
             throw new ArgumentException
@@ -44,8 +46,33 @@ public sealed class GamePlayerPerspective
             );
 
 
+        if (!externalPlayerPerspectiveRecord.PlayerPerspectiveId.HasValue)
+            throw new ArgumentException
+            (
+                "The External Player Perspective Record must be linked to a Player Perspective.",
+                nameof(externalPlayerPerspectiveRecord)
+            );
+
+
+        if (externalPlayerPerspectiveRecord.PlayerPerspectiveId.Value != playerPerspectiveId)
+            throw new ArgumentException
+            (
+                "The External Player Perspective Record must be linked to the same Player Perspective.",
+                nameof(externalPlayerPerspectiveRecord)
+            );
+
+
+        if (externalGameRecord.DataSourceId != externalPlayerPerspectiveRecord.DataSourceId)
+            throw new ArgumentException
+            (
+                "The External Game Record and External Player Perspective Record must belong to the same Data Source.",
+                nameof(externalPlayerPerspectiveRecord)
+            );
+        
+
         GameId = gameId;
         PlayerPerspectiveId = playerPerspectiveId;
         ExternalGameRecordId = externalGameRecord.Id;
+        ExternalPlayerPerspectiveRecordId = externalPlayerPerspectiveRecord.Id;
     }
 }

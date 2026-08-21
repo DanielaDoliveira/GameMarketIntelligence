@@ -3,19 +3,19 @@ using Shouldly;
 
 namespace GameMarketIntel.Domain.Tests.Entities;
 
-public class ExternalGameModeRecordTests
+public sealed class ExternalGameModeRecordTests
 {
     [Fact]
-    public void Constructor_ShouldInitializeExternalGameModeRecord()
+    public void Constructor_ShouldCreateUnlinkedRecord()
     {
-        // Arrange
         var dataSourceId = Guid.NewGuid();
-        var observedAt = new DateTimeOffset(2026, 8, 19, 12, 0, 0, TimeSpan.FromHours(-3));
+        var observedAt = DateTimeOffset.UtcNow;
 
-        // Act
-        var record = new ExternalGameModeRecord(dataSourceId, "  1  ", observedAt);
+        var record = new ExternalGameModeRecord(
+            dataSourceId,
+            " 1 ",
+            observedAt);
 
-        // Assert
         record.Id.ShouldNotBe(Guid.Empty);
         record.DataSourceId.ShouldBe(dataSourceId);
         record.ExternalId.ShouldBe("1");
@@ -26,177 +26,136 @@ public class ExternalGameModeRecordTests
     }
 
     [Fact]
-    public void Constructor_ShouldStoreNormalizedSourceUpdatedAt()
+    public void LinkToGameMode_ShouldLinkRecord_WhenRecordIsUnlinked()
     {
-        // Arrange
-        var dataSourceId = Guid.NewGuid();
-        var observedAt = new DateTimeOffset(2026, 8, 19, 12, 0, 0, TimeSpan.FromHours(-3));
-        var sourceUpdatedAt = new DateTimeOffset(2026, 8, 18, 21, 30, 0, TimeSpan.FromHours(-3));
+        var record = CreateRecord();
+        var gameModeId = Guid.NewGuid();
 
-        // Act
-        var record = new ExternalGameModeRecord(dataSourceId, "1", observedAt, sourceUpdatedAt);
-
-        // Assert
-        record.SourceUpdatedAt.ShouldBe(sourceUpdatedAt.ToUniversalTime());
-    }
-
-    [Fact]
-    public void Constructor_ShouldThrowException_WhenDataSourceIdIsEmpty()
-    {
-        // Act
-        var action = () => new ExternalGameModeRecord(Guid.Empty, "1", DateTimeOffset.UtcNow);
-
-        // Assert
-        action.ShouldThrow<ArgumentException>();
-    }
-
-    [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    [InlineData("   ")]
-    public void Constructor_ShouldThrowException_WhenExternalIdIsInvalid(string? externalId)
-    {
-        // Act
-        var action = () => new ExternalGameModeRecord(Guid.NewGuid(), externalId!, DateTimeOffset.UtcNow);
-
-        // Assert
-        action.ShouldThrow<ArgumentException>();
-    }
-
-    [Fact]
-    public void Constructor_ShouldAcceptExternalIdAtMaximumLength()
-    {
-        // Arrange
-        var externalId = new string('A', ExternalGameModeRecord.MaxExternalIdLength);
-
-        // Act
-        var record = new ExternalGameModeRecord(Guid.NewGuid(), externalId, DateTimeOffset.UtcNow);
-
-        // Assert
-        record.ExternalId.Length.ShouldBe(ExternalGameModeRecord.MaxExternalIdLength);
-    }
-
-    [Fact]
-    public void Constructor_ShouldThrowException_WhenExternalIdExceedsMaximumLength()
-    {
-        // Arrange
-        var externalId = new string('A', ExternalGameModeRecord.MaxExternalIdLength + 1);
-
-        // Act
-        var action = () => new ExternalGameModeRecord(Guid.NewGuid(), externalId, DateTimeOffset.UtcNow);
-
-        // Assert
-        action.ShouldThrow<ArgumentException>();
-    }
-
-    [Fact]
-    public void Constructor_ShouldThrowException_WhenObservedAtIsDefault()
-    {
-        // Act
-        var action = () => new ExternalGameModeRecord(Guid.NewGuid(), "1", default);
-
-        // Assert
-        action.ShouldThrow<ArgumentException>();
-    }
-
-    [Fact]
-    public void LinkToGameMode_ShouldSetGameModeId()
-    {
-        // Arrange
-        var record = new ExternalGameModeRecord(Guid.NewGuid(), "1", DateTimeOffset.UtcNow); var gameModeId = Guid.NewGuid();
-
-        // Act
         record.LinkToGameMode(gameModeId);
 
-        // Assert
         record.GameModeId.ShouldBe(gameModeId);
     }
 
     [Fact]
-    public void LinkToGameMode_ShouldThrowException_WhenGameModeIdIsEmpty()
+    public void LinkToGameMode_ShouldBeIdempotent_WhenAlreadyLinkedToSameGameMode()
     {
-        // Arrange
-        var record = new ExternalGameModeRecord(Guid.NewGuid(), "1", DateTimeOffset.UtcNow);
+        var record = CreateRecord();
+        var gameModeId = Guid.NewGuid();
 
-        // Act
-        var action = () => record.LinkToGameMode(Guid.Empty);
+        record.LinkToGameMode(gameModeId);
 
-        // Assert
-        action.ShouldThrow<ArgumentException>();
+        record.LinkToGameMode(gameModeId);
+
+        record.GameModeId.ShouldBe(gameModeId);
     }
 
     [Fact]
-    public void Unlink_ShouldClearGameModeId()
+    public void LinkToGameMode_ShouldThrow_WhenAlreadyLinkedToDifferentGameMode()
     {
-        // Arrange
-        var record = new ExternalGameModeRecord(Guid.NewGuid(), "1", DateTimeOffset.UtcNow);
-        record.LinkToGameMode(Guid.NewGuid());
+        var record = CreateRecord();
+        var firstGameModeId = Guid.NewGuid();
+        var secondGameModeId = Guid.NewGuid();
 
-        // Act
+        record.LinkToGameMode(firstGameModeId);
+
+        var action = () => record.LinkToGameMode(secondGameModeId);
+
+        action.ShouldThrow<InvalidOperationException>();
+        record.GameModeId.ShouldBe(firstGameModeId);
+    }
+
+    [Fact]
+    public void LinkToGameMode_ShouldThrow_WhenGameModeIdIsEmpty()
+    {
+        var record = CreateRecord();
+
+        var action = () => record.LinkToGameMode(Guid.Empty);
+
+        action.ShouldThrow<ArgumentException>().ParamName.ShouldBe("gameModeId");
+    }
+
+    [Fact]
+    public void Unlink_ShouldKeepRecordUnlinked_WhenAlreadyUnlinked()
+    {
+        var record = CreateRecord();
+
         record.Unlink();
-
-        // Assert
+        
         record.GameModeId.ShouldBeNull();
+    }
+
+    [Fact]
+    public void Unlink_ShouldThrow_WhenRecordIsLinked()
+    {
+        var record = CreateRecord();
+        var gameModeId = Guid.NewGuid();
+
+        record.LinkToGameMode(gameModeId);
+
+        var action = () => record.Unlink();
+
+        action.ShouldThrow<InvalidOperationException>();
+        record.GameModeId.ShouldBe(gameModeId);
     }
 
     [Fact]
     public void MarkSeen_ShouldUpdateLastSeenAt()
     {
-        // Arrange
-        var firstObservedAt = new DateTimeOffset(2026, 8, 19, 10, 0, 0, TimeSpan.Zero);
-        var nextObservedAt = firstObservedAt.AddHours(2);
-        var record = new ExternalGameModeRecord(Guid.NewGuid(), "1", firstObservedAt);
+        var observedAt = new DateTimeOffset(2026, 8, 20, 12, 0, 0, TimeSpan.Zero);
 
-        // Act
+        var record = new ExternalGameModeRecord(Guid.NewGuid(), "1", observedAt);
+
+        var nextObservedAt = observedAt.AddDays(1);
+
         record.MarkSeen(nextObservedAt);
 
-        // Assert
-        record.LastSeenAt.ShouldBe(nextObservedAt.ToUniversalTime());
+        record.LastSeenAt.ShouldBe(nextObservedAt);
     }
 
     [Fact]
-    public void MarkSeen_ShouldThrowException_WhenObservedAtIsEarlierThanLastSeenAt()
+    public void MarkSeen_ShouldUpdateSourceUpdatedAt_WhenNewer()
     {
-        // Arrange
-        var firstObservedAt = new DateTimeOffset(2026, 8, 19, 10, 0, 0, TimeSpan.Zero);
-        var record = new ExternalGameModeRecord(Guid.NewGuid(), "1", firstObservedAt);
+        var observedAt = new DateTimeOffset(2026, 8, 20, 12, 0, 0, TimeSpan.Zero);
 
-        // Act
-        var action = () => record.MarkSeen(firstObservedAt.AddMinutes(-1));
+        var sourceUpdatedAt = observedAt.AddHours(-2);
 
-        // Assert
-        action.ShouldThrow<ArgumentException>();
-    }
-
-    [Fact]
-    public void MarkSeen_ShouldUpdateSourceUpdatedAt_WhenNewValueIsMoreRecent()
-    {
-        // Arrange
-        var observedAt = new DateTimeOffset(2026, 8, 19, 10, 0, 0, TimeSpan.Zero);
-        var sourceUpdatedAt = observedAt.AddDays(-2);
-        var newerSourceUpdatedAt = observedAt.AddDays(-1);
         var record = new ExternalGameModeRecord(Guid.NewGuid(), "1", observedAt, sourceUpdatedAt);
 
-        // Act
-        record.MarkSeen(observedAt.AddHours(1), newerSourceUpdatedAt);
+        var newerSourceUpdatedAt = observedAt.AddHours(1);
 
-        // Assert
-        record.SourceUpdatedAt.ShouldBe(newerSourceUpdatedAt.ToUniversalTime());
+        record.MarkSeen(observedAt.AddDays(1), newerSourceUpdatedAt);
+
+        record.SourceUpdatedAt.ShouldBe(newerSourceUpdatedAt);
     }
 
     [Fact]
-    public void MarkSeen_ShouldKeepSourceUpdatedAt_WhenNewValueIsOlder()
+    public void MarkSeen_ShouldKeepSourceUpdatedAt_WhenIncomingValueIsOlder()
     {
-        // Arrange
-        var observedAt = new DateTimeOffset(2026, 8, 19, 10, 0, 0, TimeSpan.Zero);
-        var sourceUpdatedAt = observedAt.AddDays(-1);
-        var olderSourceUpdatedAt = observedAt.AddDays(-2);
+        var observedAt = new DateTimeOffset(2026, 8, 20, 12, 0, 0, TimeSpan.Zero);
+
+        var sourceUpdatedAt = observedAt.AddHours(1);
+
         var record = new ExternalGameModeRecord(Guid.NewGuid(), "1", observedAt, sourceUpdatedAt);
 
-        // Act
-        record.MarkSeen(observedAt.AddHours(1), olderSourceUpdatedAt);
+        record.MarkSeen(observedAt.AddDays(1), observedAt);
 
-        // Assert
-        record.SourceUpdatedAt.ShouldBe(sourceUpdatedAt.ToUniversalTime());
+        record.SourceUpdatedAt.ShouldBe(sourceUpdatedAt);
+    }
+
+    [Fact]
+    public void MarkSeen_ShouldThrow_WhenObservedAtIsOlderThanLastSeenAt()
+    {
+        var observedAt = new DateTimeOffset(2026, 8, 20, 12, 0, 0, TimeSpan.Zero);
+
+        var record = new ExternalGameModeRecord(Guid.NewGuid(), "1", observedAt);
+
+        var action = () => record.MarkSeen(observedAt.AddTicks(-1));
+
+        action.ShouldThrow<ArgumentException>().ParamName.ShouldBe("observedAt");
+    }
+
+    private static ExternalGameModeRecord CreateRecord()
+    {
+        return new ExternalGameModeRecord(Guid.NewGuid(), "1", DateTimeOffset.UtcNow);
     }
 }

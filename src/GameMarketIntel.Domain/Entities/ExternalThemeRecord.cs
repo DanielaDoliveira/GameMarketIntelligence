@@ -5,17 +5,11 @@ public sealed class ExternalThemeRecord
     public const int MaxExternalIdLength = 100;
 
     public Guid Id { get; private set; }
-
     public Guid DataSourceId { get; private set; }
-
     public string ExternalId { get; private set; } = string.Empty;
-
     public Guid? ThemeId { get; private set; }
-
     public DateTimeOffset FirstSeenAt { get; private set; }
-
     public DateTimeOffset LastSeenAt { get; private set; }
-
     public DateTimeOffset? SourceUpdatedAt { get; private set; }
 
     private ExternalThemeRecord() { }
@@ -23,6 +17,7 @@ public sealed class ExternalThemeRecord
     public ExternalThemeRecord(Guid dataSourceId, string externalId, DateTimeOffset observedAt, DateTimeOffset? sourceUpdatedAt = null)
     {
         if (dataSourceId == Guid.Empty)
+
             throw new ArgumentException
             (
                 "The data source ID is required.",
@@ -38,10 +33,13 @@ public sealed class ExternalThemeRecord
         DataSourceId = dataSourceId;
         FirstSeenAt = normalizedObservedAt;
         LastSeenAt = normalizedObservedAt;
-        SourceUpdatedAt =
-            sourceUpdatedAt.HasValue
-                ? NormalizeTimestamp(sourceUpdatedAt.Value, nameof(sourceUpdatedAt))
-                : null;
+        SourceUpdatedAt = sourceUpdatedAt.HasValue
+            ? NormalizeTimestamp
+            (
+                sourceUpdatedAt.Value,
+                nameof(sourceUpdatedAt)
+            )
+            : null;
     }
 
     public void LinkToTheme(Guid themeId)
@@ -53,11 +51,23 @@ public sealed class ExternalThemeRecord
                 nameof(themeId)
             );
         
+
+        if (ThemeId.HasValue)
+        {
+            if (ThemeId.Value == themeId) return;
+            
+            throw new InvalidOperationException("An external theme record already linked to a theme cannot be linked to a different theme.");
+        }
+
         ThemeId = themeId;
     }
 
-    public void Unlink()=>ThemeId = null;
-    
+    public void Unlink()
+    {
+        if (ThemeId.HasValue)
+            throw new InvalidOperationException("A linked external theme record cannot be unlinked directly.");
+        ThemeId = null;
+    }
 
     public void MarkSeen(DateTimeOffset observedAt, DateTimeOffset? sourceUpdatedAt = null)
     {
@@ -74,12 +84,13 @@ public sealed class ExternalThemeRecord
         LastSeenAt = normalizedObservedAt;
 
         if (!sourceUpdatedAt.HasValue) return;
-
+        
 
         var normalizedSourceUpdatedAt = NormalizeTimestamp(sourceUpdatedAt.Value, nameof(sourceUpdatedAt));
 
         if (!SourceUpdatedAt.HasValue || normalizedSourceUpdatedAt > SourceUpdatedAt.Value)
             SourceUpdatedAt = normalizedSourceUpdatedAt;
+        
     }
 
     private static string NormalizeAndValidateExternalId(string externalId)
@@ -90,7 +101,7 @@ public sealed class ExternalThemeRecord
                 "The external ID is required.",
                 nameof(externalId)
             );
-
+        
 
         var normalizedExternalId = externalId.Trim();
 
@@ -101,19 +112,20 @@ public sealed class ExternalThemeRecord
                 nameof(externalId)
             );
         
+
         return normalizedExternalId;
     }
 
     private static DateTimeOffset NormalizeTimestamp(DateTimeOffset timestamp, string parameterName)
     {
         if (timestamp == default)
-
             throw new ArgumentException
             (
                 "The timestamp is required.",
                 parameterName
             );
         
+
         return timestamp.ToUniversalTime();
     }
 }

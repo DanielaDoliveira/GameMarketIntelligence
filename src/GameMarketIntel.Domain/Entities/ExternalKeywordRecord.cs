@@ -5,17 +5,11 @@ public sealed class ExternalKeywordRecord
     public const int MaxExternalIdLength = 100;
 
     public Guid Id { get; private set; }
-
     public Guid DataSourceId { get; private set; }
-
     public string ExternalId { get; private set; } = string.Empty;
-
     public Guid? KeywordId { get; private set; }
-
     public DateTimeOffset FirstSeenAt { get; private set; }
-
     public DateTimeOffset LastSeenAt { get; private set; }
-
     public DateTimeOffset? SourceUpdatedAt { get; private set; }
 
     private ExternalKeywordRecord() { }
@@ -33,14 +27,22 @@ public sealed class ExternalKeywordRecord
 
         ExternalId = NormalizeAndValidateExternalId(externalId);
 
-        var normalizedObservedAt = NormalizeTimestamp(observedAt, nameof(observedAt));
+        var normalizedObservedAt = NormalizeTimestamp
+        (
+            observedAt,
+            nameof(observedAt)
+        );
 
         Id = Guid.NewGuid();
         DataSourceId = dataSourceId;
         FirstSeenAt = normalizedObservedAt;
         LastSeenAt = normalizedObservedAt;
         SourceUpdatedAt = sourceUpdatedAt.HasValue
-            ? NormalizeTimestamp(sourceUpdatedAt.Value, nameof(sourceUpdatedAt))
+            ? NormalizeTimestamp
+            (
+                sourceUpdatedAt.Value,
+                nameof(sourceUpdatedAt)
+            )
             : null;
     }
 
@@ -54,17 +56,32 @@ public sealed class ExternalKeywordRecord
             );
 
 
+        if (KeywordId.HasValue)
+        {
+            if (KeywordId.Value == keywordId) return;
+
+
+            throw new InvalidOperationException(
+                "An external keyword record already linked to a keyword cannot be linked to a different keyword.");
+        }
+
         KeywordId = keywordId;
     }
 
-    public void Unlink() => KeywordId = null;
+    public void Unlink()
+    {
+        if (KeywordId.HasValue)
+            throw new InvalidOperationException("A linked external keyword record cannot be unlinked directly.");
 
+        KeywordId = null;
+    }
 
     public void MarkSeen(DateTimeOffset observedAt, DateTimeOffset? sourceUpdatedAt = null)
     {
         var normalizedObservedAt = NormalizeTimestamp(observedAt, nameof(observedAt));
 
         if (normalizedObservedAt < LastSeenAt)
+
             throw new ArgumentException
             (
                 "The observation timestamp cannot be earlier than the last observation.",
@@ -108,11 +125,8 @@ public sealed class ExternalKeywordRecord
     private static DateTimeOffset NormalizeTimestamp(DateTimeOffset timestamp, string parameterName)
     {
         if (timestamp == default)
-            throw new ArgumentException
-            (
-                "The timestamp is required.",
-                parameterName
-            );
+            throw new ArgumentException("The timestamp is required.", parameterName);
+        
         return timestamp.ToUniversalTime();
     }
 }

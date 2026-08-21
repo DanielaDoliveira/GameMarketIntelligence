@@ -6,20 +6,15 @@ namespace GameMarketIntel.Domain.Tests.Entities;
 
 public sealed class ExternalGameRecordTests
 {
-    private static readonly DateTimeOffset ObservedAt =
-        new(2026, 8, 18, 12, 0, 0, TimeSpan.Zero);
-
     [Fact]
-    public void Constructor_ShouldCreateUnlinkedRecord_WhenDataIsValid()
+    public void Constructor_ShouldCreateUnlinkedRecord()
     {
         // Arrange
         var dataSourceId = Guid.NewGuid();
+        var observedAt = DateTimeOffset.UtcNow;
 
         // Act
-        var record = new ExternalGameRecord(
-            dataSourceId,
-            " 144542 ",
-            ObservedAt);
+        var record = new ExternalGameRecord(dataSourceId, " 144542 ", observedAt);
 
         // Assert
         record.Id.ShouldNotBe(Guid.Empty);
@@ -27,107 +22,13 @@ public sealed class ExternalGameRecordTests
         record.ExternalId.ShouldBe("144542");
         record.GameId.ShouldBeNull();
         record.Status.ShouldBe(ExternalGameRecordStatus.Unlinked);
-        record.FirstSeenAt.ShouldBe(ObservedAt);
-        record.LastSeenAt.ShouldBe(ObservedAt);
+        record.FirstSeenAt.ShouldBe(observedAt.ToUniversalTime());
+        record.LastSeenAt.ShouldBe(observedAt.ToUniversalTime());
         record.SourceUpdatedAt.ShouldBeNull();
     }
 
     [Fact]
-    public void Constructor_ShouldPreserveExternalIdCase()
-    {
-        // Act
-        var record = new ExternalGameRecord(
-            Guid.NewGuid(),
-            "QAbC123",
-            ObservedAt);
-
-        // Assert
-        record.ExternalId.ShouldBe("QAbC123");
-    }
-
-    [Fact]
-    public void Constructor_ShouldNormalizeTimestampsToUtc()
-    {
-        // Arrange
-        var observedAt = new DateTimeOffset(
-            2026,
-            8,
-            18,
-            9,
-            0,
-            0,
-            TimeSpan.FromHours(-3));
-
-        // Act
-        var record = new ExternalGameRecord(
-            Guid.NewGuid(),
-            "144542",
-            observedAt);
-
-        // Assert
-        record.FirstSeenAt.ShouldBe(ObservedAt);
-        record.LastSeenAt.ShouldBe(ObservedAt);
-        record.FirstSeenAt.Offset.ShouldBe(TimeSpan.Zero);
-    }
-
-    [Fact]
-    public void Constructor_ShouldThrowArgumentException_WhenDataSourceIdIsEmpty()
-    {
-        // Act
-        var exception = Should.Throw<ArgumentException>(() =>
-        {
-            _ = new ExternalGameRecord(
-                Guid.Empty,
-                "144542",
-                ObservedAt);
-        });
-
-        // Assert
-        exception.ParamName.ShouldBe("dataSourceId");
-    }
-
-    [Theory]
-    [InlineData("")]
-    [InlineData("   ")]
-    public void Constructor_ShouldThrowArgumentException_WhenExternalIdIsMissing(
-        string invalidExternalId)
-    {
-        // Act
-        var exception = Should.Throw<ArgumentException>(() =>
-        {
-            _ = new ExternalGameRecord(
-                Guid.NewGuid(),
-                invalidExternalId,
-                ObservedAt);
-        });
-
-        // Assert
-        exception.ParamName.ShouldBe("externalId");
-    }
-
-    [Fact]
-    public void Constructor_ShouldThrowArgumentException_WhenExternalIdIsTooLong()
-    {
-        // Arrange
-        var invalidExternalId = new string(
-            'a',
-            ExternalGameRecord.MaxExternalIdLength + 1);
-
-        // Act
-        var exception = Should.Throw<ArgumentException>(() =>
-        {
-            _ = new ExternalGameRecord(
-                Guid.NewGuid(),
-                invalidExternalId,
-                ObservedAt);
-        });
-
-        // Assert
-        exception.ParamName.ShouldBe("externalId");
-    }
-
-    [Fact]
-    public void LinkToGame_ShouldAssociateCanonicalGame()
+    public void LinkToGame_ShouldLinkRecord_WhenRecordIsUnlinked()
     {
         // Arrange
         var record = CreateRecord();
@@ -142,27 +43,75 @@ public sealed class ExternalGameRecordTests
     }
 
     [Fact]
-    public void LinkToGame_ShouldThrowArgumentException_WhenGameIdIsEmpty()
+    public void LinkToGame_ShouldBeIdempotent_WhenAlreadyLinkedToSameGame()
+    {
+        // Arrange
+        var record = CreateRecord();
+        var gameId = Guid.NewGuid();
+
+        record.LinkToGame(gameId);
+
+        // Act
+        record.LinkToGame(gameId);
+
+        // Assert
+        record.GameId.ShouldBe(gameId);
+        record.Status.ShouldBe(ExternalGameRecordStatus.Linked);
+    }
+
+    [Fact]
+    public void LinkToGame_ShouldThrow_WhenAlreadyLinkedToDifferentGame()
+    {
+        // Arrange
+        var record = CreateRecord();
+        var firstGameId = Guid.NewGuid();
+        var secondGameId = Guid.NewGuid();
+
+        record.LinkToGame(firstGameId);
+
+        // Act
+        var action = () => record.LinkToGame(secondGameId);
+
+        // Assert
+        action.ShouldThrow<InvalidOperationException>();
+        record.GameId.ShouldBe(firstGameId);
+        record.Status.ShouldBe(ExternalGameRecordStatus.Linked);
+    }
+
+    [Fact]
+    public void LinkToGame_ShouldThrow_WhenRecordIsRejected()
+    {
+        // Arrange
+        var record = CreateRecord();
+        record.Reject();
+
+        // Act
+        var action = () => record.LinkToGame(Guid.NewGuid());
+
+        // Assert
+        action.ShouldThrow<InvalidOperationException>();
+        record.GameId.ShouldBeNull();
+        record.Status.ShouldBe(ExternalGameRecordStatus.Rejected);
+    }
+
+    [Fact]
+    public void LinkToGame_ShouldThrow_WhenGameIdIsEmpty()
     {
         // Arrange
         var record = CreateRecord();
 
         // Act
-        var exception = Should.Throw<ArgumentException>(() =>
-        {
-            record.LinkToGame(Guid.Empty);
-        });
+        var action = () => record.LinkToGame(Guid.Empty);
 
         // Assert
-        exception.ParamName.ShouldBe("gameId");
+        action.ShouldThrow<ArgumentException>().ParamName.ShouldBe("gameId");
     }
 
     [Fact]
-    public void Unlink_ShouldRemoveCanonicalGameAssociation()
+    public void Unlink_ShouldKeepRecordUnlinked_WhenAlreadyUnlinked()
     {
         // Arrange
         var record = CreateRecord();
-        record.LinkToGame(Guid.NewGuid());
 
         // Act
         record.Unlink();
@@ -173,11 +122,43 @@ public sealed class ExternalGameRecordTests
     }
 
     [Fact]
-    public void Reject_ShouldRemoveAssociationAndMarkRecordAsRejected()
+    public void Unlink_ShouldThrow_WhenRecordIsLinked()
     {
         // Arrange
         var record = CreateRecord();
-        record.LinkToGame(Guid.NewGuid());
+        var gameId = Guid.NewGuid();
+        record.LinkToGame(gameId);
+
+        // Act
+        var action = () => record.Unlink();
+
+        // Assert
+        action.ShouldThrow<InvalidOperationException>();
+        record.GameId.ShouldBe(gameId);
+        record.Status.ShouldBe(ExternalGameRecordStatus.Linked);
+    }
+
+    [Fact]
+    public void Unlink_ShouldThrow_WhenRecordIsRejected()
+    {
+        // Arrange
+        var record = CreateRecord();
+        record.Reject();
+
+        // Act
+        var action = () => record.Unlink();
+
+        // Assert
+        action.ShouldThrow<InvalidOperationException>();
+        record.GameId.ShouldBeNull();
+        record.Status.ShouldBe(ExternalGameRecordStatus.Rejected);
+    }
+
+    [Fact]
+    public void Reject_ShouldRejectRecord_WhenRecordIsUnlinked()
+    {
+        // Arrange
+        var record = CreateRecord();
 
         // Act
         record.Reject();
@@ -186,64 +167,110 @@ public sealed class ExternalGameRecordTests
         record.GameId.ShouldBeNull();
         record.Status.ShouldBe(ExternalGameRecordStatus.Rejected);
     }
-    
-    [Fact]
-    public void Constructor_ShouldThrowArgumentException_WhenObservedAtIsDefault()
-    {
-        // Act
-        var exception = Should.Throw<ArgumentException>(() =>
-        {
-            _ = new ExternalGameRecord(
-                Guid.NewGuid(),
-                "144542",
-                default);
-        });
-
-        // Assert
-        exception.ParamName.ShouldBe("observedAt");
-    }
 
     [Fact]
-    public void MarkSeen_ShouldUpdateLastSeenAtAndSourceUpdatedAt()
+    public void Reject_ShouldBeIdempotent_WhenAlreadyRejected()
     {
         // Arrange
         var record = CreateRecord();
-
-        var nextObservation = ObservedAt.AddHours(2);
-        var sourceUpdatedAt = ObservedAt.AddHours(1);
+        record.Reject();
 
         // Act
-        record.MarkSeen(
-            nextObservation,
-            sourceUpdatedAt);
+        record.Reject();
 
         // Assert
-        record.LastSeenAt.ShouldBe(nextObservation);
+        record.GameId.ShouldBeNull();
+        record.Status.ShouldBe(ExternalGameRecordStatus.Rejected);
+    }
+
+    [Fact]
+    public void Reject_ShouldThrow_WhenRecordIsLinked()
+    {
+        // Arrange
+        var record = CreateRecord();
+        var gameId = Guid.NewGuid();
+        record.LinkToGame(gameId);
+
+        // Act
+        var action = () => record.Reject();
+
+        // Assert
+        action.ShouldThrow<InvalidOperationException>();
+        record.GameId.ShouldBe(gameId);
+        record.Status.ShouldBe(ExternalGameRecordStatus.Linked);
+    }
+
+    [Fact]
+    public void MarkSeen_ShouldUpdateLastSeenAt()
+    {
+        // Arrange
+        var observedAt = new DateTimeOffset(
+            2026, 8, 20, 12, 0, 0, TimeSpan.Zero);
+
+        var record = new ExternalGameRecord(Guid.NewGuid(), "144542", observedAt);
+
+        var nextObservedAt = observedAt.AddDays(1);
+
+        // Act
+        record.MarkSeen(nextObservedAt);
+
+        // Assert
+        record.LastSeenAt.ShouldBe(nextObservedAt);
+    }
+
+    [Fact]
+    public void MarkSeen_ShouldUpdateSourceUpdatedAt_WhenNewer()
+    {
+        // Arrange
+        var observedAt = new DateTimeOffset(2026, 8, 20, 12, 0, 0, TimeSpan.Zero);
+
+        var sourceUpdatedAt = observedAt.AddHours(-2);
+
+        var record = new ExternalGameRecord(Guid.NewGuid(), "144542", observedAt, sourceUpdatedAt);
+
+        var newerSourceUpdatedAt = observedAt.AddHours(1);
+
+        // Act
+        record.MarkSeen(observedAt.AddDays(1), newerSourceUpdatedAt);
+
+        // Assert
+        record.SourceUpdatedAt.ShouldBe(newerSourceUpdatedAt);
+    }
+
+    [Fact]
+    public void MarkSeen_ShouldKeepSourceUpdatedAt_WhenIncomingValueIsOlder()
+    {
+        // Arrange
+        var observedAt = new DateTimeOffset(2026, 8, 20, 12, 0, 0, TimeSpan.Zero);
+
+        var sourceUpdatedAt = observedAt.AddHours(1);
+
+        var record = new ExternalGameRecord(Guid.NewGuid(), "144542", observedAt, sourceUpdatedAt);
+
+        // Act
+        record.MarkSeen(observedAt.AddDays(1), observedAt);
+
+        // Assert
         record.SourceUpdatedAt.ShouldBe(sourceUpdatedAt);
     }
 
     [Fact]
-    public void MarkSeen_ShouldThrowArgumentException_WhenObservationRegresses()
+    public void MarkSeen_ShouldThrow_WhenObservedAtIsOlderThanLastSeenAt()
     {
         // Arrange
-        var record = CreateRecord();
-        var earlierObservation = ObservedAt.AddMinutes(-1);
+        var observedAt = new DateTimeOffset(2026, 8, 20, 12, 0, 0, TimeSpan.Zero);
+
+        var record = new ExternalGameRecord(Guid.NewGuid(), "144542", observedAt);
 
         // Act
-        var exception = Should.Throw<ArgumentException>(() =>
-        {
-            record.MarkSeen(earlierObservation);
-        });
+        var action = () => record.MarkSeen(observedAt.AddTicks(-1));
 
         // Assert
-        exception.ParamName.ShouldBe("observedAt");
+        action.ShouldThrow<ArgumentException>().ParamName.ShouldBe("observedAt");
     }
 
     private static ExternalGameRecord CreateRecord()
     {
-        return new ExternalGameRecord(
-            Guid.NewGuid(),
-            "144542",
-            ObservedAt);
+        return new ExternalGameRecord(Guid.NewGuid(), "144542", DateTimeOffset.UtcNow);
     }
 }

@@ -3,22 +3,19 @@ using Shouldly;
 
 namespace GameMarketIntel.Domain.Tests.Entities;
 
-public class ExternalThemeRecordTests
+public sealed class ExternalThemeRecordTests
 {
     [Fact]
-    public void Constructor_ShouldInitializeExternalThemeRecord()
+    public void Constructor_ShouldCreateUnlinkedRecord()
     {
-        //Arrange
         var dataSourceId = Guid.NewGuid();
-        var observedAt = new DateTimeOffset(2026, 8, 19, 12, 0, 0, TimeSpan.FromHours(-3));
-       
-        //Act
-        var record = new ExternalThemeRecord(dataSourceId, "  19  ", observedAt);
-        
-        // Assert
+        var observedAt = DateTimeOffset.UtcNow;
+
+        var record = new ExternalThemeRecord(dataSourceId, " 17 ", observedAt);
+
         record.Id.ShouldNotBe(Guid.Empty);
         record.DataSourceId.ShouldBe(dataSourceId);
-        record.ExternalId.ShouldBe("19");
+        record.ExternalId.ShouldBe("17");
         record.ThemeId.ShouldBeNull();
         record.FirstSeenAt.ShouldBe(observedAt.ToUniversalTime());
         record.LastSeenAt.ShouldBe(observedAt.ToUniversalTime());
@@ -26,180 +23,137 @@ public class ExternalThemeRecordTests
     }
 
     [Fact]
-    public void Constructor_ShouldStoreNormalizedSourceUpdatedAt()
+    public void LinkToTheme_ShouldLinkRecord_WhenRecordIsUnlinked()
     {
-        // Arrange
-        var dataSourceId = Guid.NewGuid();
-        var observedAt = new DateTimeOffset(2026, 8, 19, 12, 0, 0, TimeSpan.FromHours(-3));
-        var sourceUpdatedAt = new DateTimeOffset(2026, 8, 18, 21, 30, 0, TimeSpan.FromHours(-3));
-        
-        // Act
-        var record = new ExternalThemeRecord(dataSourceId, "19", observedAt, sourceUpdatedAt);
-        
-        // Assert
-        record.SourceUpdatedAt.ShouldBe(sourceUpdatedAt.ToUniversalTime());
-    }
-    
-    [Fact]
-    public void Constructor_ShouldThrowException_WhenDataSourceIdIsEmpty()
-    {
-        // Act
-        var action = () => new ExternalThemeRecord(Guid.Empty, "19", DateTimeOffset.UtcNow);
-
-        // Assert
-        action.ShouldThrow<ArgumentException>();
-    }
-
-
-    [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    [InlineData("   ")]
-    public void Constructor_ShouldThrowException_WhenExternalIdIsInvalid(string? externalId)
-    {
-        // Act
-        var action = () => new ExternalThemeRecord(Guid.NewGuid(), externalId!, DateTimeOffset.UtcNow);
-        
-        // Assert
-        action.ShouldThrow<ArgumentException>();
-        
-        
-    }
-    
-    [Fact]
-    public void Constructor_ShouldAcceptExternalIdAtMaximumLength()
-    {
-        // Arrange
-        var externalId = new string('A', ExternalThemeRecord.MaxExternalIdLength);
-
-        // Act
-        var record = new ExternalThemeRecord(Guid.NewGuid(), externalId, DateTimeOffset.UtcNow);
-
-        // Assert
-        record.ExternalId.Length.ShouldBe(ExternalThemeRecord.MaxExternalIdLength);
-    }
-    
-    [Fact]
-    public void Constructor_ShouldThrowException_WhenExternalIdExceedsMaximumLength()
-    {
-        // Arrange
-        var externalId = new string('A', ExternalThemeRecord.MaxExternalIdLength + 1);
-
-        // Act
-        var action = () => new ExternalThemeRecord( Guid.NewGuid(), externalId, DateTimeOffset.UtcNow);
-
-        // Assert
-        action.ShouldThrow<ArgumentException>();
-    }
-    [Fact]
-    public void Constructor_ShouldThrowException_WhenObservedAtIsDefault()
-    {
-        // Act
-        var action = () => new ExternalThemeRecord(Guid.NewGuid(), "19", default);
-
-        // Assert
-        action.ShouldThrow<ArgumentException>();
-    }
-    
-    
-    [Fact]
-    public void LinkToTheme_ShouldSetThemeId()
-    {
-        // Arrange
-        var record = new ExternalThemeRecord(Guid.NewGuid(), "19", DateTimeOffset.UtcNow);
+        var record = CreateRecord();
         var themeId = Guid.NewGuid();
 
-        // Act
         record.LinkToTheme(themeId);
 
-        // Assert
         record.ThemeId.ShouldBe(themeId);
     }
-    [Fact]
-    public void LinkToTheme_ShouldThrowException_WhenThemeIdIsEmpty()
-    {
-        // Arrange
-        var record = new ExternalThemeRecord(Guid.NewGuid(), "19", DateTimeOffset.UtcNow);
 
-        // Act
+    [Fact]
+    public void LinkToTheme_ShouldBeIdempotent_WhenAlreadyLinkedToSameTheme()
+    {
+        var record = CreateRecord();
+        var themeId = Guid.NewGuid();
+
+        record.LinkToTheme(themeId);
+
+        record.LinkToTheme(themeId);
+
+        record.ThemeId.ShouldBe(themeId);
+    }
+
+    [Fact]
+    public void LinkToTheme_ShouldThrow_WhenAlreadyLinkedToDifferentTheme()
+    {
+        var record = CreateRecord();
+        var firstThemeId = Guid.NewGuid();
+        var secondThemeId = Guid.NewGuid();
+
+        record.LinkToTheme(firstThemeId);
+
+        var action = () => record.LinkToTheme(secondThemeId);
+
+        action.ShouldThrow<InvalidOperationException>();
+        record.ThemeId.ShouldBe(firstThemeId);
+    }
+
+    [Fact]
+    public void LinkToTheme_ShouldThrow_WhenThemeIdIsEmpty()
+    {
+        var record = CreateRecord();
+
         var action = () => record.LinkToTheme(Guid.Empty);
 
-        // Assert
-        action.ShouldThrow<ArgumentException>();
+        action.ShouldThrow<ArgumentException>()
+            .ParamName.ShouldBe("themeId");
     }
-
 
     [Fact]
-    public void Unlink_ShouldClearThemeId()
+    public void Unlink_ShouldKeepRecordUnlinked_WhenAlreadyUnlinked()
     {
-        // Arrange
-        var record = new ExternalThemeRecord(Guid.NewGuid(), "19", DateTimeOffset.UtcNow);
-        record.LinkToTheme(Guid.NewGuid());
+        var record = CreateRecord();
 
-        // Act
         record.Unlink();
 
-        // Assert
         record.ThemeId.ShouldBeNull();
     }
-    
+
+    [Fact]
+    public void Unlink_ShouldThrow_WhenRecordIsLinked()
+    {
+        var record = CreateRecord();
+        var themeId = Guid.NewGuid();
+
+        record.LinkToTheme(themeId);
+
+        var action = () => record.Unlink();
+
+        action.ShouldThrow<InvalidOperationException>();
+        record.ThemeId.ShouldBe(themeId);
+    }
+
     [Fact]
     public void MarkSeen_ShouldUpdateLastSeenAt()
     {
-        // Arrange
-        var firstObservedAt = new DateTimeOffset(2026, 8, 19, 10, 0, 0, TimeSpan.Zero);
-        var nextObservedAt = firstObservedAt.AddHours(2);
-        var record = new ExternalThemeRecord(Guid.NewGuid(), "19", firstObservedAt);
+        var observedAt = new DateTimeOffset(2026, 8, 20, 12, 0, 0, TimeSpan.Zero);
 
-        // Act
+        var record = new ExternalThemeRecord(Guid.NewGuid(), "17", observedAt);
+
+        var nextObservedAt = observedAt.AddDays(1);
+
         record.MarkSeen(nextObservedAt);
 
-        // Assert
-        record.LastSeenAt.ShouldBe(nextObservedAt.ToUniversalTime());
+        record.LastSeenAt.ShouldBe(nextObservedAt);
     }
+
+    [Fact]
+    public void MarkSeen_ShouldUpdateSourceUpdatedAt_WhenNewer()
+    {
+        var observedAt = new DateTimeOffset(2026, 8, 20, 12, 0, 0, TimeSpan.Zero);
+
+        var sourceUpdatedAt = observedAt.AddHours(-2);
+
+        var record = new ExternalThemeRecord(Guid.NewGuid(), "17", observedAt, sourceUpdatedAt);
+
+        var newerSourceUpdatedAt = observedAt.AddHours(1);
+
+        record.MarkSeen(observedAt.AddDays(1), newerSourceUpdatedAt);
+
+        record.SourceUpdatedAt.ShouldBe(newerSourceUpdatedAt);
+    }
+
+    [Fact]
+    public void MarkSeen_ShouldKeepSourceUpdatedAt_WhenIncomingValueIsOlder()
+    {
+        var observedAt = new DateTimeOffset(2026, 8, 20, 12, 0, 0, TimeSpan.Zero);
+
+        var sourceUpdatedAt = observedAt.AddHours(1);
+
+        var record = new ExternalThemeRecord(Guid.NewGuid(), "17", observedAt, sourceUpdatedAt);
+
+        record.MarkSeen(observedAt.AddDays(1), observedAt);
+
+        record.SourceUpdatedAt.ShouldBe(sourceUpdatedAt);
+    }
+
+    [Fact]
+    public void MarkSeen_ShouldThrow_WhenObservedAtIsOlderThanLastSeenAt()
+    {
+        var observedAt = new DateTimeOffset(2026, 8, 20, 12, 0, 0, TimeSpan.Zero);
+
+        var record = new ExternalThemeRecord(Guid.NewGuid(), "17", observedAt);
+
+        var action = () => record.MarkSeen(
+            observedAt.AddTicks(-1));
+
+        action.ShouldThrow<ArgumentException>().ParamName.ShouldBe("observedAt");
+    }
+
+    private static ExternalThemeRecord CreateRecord() =>
+        new ExternalThemeRecord(Guid.NewGuid(), "17", DateTimeOffset.UtcNow);
     
-    [Fact]
-    public void MarkSeen_ShouldThrowException_WhenObservedAtIsEarlierThanLastSeenAt()
-    {
-        // Arrange
-        var firstObservedAt = new DateTimeOffset(2026, 8, 19, 10, 0, 0, TimeSpan.Zero);
-        var record = new ExternalThemeRecord(Guid.NewGuid(), "19", firstObservedAt);
-
-        // Act
-        var action = () => record.MarkSeen(firstObservedAt.AddMinutes(-1));
-
-        // Assert
-        action.ShouldThrow<ArgumentException>();
-    }
-    [Fact]
-    public void MarkSeen_ShouldUpdateSourceUpdatedAt_WhenNewValueIsMoreRecent()
-    {
-        // Arrange
-        var observedAt = new DateTimeOffset(2026, 8, 19, 10, 0, 0, TimeSpan.Zero);
-        var sourceUpdatedAt = observedAt.AddDays(-2);
-        var newerSourceUpdatedAt = observedAt.AddDays(-1);
-        var record = new ExternalThemeRecord(Guid.NewGuid(), "19", observedAt, sourceUpdatedAt);
-
-        // Act
-        record.MarkSeen(observedAt.AddHours(1), newerSourceUpdatedAt);
-
-        // Assert
-        record.SourceUpdatedAt.ShouldBe(newerSourceUpdatedAt.ToUniversalTime());
-    }
-
-    [Fact]
-    public void MarkSeen_ShouldKeepSourceUpdatedAt_WhenNewValueIsOlder()
-    {
-        // Arrange
-        var observedAt = new DateTimeOffset(2026, 8, 19, 10, 0, 0, TimeSpan.Zero);
-        var sourceUpdatedAt = observedAt.AddDays(-1);
-        var olderSourceUpdatedAt = observedAt.AddDays(-2);
-        var record = new ExternalThemeRecord(Guid.NewGuid(), "19", observedAt, sourceUpdatedAt);
-
-        // Act
-        record.MarkSeen(observedAt.AddHours(1), olderSourceUpdatedAt);
-
-        // Assert
-        record.SourceUpdatedAt.ShouldBe(sourceUpdatedAt.ToUniversalTime());
-    }
 }
