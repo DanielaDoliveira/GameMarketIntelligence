@@ -10,13 +10,13 @@ public sealed class GamePersistenceTests
 {
     private readonly PostgreSqlFixture _fixture;
 
-    public GamePersistenceTests(PostgreSqlFixture fixture)=>_fixture = fixture;
-    
+    public GamePersistenceTests(PostgreSqlFixture fixture) => _fixture = fixture;
 
     [Fact]
     public async Task SaveAndLoad_ShouldPersistGameWithGenresAndPlatforms()
     {
         await _fixture.ResetDatabaseAsync();
+
         // Arrange
         var game = new Game(
             name: "Hades",
@@ -51,6 +51,7 @@ public sealed class GamePersistenceTests
 
         // Assert
         persistedGame.Name.ShouldBe("Hades");
+        persistedGame.NormalizedName.ShouldBe("HADES");
 
         persistedGame.Description.ShouldBe(
             "A roguelike action game.");
@@ -76,18 +77,19 @@ public sealed class GamePersistenceTests
     [Fact]
     public async Task SaveChanges_ShouldRejectGenresWithTheSameNormalizedName()
     {
+        // Arrange
         var firstGenre = new Genre("Strategy");
         var duplicateGenre = new Genre("  sTrAtEgY  ");
 
         await using var dbContext = _fixture.CreateDbContext();
 
-        dbContext.Genres.AddRange(
-            firstGenre,
-            duplicateGenre);
+        dbContext.Genres.AddRange(firstGenre, duplicateGenre);
 
+        // Act
         var action = async () =>
             await dbContext.SaveChangesAsync();
 
+        // Assert
         await action.ShouldThrowAsync<DbUpdateException>();
     }
 

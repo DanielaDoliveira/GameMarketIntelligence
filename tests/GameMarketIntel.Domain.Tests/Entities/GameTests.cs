@@ -52,15 +52,34 @@ public class GameTests
     }
 
     [Fact]
+    public void Constructor_ShouldStoreNormalizedName()
+    {
+        // Arrange & Act
+        var game = new Game("Hades");
+
+        // Assert
+        game.NormalizedName.ShouldBe("HADES");
+    }
+
+    [Fact]
+    public void Constructor_ShouldNormalizeTrimmedName()
+    {
+        // Arrange & Act
+        var game = new Game("  HaDeS  ");
+
+        // Assert
+        game.Name.ShouldBe("HaDeS");
+        game.NormalizedName.ShouldBe("HADES");
+    }
+
+    [Fact]
     public void Constructor_ShouldTrimDescription()
     {
         // Arrange
         const string description = "  A roguelike action game.  ";
 
         // Act
-        var game = new Game(
-            name: "Hades",
-            description: description);
+        var game = new Game(name: "Hades", description: description);
 
         // Assert
         game.Description.ShouldBe("A roguelike action game.");
@@ -70,13 +89,10 @@ public class GameTests
     [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
-    public void Constructor_ShouldNormalizeInvalidDescriptionToNull(
-        string? description)
+    public void Constructor_ShouldNormalizeInvalidDescriptionToNull(string? description)
     {
         // Arrange & Act
-        var game = new Game(
-            name: "Hades",
-            description: description);
+        var game = new Game(name: "Hades", description: description);
 
         // Assert
         game.Description.ShouldBeNull();
@@ -86,13 +102,10 @@ public class GameTests
     [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
-    public void Constructor_ShouldNormalizeInvalidOptionalImageUrlToNull(
-        string? imageUrl)
+    public void Constructor_ShouldNormalizeInvalidOptionalImageUrlToNull(string? imageUrl)
     {
         // Arrange & Act
-        var game = new Game(
-            name: "Hades",
-            imageUrl: imageUrl);
+        var game = new Game(name: "Hades", imageUrl: imageUrl);
 
         // Assert
         game.ImageUrl.ShouldBeNull();
@@ -101,13 +114,10 @@ public class GameTests
     [Theory]
     [InlineData("https://example.com/hades.png")]
     [InlineData("http://example.com/hades.png")]
-    public void Constructor_ShouldStoreValidAbsoluteImageUrl(
-        string imageUrl)
+    public void Constructor_ShouldStoreValidAbsoluteImageUrl(string imageUrl)
     {
         // Arrange & Act
-        var game = new Game(
-            name: "Hades",
-            imageUrl: imageUrl);
+        var game = new Game(name: "Hades", imageUrl: imageUrl);
 
         // Assert
         game.ImageUrl.ShouldBe(imageUrl);
@@ -118,13 +128,10 @@ public class GameTests
     [InlineData("/images/hades.png")]
     [InlineData("ftp://example.com/hades.png")]
     [InlineData("not-a-url")]
-    public void Constructor_ShouldThrowException_WhenImageUrlIsInvalid(
-        string imageUrl)
+    public void Constructor_ShouldThrowException_WhenImageUrlIsInvalid(string imageUrl)
     {
         // Arrange & Act
-        var action = () => new Game(
-            name: "Hades",
-            imageUrl: imageUrl);
+        var action = () => new Game(name: "Hades", imageUrl: imageUrl);
 
         // Assert
         action.ShouldThrow<ArgumentException>();
@@ -137,9 +144,7 @@ public class GameTests
         var firstReleaseDate = new DateOnly(2020, 9, 17);
 
         // Act
-        var game = new Game(
-            name: "Hades",
-            firstReleaseDate: firstReleaseDate);
+        var game = new Game(name: "Hades", firstReleaseDate: firstReleaseDate);
 
         // Assert
         game.FirstReleaseDate.ShouldBe(firstReleaseDate);

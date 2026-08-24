@@ -8,13 +8,17 @@ public sealed class GameConfiguration : IEntityTypeConfiguration<Game>
 {
     public void Configure(EntityTypeBuilder<Game> builder)
     {
-        builder.ToTable("Games");
-
         builder.HasKey(game => game.Id);
 
         builder.Property(game => game.Name)
             .HasMaxLength(200)
             .IsRequired();
+
+        builder.Property(game => game.NormalizedName)
+            .HasMaxLength(200)
+            .IsRequired();
+
+        builder.HasIndex(game => game.NormalizedName);
 
         builder.Property(game => game.Description)
             .HasMaxLength(4000);
@@ -24,7 +28,8 @@ public sealed class GameConfiguration : IEntityTypeConfiguration<Game>
         builder.Property(game => game.ImageUrl)
             .HasMaxLength(2048);
 
-        builder.HasMany(game => game.Genres)
+        builder
+            .HasMany(game => game.Genres)
             .WithMany()
             .UsingEntity<Dictionary<string, object>>(
                 "GameGenre",
@@ -41,13 +46,11 @@ public sealed class GameConfiguration : IEntityTypeConfiguration<Game>
                 join =>
                 {
                     join.ToTable("GameGenres");
-
-                    join.HasKey(
-                        "GameId",
-                        "GenreId");
+                    join.HasKey("GameId", "GenreId");
                 });
 
-        builder.HasMany(game => game.Platforms)
+        builder
+            .HasMany(game => game.Platforms)
             .WithMany()
             .UsingEntity<Dictionary<string, object>>(
                 "GamePlatform",
@@ -64,10 +67,7 @@ public sealed class GameConfiguration : IEntityTypeConfiguration<Game>
                 join =>
                 {
                     join.ToTable("GamePlatforms");
-
-                    join.HasKey(
-                        "GameId",
-                        "PlatformId");
+                    join.HasKey("GameId", "PlatformId");
                 });
     }
 }
