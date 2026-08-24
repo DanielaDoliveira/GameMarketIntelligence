@@ -1,4 +1,6 @@
-﻿namespace GameMarketIntel.Domain.Entities;
+﻿using GameMarketIntel.Domain.Enums;
+
+namespace GameMarketIntel.Domain.Entities;
 
 public sealed class Game
 {
@@ -18,6 +20,8 @@ public sealed class Game
 
     public string? ImageUrl { get; private set; }
 
+    public GameProductType? ProductType { get; private set; }
+
     public IReadOnlyCollection<Genre> Genres => _genres.AsReadOnly();
 
     public IReadOnlyCollection<Platform> Platforms => _platforms.AsReadOnly();
@@ -26,7 +30,12 @@ public sealed class Game
     {
     }
 
-    public Game(string name, string? description = null, DateOnly? firstReleaseDate = null, string? imageUrl = null)
+    public Game(
+        string name,
+        string? description = null,
+        DateOnly? firstReleaseDate = null,
+        string? imageUrl = null,
+        GameProductType? productType = null)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException
@@ -41,25 +50,18 @@ public sealed class Game
         Description = NormalizeOptionalText(description);
         FirstReleaseDate = firstReleaseDate;
         ImageUrl = ValidateAndNormalizeOptionalUrl(imageUrl);
+        ProductType = productType;
     }
 
-    private static string? NormalizeOptionalText(string? value)
-    {
-        return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
-    }
+    private static string? NormalizeOptionalText(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
     private static string? ValidateAndNormalizeOptionalUrl(string? imageUrl)
     {
         if (string.IsNullOrWhiteSpace(imageUrl))
             return null;
 
-        var isValidAbsoluteUrl =
-            Uri.TryCreate
-            (
-                imageUrl.Trim(),
-                UriKind.Absolute,
-                out var parsedUrl
-            );
+        var isValidAbsoluteUrl = Uri.TryCreate(imageUrl.Trim(), UriKind.Absolute, out var parsedUrl);
 
         if (!isValidAbsoluteUrl || parsedUrl is null)
             throw new ArgumentException
@@ -68,8 +70,7 @@ public sealed class Game
                 nameof(imageUrl)
             );
 
-        var isHttpOrHttps =
-            parsedUrl.Scheme == Uri.UriSchemeHttp || parsedUrl.Scheme == Uri.UriSchemeHttps;
+        var isHttpOrHttps = parsedUrl.Scheme == Uri.UriSchemeHttp || parsedUrl.Scheme == Uri.UriSchemeHttps;
 
         if (!isHttpOrHttps)
             throw new ArgumentException

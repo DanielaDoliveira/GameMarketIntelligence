@@ -1,4 +1,5 @@
 ﻿using GameMarketIntel.Domain.Entities;
+using GameMarketIntel.Domain.Enums;
 using GameMarketIntel.Infrastructure.IntegrationTests.Fixtures;
 using Microsoft.EntityFrameworkCore;
 using Shouldly;
@@ -22,7 +23,8 @@ public sealed class GamePersistenceTests
             name: "Hades",
             description: "A roguelike action game.",
             firstReleaseDate: new DateOnly(2020, 9, 17),
-            imageUrl: "https://example.com/hades.png");
+            imageUrl: "https://example.com/hades.png",
+            productType: GameProductType.MainGame);
 
         var genre = new Genre("Action");
 
@@ -52,12 +54,9 @@ public sealed class GamePersistenceTests
         // Assert
         persistedGame.Name.ShouldBe("Hades");
         persistedGame.NormalizedName.ShouldBe("HADES");
-
-        persistedGame.Description.ShouldBe(
-            "A roguelike action game.");
-
-        persistedGame.FirstReleaseDate.ShouldBe(
-            new DateOnly(2020, 9, 17));
+        persistedGame.Description.ShouldBe("A roguelike action game.");
+        persistedGame.FirstReleaseDate.ShouldBe(new DateOnly(2020, 9, 17));
+        persistedGame.ProductType.ShouldBe(GameProductType.MainGame);
 
         persistedGame.Genres.Count.ShouldBe(1);
 
@@ -83,11 +82,12 @@ public sealed class GamePersistenceTests
 
         await using var dbContext = _fixture.CreateDbContext();
 
-        dbContext.Genres.AddRange(firstGenre, duplicateGenre);
+        dbContext.Genres.AddRange(
+            firstGenre,
+            duplicateGenre);
 
         // Act
-        var action = async () =>
-            await dbContext.SaveChangesAsync();
+        var action = async () => await dbContext.SaveChangesAsync();
 
         // Assert
         await action.ShouldThrowAsync<DbUpdateException>();
@@ -107,8 +107,7 @@ public sealed class GamePersistenceTests
             duplicatePlatform);
 
         // Act
-        var action = async () =>
-            await dbContext.SaveChangesAsync();
+        var action = async () => await dbContext.SaveChangesAsync();
 
         // Assert
         await action.ShouldThrowAsync<DbUpdateException>();

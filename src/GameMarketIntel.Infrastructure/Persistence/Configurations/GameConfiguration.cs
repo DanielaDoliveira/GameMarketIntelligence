@@ -28,6 +28,10 @@ public sealed class GameConfiguration : IEntityTypeConfiguration<Game>
         builder.Property(game => game.ImageUrl)
             .HasMaxLength(2048);
 
+        builder.Property(game => game.ProductType)
+            .HasConversion<string>()
+            .HasMaxLength(50);
+
         builder
             .HasMany(game => game.Genres)
             .WithMany()

@@ -1,4 +1,5 @@
 ﻿using GameMarketIntel.Domain.Entities;
+using GameMarketIntel.Domain.Enums;
 using Shouldly;
 
 namespace GameMarketIntel.Domain.Tests.Entities;
@@ -79,7 +80,9 @@ public class GameTests
         const string description = "  A roguelike action game.  ";
 
         // Act
-        var game = new Game(name: "Hades", description: description);
+        var game = new Game(
+            name: "Hades",
+            description: description);
 
         // Assert
         game.Description.ShouldBe("A roguelike action game.");
@@ -92,7 +95,9 @@ public class GameTests
     public void Constructor_ShouldNormalizeInvalidDescriptionToNull(string? description)
     {
         // Arrange & Act
-        var game = new Game(name: "Hades", description: description);
+        var game = new Game(
+            name: "Hades",
+            description: description);
 
         // Assert
         game.Description.ShouldBeNull();
@@ -105,7 +110,9 @@ public class GameTests
     public void Constructor_ShouldNormalizeInvalidOptionalImageUrlToNull(string? imageUrl)
     {
         // Arrange & Act
-        var game = new Game(name: "Hades", imageUrl: imageUrl);
+        var game = new Game(
+            name: "Hades",
+            imageUrl: imageUrl);
 
         // Assert
         game.ImageUrl.ShouldBeNull();
@@ -117,7 +124,9 @@ public class GameTests
     public void Constructor_ShouldStoreValidAbsoluteImageUrl(string imageUrl)
     {
         // Arrange & Act
-        var game = new Game(name: "Hades", imageUrl: imageUrl);
+        var game = new Game(
+            name: "Hades",
+            imageUrl: imageUrl);
 
         // Assert
         game.ImageUrl.ShouldBe(imageUrl);
@@ -131,7 +140,9 @@ public class GameTests
     public void Constructor_ShouldThrowException_WhenImageUrlIsInvalid(string imageUrl)
     {
         // Arrange & Act
-        var action = () => new Game(name: "Hades", imageUrl: imageUrl);
+        var action = () => new Game(
+            name: "Hades",
+            imageUrl: imageUrl);
 
         // Assert
         action.ShouldThrow<ArgumentException>();
@@ -144,7 +155,9 @@ public class GameTests
         var firstReleaseDate = new DateOnly(2020, 9, 17);
 
         // Act
-        var game = new Game(name: "Hades", firstReleaseDate: firstReleaseDate);
+        var game = new Game(
+            name: "Hades",
+            firstReleaseDate: firstReleaseDate);
 
         // Assert
         game.FirstReleaseDate.ShouldBe(firstReleaseDate);
@@ -158,6 +171,31 @@ public class GameTests
 
         // Assert
         game.FirstReleaseDate.ShouldBeNull();
+    }
+
+    [Fact]
+    public void Constructor_ShouldStoreProductType()
+    {
+        // Arrange
+        const GameProductType productType = GameProductType.MainGame;
+
+        // Act
+        var game = new Game(
+            name: "Hades",
+            productType: productType);
+
+        // Assert
+        game.ProductType.ShouldBe(productType);
+    }
+
+    [Fact]
+    public void Constructor_ShouldAllowNullProductType()
+    {
+        // Arrange & Act
+        var game = new Game("Hades");
+
+        // Assert
+        game.ProductType.ShouldBeNull();
     }
 
     [Fact]
