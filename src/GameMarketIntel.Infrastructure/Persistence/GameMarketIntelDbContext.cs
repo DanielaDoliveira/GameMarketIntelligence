@@ -18,6 +18,8 @@ public sealed class GameMarketIntelDbContext(DbContextOptions<GameMarketIntelDbC
 
     public DbSet<ExternalKeywordRecord> ExternalKeywordRecords => Set<ExternalKeywordRecord>();
 
+    public DbSet<ExternalCompanyRecord> ExternalCompanyRecords => Set<ExternalCompanyRecord>();
+
     public DbSet<GameRelease> GameReleases => Set<GameRelease>();
 
     public DbSet<GameProductRelation> GameProductRelations => Set<GameProductRelation>();
@@ -27,6 +29,8 @@ public sealed class GameMarketIntelDbContext(DbContextOptions<GameMarketIntelDbC
     public DbSet<Genre> Genres => Set<Genre>();
 
     public DbSet<Platform> Platforms => Set<Platform>();
+
+    public DbSet<Company> Companies => Set<Company>();
 
     public DbSet<Theme> Themes => Set<Theme>();
 
@@ -44,6 +48,8 @@ public sealed class GameMarketIntelDbContext(DbContextOptions<GameMarketIntelDbC
         => Set<GamePlayerPerspective>();
 
     public DbSet<GameKeyword> GameKeywords => Set<GameKeyword>();
+
+    public DbSet<GameCompany> GameCompanies => Set<GameCompany>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
