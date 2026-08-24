@@ -3,6 +3,7 @@ using System;
 using GameMarketIntel.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace GameMarketIntel.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(GameMarketIntelDbContext))]
-    partial class GameMarketIntelDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260824112841_AddGameProductType")]
+    partial class AddGameProductType
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -35,62 +38,6 @@ namespace GameMarketIntel.Infrastructure.Persistence.Migrations
                     b.HasIndex("GenreId");
 
                     b.ToTable("GameGenres", (string)null);
-                });
-
-            modelBuilder.Entity("GameMarketIntel.Domain.Entities.Collection", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("name");
-
-                    b.Property<string>("NormalizedName")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("normalized_name");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("NormalizedName")
-                        .IsUnique()
-                        .HasDatabaseName("ux_collections_normalized_name");
-
-                    b.ToTable("collections", (string)null);
-                });
-
-            modelBuilder.Entity("GameMarketIntel.Domain.Entities.Company", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("name");
-
-                    b.Property<string>("NormalizedName")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("normalized_name");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("NormalizedName")
-                        .IsUnique()
-                        .HasDatabaseName("ux_companies_normalized_name");
-
-                    b.ToTable("companies", (string)null);
                 });
 
             modelBuilder.Entity("GameMarketIntel.Domain.Entities.DataSource", b =>
@@ -134,96 +81,6 @@ namespace GameMarketIntel.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ux_data_sources_code");
 
                     b.ToTable("data_sources", (string)null);
-                });
-
-            modelBuilder.Entity("GameMarketIntel.Domain.Entities.ExternalCollectionRecord", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<Guid?>("CollectionId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("collection_id");
-
-                    b.Property<Guid>("DataSourceId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("data_source_id");
-
-                    b.Property<string>("ExternalId")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("external_id");
-
-                    b.Property<DateTimeOffset>("FirstSeenAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("first_seen_at");
-
-                    b.Property<DateTimeOffset>("LastSeenAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("last_seen_at");
-
-                    b.Property<DateTimeOffset?>("SourceUpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("source_updated_at");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CollectionId")
-                        .HasDatabaseName("ix_external_collection_records_collection_id");
-
-                    b.HasIndex("DataSourceId", "ExternalId")
-                        .IsUnique()
-                        .HasDatabaseName("ux_external_collection_records_source_external_id");
-
-                    b.ToTable("external_collection_records", (string)null);
-                });
-
-            modelBuilder.Entity("GameMarketIntel.Domain.Entities.ExternalCompanyRecord", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<Guid?>("CompanyId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("company_id");
-
-                    b.Property<Guid>("DataSourceId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("data_source_id");
-
-                    b.Property<string>("ExternalId")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("external_id");
-
-                    b.Property<DateTimeOffset>("FirstSeenAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("first_seen_at");
-
-                    b.Property<DateTimeOffset>("LastSeenAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("last_seen_at");
-
-                    b.Property<DateTimeOffset?>("SourceUpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("source_updated_at");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CompanyId")
-                        .HasDatabaseName("ix_external_company_records_company_id");
-
-                    b.HasIndex("DataSourceId", "ExternalId")
-                        .IsUnique()
-                        .HasDatabaseName("ux_external_company_records_source_external_id");
-
-                    b.ToTable("external_company_records", (string)null);
                 });
 
             modelBuilder.Entity("GameMarketIntel.Domain.Entities.ExternalGameModeRecord", b =>
@@ -491,73 +348,6 @@ namespace GameMarketIntel.Infrastructure.Persistence.Migrations
                     b.ToTable("Games");
                 });
 
-            modelBuilder.Entity("GameMarketIntel.Domain.Entities.GameCollection", b =>
-                {
-                    b.Property<Guid>("ExternalGameRecordId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("external_game_record_id");
-
-                    b.Property<Guid>("ExternalCollectionRecordId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("external_collection_record_id");
-
-                    b.Property<Guid>("CollectionId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("collection_id");
-
-                    b.Property<Guid>("GameId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("game_id");
-
-                    b.HasKey("ExternalGameRecordId", "ExternalCollectionRecordId");
-
-                    b.HasIndex("CollectionId")
-                        .HasDatabaseName("ix_game_collections_collection_id");
-
-                    b.HasIndex("ExternalCollectionRecordId");
-
-                    b.HasIndex("GameId")
-                        .HasDatabaseName("ix_game_collections_game_id");
-
-                    b.ToTable("game_collections", (string)null);
-                });
-
-            modelBuilder.Entity("GameMarketIntel.Domain.Entities.GameCompany", b =>
-                {
-                    b.Property<Guid>("ExternalGameRecordId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("external_game_record_id");
-
-                    b.Property<Guid>("ExternalCompanyRecordId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("external_company_record_id");
-
-                    b.Property<string>("Role")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("role");
-
-                    b.Property<Guid>("CompanyId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("company_id");
-
-                    b.Property<Guid>("GameId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("game_id");
-
-                    b.HasKey("ExternalGameRecordId", "ExternalCompanyRecordId", "Role");
-
-                    b.HasIndex("CompanyId")
-                        .HasDatabaseName("ix_game_companies_company_id");
-
-                    b.HasIndex("ExternalCompanyRecordId");
-
-                    b.HasIndex("GameId")
-                        .HasDatabaseName("ix_game_companies_game_id");
-
-                    b.ToTable("game_companies", (string)null);
-                });
-
             modelBuilder.Entity("GameMarketIntel.Domain.Entities.GameGameMode", b =>
                 {
                     b.Property<Guid>("ExternalGameRecordId")
@@ -671,52 +461,6 @@ namespace GameMarketIntel.Infrastructure.Persistence.Migrations
                     b.HasIndex("PlayerPerspectiveId");
 
                     b.ToTable("game_player_perspectives", (string)null);
-                });
-
-            modelBuilder.Entity("GameMarketIntel.Domain.Entities.GameProductRelation", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<Guid>("ExternalSourceGameRecordId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("external_source_game_record_id");
-
-                    b.Property<Guid>("ExternalTargetGameRecordId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("external_target_game_record_id");
-
-                    b.Property<string>("RelationType")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("relation_type");
-
-                    b.Property<Guid>("SourceGameId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("source_game_id");
-
-                    b.Property<Guid>("TargetGameId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("target_game_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ExternalTargetGameRecordId");
-
-                    b.HasIndex("SourceGameId")
-                        .HasDatabaseName("ix_game_product_relations_source_game_id");
-
-                    b.HasIndex("TargetGameId")
-                        .HasDatabaseName("ix_game_product_relations_target_game_id");
-
-                    b.HasIndex("ExternalSourceGameRecordId", "ExternalTargetGameRecordId", "RelationType")
-                        .IsUnique()
-                        .HasDatabaseName("ux_game_product_relations_external_records_type");
-
-                    b.ToTable("game_product_relations", (string)null);
                 });
 
             modelBuilder.Entity("GameMarketIntel.Domain.Entities.GameRelease", b =>
@@ -1016,34 +760,6 @@ namespace GameMarketIntel.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("GameMarketIntel.Domain.Entities.ExternalCollectionRecord", b =>
-                {
-                    b.HasOne("GameMarketIntel.Domain.Entities.Collection", null)
-                        .WithMany()
-                        .HasForeignKey("CollectionId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("GameMarketIntel.Domain.Entities.DataSource", null)
-                        .WithMany()
-                        .HasForeignKey("DataSourceId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("GameMarketIntel.Domain.Entities.ExternalCompanyRecord", b =>
-                {
-                    b.HasOne("GameMarketIntel.Domain.Entities.Company", null)
-                        .WithMany()
-                        .HasForeignKey("CompanyId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("GameMarketIntel.Domain.Entities.DataSource", null)
-                        .WithMany()
-                        .HasForeignKey("DataSourceId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("GameMarketIntel.Domain.Entities.ExternalGameModeRecord", b =>
                 {
                     b.HasOne("GameMarketIntel.Domain.Entities.DataSource", null)
@@ -1112,60 +828,6 @@ namespace GameMarketIntel.Infrastructure.Persistence.Migrations
                         .WithMany()
                         .HasForeignKey("ThemeId")
                         .OnDelete(DeleteBehavior.Restrict);
-                });
-
-            modelBuilder.Entity("GameMarketIntel.Domain.Entities.GameCollection", b =>
-                {
-                    b.HasOne("GameMarketIntel.Domain.Entities.Collection", null)
-                        .WithMany()
-                        .HasForeignKey("CollectionId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("GameMarketIntel.Domain.Entities.ExternalCollectionRecord", null)
-                        .WithMany()
-                        .HasForeignKey("ExternalCollectionRecordId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("GameMarketIntel.Domain.Entities.ExternalGameRecord", null)
-                        .WithMany()
-                        .HasForeignKey("ExternalGameRecordId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("GameMarketIntel.Domain.Entities.Game", null)
-                        .WithMany()
-                        .HasForeignKey("GameId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("GameMarketIntel.Domain.Entities.GameCompany", b =>
-                {
-                    b.HasOne("GameMarketIntel.Domain.Entities.Company", null)
-                        .WithMany()
-                        .HasForeignKey("CompanyId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("GameMarketIntel.Domain.Entities.ExternalCompanyRecord", null)
-                        .WithMany()
-                        .HasForeignKey("ExternalCompanyRecordId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("GameMarketIntel.Domain.Entities.ExternalGameRecord", null)
-                        .WithMany()
-                        .HasForeignKey("ExternalGameRecordId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("GameMarketIntel.Domain.Entities.Game", null)
-                        .WithMany()
-                        .HasForeignKey("GameId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("GameMarketIntel.Domain.Entities.GameGameMode", b =>
@@ -1245,33 +907,6 @@ namespace GameMarketIntel.Infrastructure.Persistence.Migrations
                     b.HasOne("GameMarketIntel.Domain.Entities.PlayerPerspective", null)
                         .WithMany()
                         .HasForeignKey("PlayerPerspectiveId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("GameMarketIntel.Domain.Entities.GameProductRelation", b =>
-                {
-                    b.HasOne("GameMarketIntel.Domain.Entities.ExternalGameRecord", null)
-                        .WithMany()
-                        .HasForeignKey("ExternalSourceGameRecordId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("GameMarketIntel.Domain.Entities.ExternalGameRecord", null)
-                        .WithMany()
-                        .HasForeignKey("ExternalTargetGameRecordId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("GameMarketIntel.Domain.Entities.Game", null)
-                        .WithMany()
-                        .HasForeignKey("SourceGameId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("GameMarketIntel.Domain.Entities.Game", null)
-                        .WithMany()
-                        .HasForeignKey("TargetGameId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });

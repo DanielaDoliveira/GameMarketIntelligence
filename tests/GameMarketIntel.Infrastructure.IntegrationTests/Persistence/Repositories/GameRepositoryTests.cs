@@ -35,17 +35,17 @@ public sealed class GameRepositoryTests : IAsyncLifetime
                 new Game(
                     name: "Hades",
                     description: null,
-                    releaseDate: new DateOnly(2020, 9, 17),
+                    firstReleaseDate: new DateOnly(2020, 9, 17),
                     imageUrl: null),
                 new Game(
                     name: "Hades II",
                     description: null,
-                    releaseDate: new DateOnly(2024, 5, 6),
+                    firstReleaseDate: new DateOnly(2024, 5, 6),
                     imageUrl: null),
                 new Game(
                     name: "Dead Cells",
                     description: null,
-                    releaseDate: new DateOnly(2018, 8, 7),
+                    firstReleaseDate: new DateOnly(2018, 8, 7),
                     imageUrl: null));
 
             await arrangeDbContext.SaveChangesAsync();
@@ -83,7 +83,7 @@ public sealed class GameRepositoryTests : IAsyncLifetime
 
         var hades = new Game(
             name: "Hades",
-            releaseDate: new DateOnly(2020, 9, 17));
+            firstReleaseDate: new DateOnly(2020, 9, 17));
 
         hades.AddGenre(action);
         hades.AddGenre(roguelike);
@@ -91,14 +91,14 @@ public sealed class GameRepositoryTests : IAsyncLifetime
 
         var deadCells = new Game(
             name: "Dead Cells",
-            releaseDate: new DateOnly(2018, 8, 7));
+            firstReleaseDate: new DateOnly(2018, 8, 7));
 
         deadCells.AddGenre(roguelike);
         deadCells.AddPlatform(pc);
 
         var celeste = new Game(
             name: "Celeste",
-            releaseDate: new DateOnly(2018, 1, 25));
+            firstReleaseDate: new DateOnly(2018, 1, 25));
 
         celeste.AddGenre(platformGenre);
         celeste.AddPlatform(pc);
@@ -144,17 +144,17 @@ public sealed class GameRepositoryTests : IAsyncLifetime
         var switchPlatform = new Platform("Nintendo Switch");
         var playstation = new Platform("PlayStation 5");
 
-        var hades = new Game( name: "Hades", releaseDate: new DateOnly(2020, 9, 17));
+        var hades = new Game( name: "Hades", firstReleaseDate: new DateOnly(2020, 9, 17));
 
         hades.AddGenre(action);
         hades.AddPlatform(pc);
 
-        var mario = new Game( name: "Super Mario Odyssey", releaseDate: new DateOnly(2017, 10, 27));
+        var mario = new Game( name: "Super Mario Odyssey", firstReleaseDate: new DateOnly(2017, 10, 27));
 
         mario.AddGenre(action);
         mario.AddPlatform(switchPlatform);
 
-        var tlou = new Game( name: "The Last of Us", releaseDate: new DateOnly(2013, 6, 14));
+        var tlou = new Game( name: "The Last of Us", firstReleaseDate: new DateOnly(2013, 6, 14));
 
         tlou.AddGenre(action);
         tlou.AddPlatform(playstation);
@@ -203,21 +203,21 @@ public sealed class GameRepositoryTests : IAsyncLifetime
 
         var hades = new Game(
             name: "Hades",
-            releaseDate: new DateOnly(2020, 9, 17));
+            firstReleaseDate: new DateOnly(2020, 9, 17));
 
         hades.AddGenre(action);
         hades.AddPlatform(pc);
 
         var zelda = new Game(
             name: "The Legend of Zelda",
-            releaseDate: new DateOnly(2017, 3, 3));
+            firstReleaseDate: new DateOnly(2017, 3, 3));
 
         zelda.AddGenre(action);
         zelda.AddPlatform(switchPlatform);
 
         var baldursGate = new Game(
             name: "Baldur's Gate 3",
-            releaseDate: new DateOnly(2023, 8, 3));
+            firstReleaseDate: new DateOnly(2023, 8, 3));
 
         baldursGate.AddGenre(rpg);
         baldursGate.AddPlatform(pc);
@@ -260,7 +260,7 @@ public sealed class GameRepositoryTests : IAsyncLifetime
 
         var hades = new Game(
             name: "Hades",
-            releaseDate: new DateOnly(2020, 9, 17));
+            firstReleaseDate: new DateOnly(2020, 9, 17));
 
         hades.AddGenre(action);
         hades.AddPlatform(pc);

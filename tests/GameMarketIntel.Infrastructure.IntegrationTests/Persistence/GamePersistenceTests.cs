@@ -1,4 +1,5 @@
 ﻿using GameMarketIntel.Domain.Entities;
+using GameMarketIntel.Domain.Enums;
 using GameMarketIntel.Infrastructure.IntegrationTests.Fixtures;
 using Microsoft.EntityFrameworkCore;
 using Shouldly;
@@ -10,19 +11,20 @@ public sealed class GamePersistenceTests
 {
     private readonly PostgreSqlFixture _fixture;
 
-    public GamePersistenceTests(PostgreSqlFixture fixture)=>_fixture = fixture;
-    
+    public GamePersistenceTests(PostgreSqlFixture fixture) => _fixture = fixture;
 
     [Fact]
     public async Task SaveAndLoad_ShouldPersistGameWithGenresAndPlatforms()
     {
         await _fixture.ResetDatabaseAsync();
+
         // Arrange
         var game = new Game(
             name: "Hades",
             description: "A roguelike action game.",
-            releaseDate: new DateOnly(2020, 9, 17),
-            imageUrl: "https://example.com/hades.png");
+            firstReleaseDate: new DateOnly(2020, 9, 17),
+            imageUrl: "https://example.com/hades.png",
+            productType: GameProductType.MainGame);
 
         var genre = new Genre("Action");
 
@@ -51,12 +53,10 @@ public sealed class GamePersistenceTests
 
         // Assert
         persistedGame.Name.ShouldBe("Hades");
-
-        persistedGame.Description.ShouldBe(
-            "A roguelike action game.");
-
-        persistedGame.ReleaseDate.ShouldBe(
-            new DateOnly(2020, 9, 17));
+        persistedGame.NormalizedName.ShouldBe("HADES");
+        persistedGame.Description.ShouldBe("A roguelike action game.");
+        persistedGame.FirstReleaseDate.ShouldBe(new DateOnly(2020, 9, 17));
+        persistedGame.ProductType.ShouldBe(GameProductType.MainGame);
 
         persistedGame.Genres.Count.ShouldBe(1);
 
@@ -76,6 +76,7 @@ public sealed class GamePersistenceTests
     [Fact]
     public async Task SaveChanges_ShouldRejectGenresWithTheSameNormalizedName()
     {
+        // Arrange
         var firstGenre = new Genre("Strategy");
         var duplicateGenre = new Genre("  sTrAtEgY  ");
 
@@ -85,9 +86,10 @@ public sealed class GamePersistenceTests
             firstGenre,
             duplicateGenre);
 
-        var action = async () =>
-            await dbContext.SaveChangesAsync();
+        // Act
+        var action = async () => await dbContext.SaveChangesAsync();
 
+        // Assert
         await action.ShouldThrowAsync<DbUpdateException>();
     }
 
@@ -105,8 +107,7 @@ public sealed class GamePersistenceTests
             duplicatePlatform);
 
         // Act
-        var action = async () =>
-            await dbContext.SaveChangesAsync();
+        var action = async () => await dbContext.SaveChangesAsync();
 
         // Assert
         await action.ShouldThrowAsync<DbUpdateException>();

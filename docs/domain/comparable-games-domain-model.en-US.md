@@ -1,204 +1,913 @@
 # Comparable Games Domain Model
 
-> Review status: updated by GMI-13 after IGDB PoC approval and the lightweight
-> multi-source compatibility spike on August 18, 2026.
-
 ## Purpose
 
-Describe the implemented foundation and the approved direction after external-source selection. The domain must answer validated producer questions without copying upstream API schemas.
+Define the current domain model and read behavior that support the Comparable Games feature in GameMarketIntel.
 
-## Current implementation
+The model should provide enough information to support early production and market-analysis questions while remaining source-neutral, provenance-aware, and compatible with the storage constraints of the MVP.
 
-- `Game`, `Genre`, `Platform`, `DataSource`, and `SourceReliability`;
-- many-to-many game/genre and game/platform relationships;
-- normalized-name invariants and uniqueness;
-- PostgreSQL persistence and EF Core configuration;
-- partial-name, genre, platform, and release-year search;
-- AND semantics across categories;
-- alphabetical pagination;
-- game details, genre, and platform read endpoints;
-- standardized validation and error responses;
-- responsive Blazor read experience.
+The model is intentionally pragmatic. It has evolved from the initial Comparable Games foundation through the source-identity, contextual-release, classification, product-relation, company, and collection increments validated during Milestone 2.
 
-## Current `Game`
+## Product Questions
 
-| Property | Required | Meaning |
-|---|---:|---|
-| `Id` | Yes | Internal identity |
+The Comparable Games vertical should help answer:
+
+* Which games may be considered comparable?
+* Which genres are associated with each game?
+* Which platforms are associated with each game?
+* When was each game first released?
+* Which games match a partial-name search?
+* Which games match a selected genre?
+* Which games match a selected platform?
+* Which games were released in a selected year?
+* What type of product is a game, when known?
+* Which related products are known for a game?
+* Which companies are associated with a game and in which roles?
+* Which collections contain or contextualize a game?
+* Which source records support contextual facts and associations?
+* Which limitations affect interpretation of the data?
+
+The model should later support:
+
+* advanced Comparable Games filtering;
+* genre-saturation analysis;
+* launch-window analysis;
+* platform comparison;
+* source-aware detail views;
+* historical market indicators;
+* commercial performance comparison.
+
+## Domain Scope
+
+The current domain and persistence scope includes:
+
+* `Game`;
+* `Genre`;
+* `Platform`;
+* `DataSource`;
+* `SourceReliability`;
+* `ExternalGameRecord`;
+* contextual `GameRelease`;
+* `Theme`;
+* `GameMode`;
+* `PlayerPerspective`;
+* `Keyword`;
+* external identities for approved classifications;
+* provenance-bearing game/classification associations;
+* `GameProductType`;
+* `GameProductRelation`;
+* `Company`;
+* `ExternalCompanyRecord`;
+* `GameCompanyRole`;
+* `GameCompany`;
+* `Collection`;
+* `ExternalCollectionRecord`;
+* `GameCollection`;
+* game-to-genre relationships;
+* game-to-platform relationships;
+* read contracts for the current Comparable Games search.
+
+Not every persisted concept is exposed through the public API or frontend yet.
+
+The persistence model may contain more treated information than a specific API contract or UI view needs. Application and Shared contracts should expose only the information required by each use case.
+
+## Current Status
+
+Implemented:
+
+* canonical `Game`, `Genre`, and `Platform`;
+* game-to-genre many-to-many relationship;
+* game-to-platform many-to-many relationship;
+* game-name normalization with a non-unique lookup index;
+* normalized-name uniqueness for canonical classifications, companies, and collections where applicable;
+* external source identity through `DataSource + ExternalId`;
+* contextual release modeling with provenance;
+* approved queryable classifications:
+  * themes;
+  * game modes;
+  * player perspectives;
+  * keywords;
+* provenance-bearing classification associations;
+* product type modeling;
+* directed product relationships with provenance;
+* canonical company modeling;
+* company external identities;
+* game/company roles with provenance;
+* canonical collection modeling;
+* collection external identities;
+* game/collection associations with provenance;
+* restrictive delete behavior for provenance-bearing relationships;
+* EF Core configurations;
+* PostgreSQL migrations;
+* PostgreSQL persistence;
+* domain tests;
+* PostgreSQL integration tests;
+* Comparable Games search contracts;
+* Application search service;
+* repository abstraction;
+* PostgreSQL search repository;
+* partial case-insensitive game-name filtering;
+* genre filtering;
+* platform filtering;
+* first-release-year filtering;
+* AND combination between different filter categories;
+* alphabetical ordering;
+* pagination;
+* pagination metadata;
+* `GET /api/games`;
+* `GET /api/games/{id:guid}`;
+* `GET /api/genres`;
+* `GET /api/platforms`;
+* FluentValidation for search parameters;
+* OpenAPI and Scalar documentation;
+* centralized API exception handling;
+* standardized `ProblemDetails` responses;
+* responsive Blazor Comparable Games experience;
+* visible Search action;
+* loading, error, empty, and no-results states;
+* 424 automated tests passing across the solution at the GMI-28 final quality gate.
+
+Not yet implemented in the public read experience:
+
+* public API contracts for product type;
+* public API contracts for product relationships;
+* public API contracts for companies and their roles;
+* public API contracts for collections;
+* public API contracts for contextual releases and provenance details;
+* advanced filters using the newly persisted classifications and product metadata;
+* Worker ingestion of the complete approved Milestone 2 subset;
+* multi-source reconciliation;
+* commercial metric observations.
+
+## Game
+
+### Purpose
+
+Represents one canonical game product used in market comparison and analysis.
+
+A canonical `Game` is not tied permanently to one provider. Source-specific identity and evidence live in external records and provenance-bearing contextual entities.
+
+### Implemented Properties
+
+| Property | Required | Purpose |
+| --- | ---: | --- |
+| `Id` | Yes | Internal canonical identity |
 | `Name` | Yes | Display name |
-| `Description` | No | Short context |
-| `ReleaseDate` | No | Simplified known release date |
-| `ImageUrl` | No | Optional external reference |
+| `NormalizedName` | Yes | Technical normalized name used for lookup and candidate discovery |
+| `Description` | No | Short descriptive context |
+| `FirstReleaseDate` | No | First known canonical product release date used by the current year filter |
+| `ImageUrl` | No | Selected external image reference |
+| `ProductType` | No | Canonical product type when known |
 
-The current release date is intentionally simplified and does not represent all platform, region, Early Access, port, remake, or remaster events.
+### Name Normalization
 
-## Canonical database and approved source roles
+`Name` preserves the display value after trimming.
 
-The database represents GMI's own canonical dataset, not a permanent copy of
-IGDB. IGDB is the only active source for the first MVP and provides its initial
-taxonomy and values. Future increments may materialize selected values from
-multiple sources without retaining complete or interchangeable copies of every
-catalog.
+`NormalizedName` is derived from the trimmed name using invariant uppercase normalization.
 
-- IGDB: base catalog source and general fallback when no more appropriate
-  contextual source is available;
-- Wikidata: gap filling, enrichment, cross-identifiers, and inconsistency
-  detection;
-- Steam: specialized and preferred only for facts about the Steam ecosystem;
-- future official sources: preferred only for fields and contexts where they
-  have authority and authorized access.
-
-There is no absolute provider precedence. Selection is field- and
-context-specific. One game may, for example, use an IGDB cover and genres,
-Wikidata identifiers, an IGDB Switch release, and a Steam-sourced Steam release.
-
-Provider identifiers must not become permanent source-specific properties on `Game`.
-
-## Approved architectural direction
-
-The lightweight multi-source compatibility spike confirmed the separation
-between an external source record and a canonical entity. The complete decision
-is recorded in
-[`ADR-0003`](../architecture/adr/ADR-0003-external-source-identity-and-provenance.md).
-It describes an extensible direction, not a requirement to deliver every future
-source or analytical capability in the first IGDB MVP.
+Example:
 
 ```text
-DataSource
-└── ExternalGameRecord
-    ├── ExternalId
-    ├── optional GameId
-    ├── SourceUpdatedAt
-    ├── LastSeenAt
-    └── ProcessingStatus
+Name:
+The Legend of Zelda: Ocarina of Time
 
-Game
-├── zero or more linked ExternalGameRecords
-├── Genres
-├── Themes
-├── GameModes
-├── Companies
-└── contextual releases with provenance
+NormalizedName:
+THE LEGEND OF ZELDA: OCARINA OF TIME
 ```
 
-Future supporting concepts are introduced only when justified by a concrete
-need and may include:
+`Game.NormalizedName` is intentionally not unique.
 
-- `MatchConfidence`;
-- source/evidence separation;
-- field- or assertion-level provenance;
-- reliability and conflict status;
-- temporal `SourceObservation`.
+Distinct products, editions, ports, or source records may legitimately have the same or very similar title. A normalized title supports lookup and candidate comparison but does not prove cross-source identity.
 
-GMI stores the selected canonical value and the minimum evidence required to
-explain its origin. Retaining every competing observation or allowing producers
-to switch the displayed catalog by source is not a requirement.
+### Implemented Relationships
 
-## Minimum provenance
+A game may:
 
-`DataSource` describes the integration and its operational obligations,
-including a stable code, public name, official URL, attribution, status, and
-retention rules. Value origin does not belong only to `DataSource`: it must be
-associated with the field or contextual entity that received the contribution.
+* have multiple genres;
+* be available on multiple platforms;
+* have multiple contextual release records;
+* have multiple external source records;
+* have multiple themes;
+* have multiple game modes;
+* have multiple player perspectives;
+* have multiple keywords;
+* have multiple company associations;
+* belong to multiple collections;
+* participate in directed product relationships.
 
-- releases preserve source, platform, ecosystem, region, precision, and status;
-- images preserve source identifiers needed to construct a URL, without storing
-  the binary;
-- localized names, websites, external identifiers, and relationships preserve
-  their source when materialized;
-- simple fields receive compact provenance only when required for attribution,
-  audit, removal, or recomposition;
-- the implementation does not anticipate a heavy generic polymorphic table for
-  every field.
+No product relationship automatically propagates genres, platforms, releases, companies, collections, classifications, or other fields from one `Game` to another.
 
-Provenance is also an operational rule. If a source must be disabled or its data
-removed, the system must locate its contributions, remove them, and, when
-possible, recompose the value from an allowed base or fallback source without
-changing the canonical game identity.
+## First Release Date and Contextual Releases
 
-## Storage strategy
+### `Game.FirstReleaseDate`
 
-The design accounts for the production database limit below 1 GB:
+`FirstReleaseDate` is a canonical summary value used by the current Comparable Games release-year filter.
 
-- do not store complete raw payloads, dumps, HTML, or routine snapshots;
-- do not mirror complete auxiliary catalogs;
-- do not store image binaries;
-- query Wikidata and Steam selectively for known games;
-- persist only accepted values and required external identity, synchronization,
-  and provenance;
-- initially create only constraints and indexes supported by real queries;
-- measure high-cardinality tables such as releases, images, keywords, and
-  many-to-many associations with representative data before expanding intake.
+It answers:
 
-## Product and API impact
+> What is the first known release date for this canonical product?
 
-GMI provides blended, auditable canonical data, not selectable alternative
-catalogs. In addition to game details, the API must eventually expose a
-provenance summary mapping fields or contexts to contributing sources without
-duplicating the values.
+It is nullable because source coverage may be incomplete.
 
-`Data Sources` gains two responsibilities:
+It does not replace detailed release observations.
 
-1. show the source of relevant fields and associations for the selected game;
-2. explain each integration's role, limitations, attribution, and links.
+### `GameRelease`
 
-Official, curated, or community nature remains visible evidence, but is not a
-selector that replaces the whole displayed dataset.
+`GameRelease` represents contextual release evidence.
 
-## GMI-13 gap analysis
+It preserves the relevant release context, including:
 
-| Current state | Approved need | Implementation direction |
-|---|---|---|
-| `DataSource` is not linked to an imported game | external identity and idempotency | introduce an external record linked to the source and optionally to `Game` |
-| `Game` has one simplified `ReleaseDate` | contextual releases | model releases by platform, region, precision, status, and source |
-| `Game.ImageUrl` is a direct URL | auditable, storage-efficient images | persist source metadata and IDs and construct display URLs |
-| provenance is not attached to values | attribution, removal, and recomposition | source on contextual entities and compact support for simple fields |
-| Data Sources is institutional | selected-game audit | add a field/context → source map while retaining the institutional section |
-| future vision allowed provider selection | selective retention cannot support switching | remove source-catalog selection |
-| the model starts with IGDB | selective future composition | scope IGDB to the first MVP and the base/fallback role |
+* canonical `Game`;
+* `Platform`;
+* source `ExternalGameRecord`;
+* external release identity;
+* release-date precision/components;
+* region when available;
+* status when available;
+* observation metadata.
 
-Approved identity rules:
+This separation allows the model to distinguish:
 
-- `Game.Id` identifies the canonical GMI game;
-- `DataSource + ExternalId` safely identifies one record within a source;
-- an external record may remain unlinked to `Game` until sufficient evidence
-  exists;
-- normalized name supports search and candidate generation but does not
-  authorize automatic reconciliation;
-- provider IDs are not provider-specific properties on `Game`.
+```text
+Game.FirstReleaseDate
+→ canonical summary/filter value
 
-## Modeling rules
+GameRelease
+→ platform/region/source-specific release occurrence
+```
 
-- producer needs come before source schemas;
-- source identity and provenance must remain inspectable;
-- conflicts must not be silently erased;
-- game base, DLC, bundle, remake, remaster, and port must not be merged blindly;
-- prices, reviews, rankings, player counts, and other changing values are observations;
-- images and descriptions require separate rights review;
-- raw payloads, HTML, and image binaries should not be stored by default.
-- integrations must honor source-specific licensing, authorized endpoints,
-  attribution, retention, and removal requirements;
-- SteamDB remains a manual reference and never feeds a Worker, persistence, or
-  the public API.
+Ports, remakes, remasters, bundles, expansions, and other distinct products are not collapsed into one game merely because they are related.
 
-## Migration gate
+## Product Type
 
-No major migration before:
+`GameProductType` describes what the product itself is.
 
-1. required questions and filters for the current IGDB MVP are fixed;
-2. permitted IGDB fields and their nullability are approved by the completed
-   PoC;
-3. apply the compatibility confirmed by the spike and `ADR-0003` to canonical
-   identity, external records, provenance, and source-specific contracts;
-4. domain and ingestion architecture are reviewed;
-5. the migration is limited to concepts justified by the current iteration.
+Current domain vocabulary:
 
-The first migration does not need production reconciliation, competing
-observations, user source selection, or generic field history. It must,
-however, avoid a structure that prevents provenance, removal, and recomposition
-when the second source is integrated.
+* `MainGame`;
+* `Dlc`;
+* `Expansion`;
+* `Bundle`;
+* `StandaloneExpansion`;
+* `Mod`;
+* `Episode`;
+* `Season`;
+* `Remake`;
+* `Remaster`;
+* `ExpandedGame`;
+* `Port`;
+* `Fork`;
+* `PackAddon`;
+* `Update`.
 
-Complete Wikidata and Steam field mappings are not prerequisites for the first
-IGDB persistence increment. They remain future-iteration gates before those
-sources are integrated. This preserves the multi-source product direction
-without forcing future fields into the current schema.
+`Game.ProductType` is nullable.
+
+Unknown product type is represented by `null`, not by a synthetic `Unknown` value.
+
+The enum is source-neutral. Provider adapters must map source values explicitly and must not depend on matching provider numeric IDs to the domain enum's numeric values.
+
+## Product Relationships
+
+### Purpose
+
+`GameProductRelation` represents a directed relation between two canonical products.
+
+`GameProductType` answers:
+
+> What is this product?
+
+`GameProductRelationType` answers:
+
+> How is this product related to another product?
+
+### Current Relation Vocabulary
+
+* `DlcOf`;
+* `ExpansionOf`;
+* `StandaloneExpansionOf`;
+* `RemakeOf`;
+* `RemasterOf`;
+* `PortOf`;
+* `ExpandedGameOf`;
+* `EpisodeOf`;
+* `SeasonOf`;
+* `ForkOf`;
+* `PackAddonOf`;
+* `UpdateOf`;
+* `BundleContains`;
+* `VersionOf`.
+
+Example:
+
+```text
+The Legend of Zelda: Ocarina of Time 3D
+    └── RemakeOf → The Legend of Zelda: Ocarina of Time
+```
+
+### Provenance
+
+A `GameProductRelation` preserves:
+
+* `SourceGameId`;
+* `TargetGameId`;
+* `ExternalSourceGameRecordId`;
+* `ExternalTargetGameRecordId`;
+* `RelationType`.
+
+Both external game records must:
+
+* already be linked to canonical games;
+* belong to the same `DataSource`.
+
+A game cannot have a relation with itself through one relation record.
+
+The same external source/target pair plus relation type is unique.
+
+All persistence FKs use restrictive delete behavior.
+
+## Genre
+
+### Purpose
+
+Represents a canonical game genre used for filtering, comparison, aggregation, and saturation analysis.
+
+### Implemented Properties
+
+| Property | Required | Purpose |
+| --- | ---: | --- |
+| `Id` | Yes | Internal identity |
+| `Name` | Yes | Display name |
+| `NormalizedName` | Yes | Normalized value used for uniqueness and comparison |
+
+### Relationships
+
+* A genre may be associated with multiple games.
+* A game may be associated with multiple genres.
+
+Genre classification may differ between sources.
+
+Normalized-name uniqueness prevents duplicate canonical concepts caused only by casing or formatting differences. Cross-source equivalence still requires source-aware mapping and must not be inferred from the normalized name alone.
+
+## Platform
+
+### Purpose
+
+Represents a canonical game platform used for filtering, release context, market comparison, and platform-level analysis.
+
+### Implemented Properties
+
+| Property | Required | Purpose |
+| --- | ---: | --- |
+| `Id` | Yes | Internal identity |
+| `Name` | Yes | Platform display name |
+| `Family` | No | Product family or ecosystem |
+| `Manufacturer` | No | Platform manufacturer |
+| `ImageUrl` | No | External image reference |
+
+### Relationships
+
+* A platform may be associated with multiple games.
+* A game may be associated with multiple platforms.
+* A contextual `GameRelease` belongs to one platform.
+
+Platform and game images are referenced by URL rather than stored as binary content.
+
+## Queryable Classifications
+
+The approved Milestone 2 queryable classifications are modeled as separate canonical entities:
+
+* `Theme`;
+* `GameMode`;
+* `PlayerPerspective`;
+* `Keyword`.
+
+Each canonical classification has:
+
+* `Id`;
+* `Name`;
+* `NormalizedName`.
+
+Each classification also has its own external identity record:
+
+* `ExternalThemeRecord`;
+* `ExternalGameModeRecord`;
+* `ExternalPlayerPerspectiveRecord`;
+* `ExternalKeywordRecord`.
+
+Source identity follows:
+
+```text
+DataSourceId + ExternalId
+```
+
+The canonical game/classification associations preserve both:
+
+* the canonical IDs used by GMI;
+* the external record IDs that support the association.
+
+This prevents the canonical relationship from losing its provenance.
+
+The current persistence associations are:
+
+* `GameTheme`;
+* `GameGameMode`;
+* `GamePlayerPerspective`;
+* `GameKeyword`.
+
+Public filtering by these classifications remains a later API/frontend decision.
+
+## Company
+
+### Purpose
+
+Represents a canonical source-neutral company.
+
+A company is not permanently classified as developer or publisher. The role belongs to the relationship between a company and a specific game.
+
+### Implemented Properties
+
+| Property | Required | Purpose |
+| --- | ---: | --- |
+| `Id` | Yes | Internal canonical identity |
+| `Name` | Yes | Display name |
+| `NormalizedName` | Yes | Normalized value used for canonical uniqueness |
+
+`Company.NormalizedName` is unique in the current Milestone 2 model.
+
+### External Company Identity
+
+`ExternalCompanyRecord` preserves:
+
+* `DataSourceId`;
+* `ExternalId`;
+* optional `CompanyId`;
+* `FirstSeenAt`;
+* `LastSeenAt`;
+* optional `SourceUpdatedAt`.
+
+`DataSourceId + ExternalId` is unique.
+
+An external company record may remain unlinked until there is enough evidence.
+
+Once linked, it cannot be silently relinked to another canonical company.
+
+### Game Company Role
+
+`GameCompanyRole` currently includes:
+
+* `Developer`;
+* `Publisher`;
+* `Porting`;
+* `Supporting`.
+
+### `GameCompany`
+
+`GameCompany` represents the provenance-bearing N:N relationship between games and companies.
+
+It preserves:
+
+* `GameId`;
+* `CompanyId`;
+* `ExternalGameRecordId`;
+* `ExternalCompanyRecordId`;
+* `Role`.
+
+The same company may:
+
+* participate in many games;
+* have different roles in different games;
+* have multiple supported roles for the same game.
+
+The persistence identity is:
+
+```text
+ExternalGameRecordId
++ ExternalCompanyRecordId
++ Role
+```
+
+All FKs use restrictive delete behavior.
+
+Company participation is context and evidence. It is not automatic proof of officiality, authorization, or commercial legitimacy.
+
+## Collection
+
+### Purpose
+
+Represents a canonical source-neutral game collection.
+
+Collections are approved for the current MVP persistence model.
+
+Franchises remain deferred.
+
+### Implemented Properties
+
+| Property | Required | Purpose |
+| --- | ---: | --- |
+| `Id` | Yes | Internal canonical identity |
+| `Name` | Yes | Display name |
+| `NormalizedName` | Yes | Normalized value used for canonical uniqueness |
+
+`Collection.NormalizedName` is unique in the current Milestone 2 model.
+
+### External Collection Identity
+
+`ExternalCollectionRecord` preserves:
+
+* `DataSourceId`;
+* `ExternalId`;
+* optional `CollectionId`;
+* `FirstSeenAt`;
+* `LastSeenAt`;
+* optional `SourceUpdatedAt`.
+
+`DataSourceId + ExternalId` is unique.
+
+An external collection record may remain unlinked and, once linked, cannot be silently relinked to another canonical collection.
+
+### `GameCollection`
+
+`GameCollection` represents the provenance-bearing N:N relationship between games and collections.
+
+It preserves:
+
+* `GameId`;
+* `CollectionId`;
+* `ExternalGameRecordId`;
+* `ExternalCollectionRecordId`.
+
+The persistence identity is:
+
+```text
+ExternalGameRecordId
++ ExternalCollectionRecordId
+```
+
+A collection may contain multiple games, and a game may participate in more than one collection when supported by source evidence.
+
+All FKs use restrictive delete behavior.
+
+## Data Source and External Identity
+
+### Canonical Identity
+
+`Game.Id` is the canonical GMI identity.
+
+Canonical identity must not depend on Steam, IGDB, or any other single source.
+
+### External Source Identity
+
+An external source record is identified safely by:
+
+```text
+DataSourceId + ExternalId
+```
+
+`ExternalGameRecord` preserves the source identity of a game observation and may optionally link to a canonical `Game`.
+
+The same general pattern is used for classifications, companies, and collections.
+
+### Source-Neutral Rule
+
+The domain must avoid permanent provider-specific properties such as:
+
+```text
+IgdbId
+SteamId
+WikidataId
+```
+
+Provider-specific IDs belong in external identity records.
+
+Normalized names may help discover reconciliation candidates, but they never prove equivalence by themselves.
+
+Multi-source reconciliation remains outside the current Milestone 2 implementation.
+
+## Provenance Model
+
+GMI stores treated canonical data plus the minimum source evidence required to understand, audit, delete, or later reconcile a contribution.
+
+Provenance is preserved on contextual entities and associations where the source matters materially.
+
+Examples include:
+
+* releases;
+* queryable classification associations;
+* product relationships;
+* game/company roles;
+* game/collection membership.
+
+The current design deliberately avoids a generic polymorphic field-history table.
+
+More granular field-level provenance should be introduced only if validated product or legal requirements justify its storage and complexity.
+
+## Implemented Relationship Model
+
+The current relationship model includes:
+
+```text
+Game
+  ├── many-to-many → Genre
+  ├── many-to-many → Platform
+  ├── source identities → ExternalGameRecord
+  ├── contextual releases → GameRelease → Platform
+  ├── provenance associations → Theme
+  ├── provenance associations → GameMode
+  ├── provenance associations → PlayerPerspective
+  ├── provenance associations → Keyword
+  ├── provenance associations → Company + Role
+  ├── provenance associations → Collection
+  └── directed provenance relations → Game
+```
+
+This persistence model is richer than the current public search contract.
+
+The API must expose source-neutral read contracts rather than returning domain or EF Core entities directly.
+
+## Comparable Games Search
+
+### Current Search Contract
+
+The current query contract remains:
+
+```text
+Search
+GenreId
+PlatformId
+ReleaseYear
+Page
+PageSize
+```
+
+The current endpoint accepts:
+
+* one optional text search;
+* one optional genre identifier;
+* one optional platform identifier;
+* one optional release year;
+* pagination parameters.
+
+The newly persisted GMI-27/GMI-28 concepts are not yet public search parameters.
+
+### Search Semantics
+
+Different filter categories use AND semantics.
+
+```text
+Search condition
+AND
+Genre condition
+AND
+Platform condition
+AND
+Release-year condition
+```
+
+The current implementation does not accept multiple genre or platform values in the same request.
+
+Advanced filtering remains a later API/frontend increment.
+
+### Partial-Name Search
+
+Game-name search:
+
+* trims the supplied term;
+* uses PostgreSQL `ILike`;
+* ignores letter casing;
+* matches the term within any part of the game name.
+
+`Game.NormalizedName` exists for technical consistency and candidate discovery but does not replace the current partial-name search semantics.
+
+### Pagination
+
+The search result exposes:
+
+```text
+Items
+Page
+PageSize
+TotalItems
+TotalPages
+```
+
+Rules:
+
+* `Page` must be greater than or equal to `1`;
+* `PageSize` must be between `1` and `100`;
+* default `Page` is `1`;
+* default `PageSize` is `20`.
+
+The repository:
+
+1. applies filters;
+2. counts all matching records;
+3. orders games alphabetically;
+4. skips records from previous pages;
+5. takes only the requested page size;
+6. projects the result into read contracts.
+
+### Release-Year Search
+
+`ReleaseYear` uses `Game.FirstReleaseDate`.
+
+When supplied:
+
+* games without `FirstReleaseDate` are excluded;
+* the stored year must match the supplied year;
+* the supplied year cannot be greater than the current year.
+
+Detailed `GameRelease` rows do not currently drive the public release-year filter.
+
+## Implemented Comparable Games Response
+
+The current public search response contains:
+
+```text
+Game identifier
+Game name
+Description
+Release date
+Image URL
+Genres
+Platforms
+```
+
+The public contract continues to use a user-facing release-date field even though the canonical domain property is now named `FirstReleaseDate`.
+
+Genres and platforms are returned as lightweight read categories.
+
+The current frontend does not automatically receive every persisted GMI-27/GMI-28 concept.
+
+Future API contracts may expose selected information such as:
+
+* product type;
+* related products;
+* companies and roles;
+* collections;
+* contextual releases;
+* source information.
+
+That exposure should be driven by product use cases rather than by the shape of the database.
+
+## Storage Constraints
+
+The Neon Free storage limit remains a product constraint.
+
+The model prioritizes:
+
+* normalized structured data;
+* source identities;
+* selected canonical values;
+* contextual records needed for product questions;
+* provenance required for audit, deletion, attribution, and future reconciliation.
+
+The operational database should avoid storing:
+
+* raw API payloads;
+* complete JSON responses;
+* HTML pages;
+* image binaries;
+* unnecessary source duplicates;
+* complete auxiliary-provider mirrors.
+
+Storage growth may require:
+
+* selective source ingestion;
+* reduced historical granularity;
+* aggregation;
+* retention policies;
+* postponement of storage-intensive features.
+
+## Delete Behavior and Integrity
+
+Provenance-bearing relationships introduced in Milestone 2 use restrictive deletes.
+
+A referenced canonical or external record cannot be deleted while dependent association rows still exist.
+
+Representative integration tests validate restrictions involving:
+
+* product relationships;
+* companies;
+* collections;
+* external game records.
+
+The integration-test database reset must include every table added by completed migrations so tests do not leak state through the shared PostgreSQL fixture.
+
+## Validation Responsibilities
+
+Validation remains divided by responsibility.
+
+### Domain Validation
+
+Domain entities protect invariants independent of the caller.
+
+Examples:
+
+* required names;
+* trimming and normalization;
+* maximum lengths;
+* external identity validity;
+* linked-record consistency;
+* same-source provenance requirements;
+* prevention of self-product relationships;
+* prevention of silent relinking.
+
+### Application Validation
+
+Application validators protect use-case inputs.
+
+Current search rules include:
+
+```text
+Page >= 1
+PageSize between 1 and 100
+ReleaseYear <= current year
+```
+
+### Persistence Validation
+
+EF Core/PostgreSQL constraints enforce persistence-level integrity such as:
+
+* primary keys;
+* composite keys;
+* unique external identities;
+* canonical normalized-name uniqueness where approved;
+* foreign keys;
+* restrictive delete behavior;
+* duplicate-provenance prevention.
+
+## Implementation Progress
+
+Completed foundation:
+
+1. `DataSource` and reliability foundation;
+2. canonical `Genre`, `Platform`, and `Game`;
+3. game-to-genre and game-to-platform relationships;
+4. Comparable Games search and details API;
+5. genre and platform list APIs;
+6. responsive Comparable Games frontend;
+7. initial real-source research and IGDB PoC;
+8. source-neutral identity and provenance design.
+
+Completed Milestone 2 persistence increments:
+
+1. **GMI-25** — external source identity;
+2. **GMI-26** — contextual releases with provenance;
+3. **GMI-27** — approved queryable classifications;
+4. **GMI-28** — product types, product relationships, companies, company roles, collections, provenance, constraints, mappings, tests, and migrations.
+
+GMI-28 final quality gate:
+
+```text
+Build: passed
+Tests: 424 passed
+Failures: 0
+Ignored: 0
+```
+
+## Next Implementation Steps
+
+Within the persistence milestone:
+
+1. GMI-29 — cover and screenshot metadata;
+2. GMI-30 — persistence and storage-budget validation.
+
+After the approved persistence model is complete:
+
+1. implement the Worker/Collector ingestion flow for the approved source subset;
+2. populate the canonical dataset with treated real data;
+3. expose selected new concepts through Application and API contracts;
+4. decide which persisted information belongs in Comparable Games cards, details, and advanced filters;
+5. preserve source-aware presentation and attribution;
+6. validate the complete production flow with real data.
+
+The frontend should organize the API's use-case-specific contracts. It should not mirror the database schema or expose every internal provenance identifier.
+
+## Deferred Concepts
+
+The following concepts remain intentionally deferred unless a later Jira item explicitly activates them:
+
+* multi-source reconciliation;
+* franchises;
+* field-level generic history tables;
+* multiple genres in one current search request;
+* multiple platforms in one current search request;
+* advanced similarity scoring;
+* recommendation systems;
+* sales and revenue observations;
+* historical commercial metric snapshots;
+* machine learning;
+* public filters for every persisted classification;
+* automatic propagation of data across product relationships.
+
+## Design Principle
+
+The domain model should support validated product questions without becoming a copy of an upstream API schema.
+
+The guiding principle remains:
+
+> Model the complexity required by validated product decisions, not the complexity that may exist in every future scenario.
+
+A second principle now also applies:
+
+> Preserve enough identity and provenance to explain where a fact or relationship came from without forcing the public API or frontend to expose the complete persistence model.

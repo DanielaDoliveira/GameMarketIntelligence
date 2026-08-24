@@ -21,7 +21,7 @@ public sealed class GameService( IGameRepository gameRepository) : IGameService
             game.Id,
             game.Name,
             game.Description,
-            game.ReleaseDate,
+            game.FirstReleaseDate,
             game.ImageUrl,
             game.Genres
                 .Select(genre => new GenreDetails(
