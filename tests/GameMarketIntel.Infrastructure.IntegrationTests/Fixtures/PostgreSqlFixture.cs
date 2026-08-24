@@ -32,10 +32,7 @@ public sealed class PostgreSqlFixture : IAsyncLifetime
         await dbContext.Database.MigrateAsync();
     }
 
-    public async Task DisposeAsync()
-    {
-        await _container.DisposeAsync();
-    }
+    public async Task DisposeAsync() => await _container.DisposeAsync();
 
     public async Task ResetDatabaseAsync()
     {
@@ -44,16 +41,23 @@ public sealed class PostgreSqlFixture : IAsyncLifetime
         await dbContext.Database.ExecuteSqlRawAsync(
             """
             TRUNCATE TABLE
+                game_product_relations,
+                game_companies,
+                game_collections,
                 game_themes,
                 game_game_modes,
                 game_player_perspectives,
                 game_keywords,
                 game_releases,
+                external_company_records,
+                external_collection_records,
                 external_theme_records,
                 external_game_mode_records,
                 external_player_perspective_records,
                 external_keyword_records,
                 external_game_records,
+                companies,
+                collections,
                 themes,
                 game_modes,
                 player_perspectives,
