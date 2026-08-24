@@ -3,7 +3,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GameMarketIntel.Infrastructure.Persistence;
 
-public sealed class GameMarketIntelDbContext(DbContextOptions<GameMarketIntelDbContext> options) : DbContext(options)
+public sealed class GameMarketIntelDbContext(
+    DbContextOptions<GameMarketIntelDbContext> options)
+    : DbContext(options)
 {
     public DbSet<DataSource> DataSources => Set<DataSource>();
 
@@ -20,6 +22,8 @@ public sealed class GameMarketIntelDbContext(DbContextOptions<GameMarketIntelDbC
 
     public DbSet<ExternalCompanyRecord> ExternalCompanyRecords => Set<ExternalCompanyRecord>();
 
+    public DbSet<ExternalCollectionRecord> ExternalCollectionRecords => Set<ExternalCollectionRecord>();
+
     public DbSet<GameRelease> GameReleases => Set<GameRelease>();
 
     public DbSet<GameProductRelation> GameProductRelations => Set<GameProductRelation>();
@@ -31,6 +35,8 @@ public sealed class GameMarketIntelDbContext(DbContextOptions<GameMarketIntelDbC
     public DbSet<Platform> Platforms => Set<Platform>();
 
     public DbSet<Company> Companies => Set<Company>();
+
+    public DbSet<Collection> Collections => Set<Collection>();
 
     public DbSet<Theme> Themes => Set<Theme>();
 
@@ -50,6 +56,8 @@ public sealed class GameMarketIntelDbContext(DbContextOptions<GameMarketIntelDbC
     public DbSet<GameKeyword> GameKeywords => Set<GameKeyword>();
 
     public DbSet<GameCompany> GameCompanies => Set<GameCompany>();
+
+    public DbSet<GameCollection> GameCollections => Set<GameCollection>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
