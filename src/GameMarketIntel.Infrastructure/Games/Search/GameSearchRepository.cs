@@ -14,31 +14,41 @@ public sealed class GameSearchRepository : IGameSearchRepository
         _dbContext = dbContext;
     }
 
-    public async Task<SearchGamesResult> SearchAsync(  SearchGamesQuery query,CancellationToken cancellationToken = default)
+    public async Task<SearchGamesResult> SearchAsync(
+        SearchGamesQuery query,
+        CancellationToken cancellationToken = default)
     {
-        var gamesQuery = _dbContext.Games .AsNoTracking() .AsQueryable();
+        var gamesQuery = _dbContext.Games
+            .AsNoTracking()
+            .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(query.Search))
         {
             var searchTerm = query.Search.Trim();
-            gamesQuery = gamesQuery.Where(game =>  EF.Functions.ILike(game.Name, $"%{searchTerm}%"));
+
+            gamesQuery = gamesQuery.Where(game =>
+                EF.Functions.ILike(game.Name, $"%{searchTerm}%"));
         }
 
         if (query.GenreId.HasValue)
         {
             gamesQuery = gamesQuery.Where(game =>
-            game.Genres.Any(genre => genre.Id == query.GenreId.Value));
+                game.Genres.Any(
+                    genre => genre.Id == query.GenreId.Value));
         }
 
         if (query.PlatformId.HasValue)
         {
             gamesQuery = gamesQuery.Where(game =>
-                game.Platforms.Any(platform =>  platform.Id == query.PlatformId.Value));
+                game.Platforms.Any(platform => platform.Id == query.PlatformId.Value));
         }
 
         if (query.ReleaseYear.HasValue)
         {
-            gamesQuery = gamesQuery.Where(game =>game.FirstReleaseDate.HasValue &&  game.FirstReleaseDate.Value.Year == query.ReleaseYear.Value);
+            gamesQuery = gamesQuery.Where(game =>
+                game.FirstReleaseDate.HasValue &&
+                game.FirstReleaseDate.Value.Year ==
+                query.ReleaseYear.Value);
         }
 
         var totalItems = await gamesQuery.CountAsync(cancellationToken);
@@ -52,7 +62,7 @@ public sealed class GameSearchRepository : IGameSearchRepository
                 game.Name,
                 game.Description,
                 game.FirstReleaseDate,
-                game.ImageUrl,
+                null,
                 game.Genres
                     .OrderBy(genre => genre.Name)
                     .Select(genre => new GameSearchCategory(

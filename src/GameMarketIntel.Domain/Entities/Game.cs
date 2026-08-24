@@ -18,8 +18,6 @@ public sealed class Game
 
     public DateOnly? FirstReleaseDate { get; private set; }
 
-    public string? ImageUrl { get; private set; }
-
     public GameProductType? ProductType { get; private set; }
 
     public IReadOnlyCollection<Genre> Genres => _genres.AsReadOnly();
@@ -34,53 +32,23 @@ public sealed class Game
         string name,
         string? description = null,
         DateOnly? firstReleaseDate = null,
-        string? imageUrl = null,
         GameProductType? productType = null)
     {
         if (string.IsNullOrWhiteSpace(name))
-            throw new ArgumentException
-            (
+            throw new ArgumentException(
                 "The game cannot be null, empty or whitespace",
-                nameof(name)
-            );
+                nameof(name));
 
         Id = Guid.NewGuid();
         Name = name.Trim();
         NormalizedName = Name.ToUpperInvariant();
         Description = NormalizeOptionalText(description);
         FirstReleaseDate = firstReleaseDate;
-        ImageUrl = ValidateAndNormalizeOptionalUrl(imageUrl);
         ProductType = productType;
     }
 
     private static string? NormalizeOptionalText(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
-
-    private static string? ValidateAndNormalizeOptionalUrl(string? imageUrl)
-    {
-        if (string.IsNullOrWhiteSpace(imageUrl))
-            return null;
-
-        var isValidAbsoluteUrl = Uri.TryCreate(imageUrl.Trim(), UriKind.Absolute, out var parsedUrl);
-
-        if (!isValidAbsoluteUrl || parsedUrl is null)
-            throw new ArgumentException
-            (
-                "The game image URL must be a valid absolute URL.",
-                nameof(imageUrl)
-            );
-
-        var isHttpOrHttps = parsedUrl.Scheme == Uri.UriSchemeHttp || parsedUrl.Scheme == Uri.UriSchemeHttps;
-
-        if (!isHttpOrHttps)
-            throw new ArgumentException
-            (
-                "The game image URL must use HTTP or HTTPS.",
-                nameof(imageUrl)
-            );
-
-        return parsedUrl.ToString();
-    }
 
     public void AddGenre(Genre genre)
     {

@@ -24,8 +24,7 @@ public sealed class GameServiceTests
         var game = new Game(
             "Astro Bot",
             description: "A platform adventure game.",
-            firstReleaseDate: new DateOnly(2024, 9, 6),
-            imageUrl: "https://example.com/astro-bot.png");
+            firstReleaseDate: new DateOnly(2024, 9, 6));
 
         game.AddGenre(genre);
         game.AddPlatform(platform);
@@ -50,8 +49,7 @@ public sealed class GameServiceTests
             "A platform adventure game.");
         result.ReleaseDate.ShouldBe(
             new DateOnly(2024, 9, 6));
-        result.ImageUrl.ShouldBe(
-            "https://example.com/astro-bot.png");
+        result.ImageUrl.ShouldBeNull();
 
         result.Genres.Count.ShouldBe(1);
         result.Genres[0].Id.ShouldBe(genre.Id);
@@ -74,15 +72,21 @@ public sealed class GameServiceTests
 
         var repository = Substitute.For<IGameRepository>();
 
-        repository .GetByIdAsync(gameId,Arg.Any<CancellationToken>()) .Returns((Game?)null);
+        repository
+            .GetByIdAsync(
+                gameId,
+                Arg.Any<CancellationToken>())
+            .Returns((Game?)null);
 
         var service = new GameService(repository);
 
         // Act
-        var exception = await Should.ThrowAsync<NotFoundException>(() => service.GetByIdAsync(gameId));
+        var exception = await Should.ThrowAsync<NotFoundException>(
+            () => service.GetByIdAsync(gameId));
 
         // Assert
-        exception.Message.ShouldBe( $"Game '{gameId}' was not found.");
+        exception.Message.ShouldBe(
+            $"Game '{gameId}' was not found.");
     }
 
     [Fact]
@@ -94,18 +98,29 @@ public sealed class GameServiceTests
         var repository = Substitute.For<IGameRepository>();
 
         repository
-            .GetByIdAsync(game.Id, Arg.Any<CancellationToken>()).Returns(game);
+            .GetByIdAsync(
+                game.Id,
+                Arg.Any<CancellationToken>())
+            .Returns(game);
 
         var service = new GameService(repository);
 
-        using var cancellationTokenSource =new CancellationTokenSource();
+        using var cancellationTokenSource =
+            new CancellationTokenSource();
 
-        var cancellationToken =cancellationTokenSource.Token;
+        var cancellationToken =
+            cancellationTokenSource.Token;
 
         // Act
-        await service.GetByIdAsync( game.Id,cancellationToken);
+        await service.GetByIdAsync(
+            game.Id,
+            cancellationToken);
 
         // Assert
-        await repository.Received(1).GetByIdAsync(game.Id, cancellationToken);
+        await repository
+            .Received(1)
+            .GetByIdAsync(
+                game.Id,
+                cancellationToken);
     }
 }
