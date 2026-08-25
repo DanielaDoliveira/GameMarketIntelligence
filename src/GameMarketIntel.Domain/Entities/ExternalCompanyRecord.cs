@@ -33,9 +33,7 @@ public sealed class ExternalCompanyRecord
                 "The data source ID cannot be empty.",
                 nameof(dataSourceId));
 
-        var normalizedObservedAt = NormalizeTimestamp(
-            observedAt,
-            nameof(observedAt));
+        var normalizedObservedAt = NormalizeTimestamp(observedAt, nameof(observedAt));
 
         Id = Guid.NewGuid();
         DataSourceId = dataSourceId;
@@ -43,10 +41,7 @@ public sealed class ExternalCompanyRecord
         FirstSeenAt = normalizedObservedAt;
         LastSeenAt = normalizedObservedAt;
         SourceUpdatedAt = sourceUpdatedAt.HasValue
-            ? NormalizeTimestamp(
-                sourceUpdatedAt.Value,
-                nameof(sourceUpdatedAt))
-            : null;
+            ? NormalizeTimestamp(sourceUpdatedAt.Value, nameof(sourceUpdatedAt)) : null;
     }
 
     public void LinkToCompany(Guid companyId)
@@ -78,9 +73,7 @@ public sealed class ExternalCompanyRecord
             return;
 
         var normalizedSourceUpdatedAt = 
-            NormalizeTimestamp(
-                sourceUpdatedAt.Value,
-                nameof(sourceUpdatedAt)
+            NormalizeTimestamp(sourceUpdatedAt.Value, nameof(sourceUpdatedAt)
                 );
 
         if (!SourceUpdatedAt.HasValue ||
@@ -105,9 +98,7 @@ public sealed class ExternalCompanyRecord
         return normalizedExternalId;
     }
 
-    private static DateTimeOffset NormalizeTimestamp(
-        DateTimeOffset timestamp,
-        string parameterName)
+    private static DateTimeOffset NormalizeTimestamp(DateTimeOffset timestamp, string parameterName)
     {
         if (timestamp == default)
             throw new ArgumentException(

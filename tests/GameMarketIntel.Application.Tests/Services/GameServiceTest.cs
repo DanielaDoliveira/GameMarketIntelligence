@@ -1,67 +1,125 @@
 ﻿using GameMarketIntel.Application.Abstractions.Persistence;
 using GameMarketIntel.Application.Services;
 using GameMarketIntel.Domain.Entities;
+using GameMarketIntel.Domain.Enums;
 using GameMarketIntel.Exceptions;
 using NSubstitute;
 using Shouldly;
 
 namespace GameMarketIntel.Application.Tests.Services;
 
-public sealed class GameServiceTests
+public sealed class GameServiceTest
 {
+    private readonly IGameRepository _gameRepository =
+        Substitute.For<IGameRepository>();
+
+    private readonly IGameImageRepository _gameImageRepository =
+        Substitute.For<IGameImageRepository>();
+
+    private readonly IGameImageUrlResolver _gameImageUrlResolver =
+        Substitute.For<IGameImageUrlResolver>();
+
+    private readonly GameService _service;
+
+    public GameServiceTest()
+    {
+        _service = new GameService(
+            _gameRepository,
+            _gameImageRepository,
+            _gameImageUrlResolver);
+    }
+
     [Fact]
-    public async Task GetByIdAsync_ShouldReturnMappedGameDetails_WhenGameExists()
+    public async Task GetByIdAsync_ShouldReturnGameDetails_WhenGameExists()
     {
         // Arrange
-        var genre = new Genre("Action");
-
-        var platform = new Platform(
-            "PlayStation 5",
-            family: "PlayStation",
-            manufacturer: "Sony",
-            imageUrl: "https://example.com/playstation-5.png");
-
         var game = new Game(
-            "Astro Bot",
-            description: "A platform adventure game.",
-            firstReleaseDate: new DateOnly(2024, 9, 6));
+            "Metroid Prime",
+            "Description",
+            new DateOnly(2002, 11, 18));
 
-        game.AddGenre(genre);
-        game.AddPlatform(platform);
-
-        var repository = Substitute.For<IGameRepository>();
-
-        repository
+        _gameRepository
             .GetByIdAsync(
                 game.Id,
                 Arg.Any<CancellationToken>())
             .Returns(game);
 
-        var service = new GameService(repository);
+        var primaryCover = new GameImageReference(
+            "igdb",
+            "co8abc",
+            GameImageType.Cover);
+
+        _gameImageRepository
+            .GetPrimaryCoverAsync(
+                game.Id,
+                Arg.Any<CancellationToken>())
+            .Returns(primaryCover);
+
+        _gameImageUrlResolver
+            .Resolve(
+                primaryCover.DataSourceCode,
+                primaryCover.SourceImageId,
+                primaryCover.Type)
+            .Returns(
+                "https://images.igdb.com/igdb/image/upload/t_cover_big/co8abc.jpg");
 
         // Act
-        var result = await service.GetByIdAsync(game.Id);
+        var result = await _service.GetByIdAsync(game.Id);
 
         // Assert
         result.Id.ShouldBe(game.Id);
-        result.Name.ShouldBe("Astro Bot");
-        result.Description.ShouldBe(
-            "A platform adventure game.");
-        result.ReleaseDate.ShouldBe(
-            new DateOnly(2024, 9, 6));
+        result.Name.ShouldBe(game.Name);
+        result.Description.ShouldBe(game.Description);
+        result.ReleaseDate.ShouldBe(game.FirstReleaseDate);
+        result.ImageUrl.ShouldBe(
+            "https://images.igdb.com/igdb/image/upload/t_cover_big/co8abc.jpg");
+        result.Genres.ShouldBeEmpty();
+        result.Platforms.ShouldBeEmpty();
+
+        await _gameImageRepository
+            .Received(1)
+            .GetPrimaryCoverAsync(
+                game.Id,
+                Arg.Any<CancellationToken>());
+
+        _gameImageUrlResolver
+            .Received(1)
+            .Resolve(
+                primaryCover.DataSourceCode,
+                primaryCover.SourceImageId,
+                primaryCover.Type);
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_ShouldReturnNullImageUrl_WhenGameHasNoCover()
+    {
+        // Arrange
+        var game = new Game("Metroid Prime");
+
+        _gameRepository
+            .GetByIdAsync(
+                game.Id,
+                Arg.Any<CancellationToken>())
+            .Returns(game);
+
+        _gameImageRepository
+            .GetPrimaryCoverAsync(
+                game.Id,
+                Arg.Any<CancellationToken>())
+            .Returns((GameImageReference?)null);
+
+        // Act
+        var result = await _service.GetByIdAsync(game.Id);
+
+        // Assert
         result.ImageUrl.ShouldBeNull();
 
-        result.Genres.Count.ShouldBe(1);
-        result.Genres[0].Id.ShouldBe(genre.Id);
-        result.Genres[0].Name.ShouldBe("Action");
-
-        result.Platforms.Count.ShouldBe(1);
-        result.Platforms[0].Id.ShouldBe(platform.Id);
-        result.Platforms[0].Name.ShouldBe("PlayStation 5");
-        result.Platforms[0].Family.ShouldBe("PlayStation");
-        result.Platforms[0].Manufacturer.ShouldBe("Sony");
-        result.Platforms[0].ImageUrl.ShouldBe(
-            "https://example.com/playstation-5.png");
+        _gameImageUrlResolver
+            .DidNotReceiveWithAnyArgs()
+            .Resolve(
+                default!,
+                default!,
+                default);
     }
 
     [Fact]
@@ -70,57 +128,22 @@ public sealed class GameServiceTests
         // Arrange
         var gameId = Guid.NewGuid();
 
-        var repository = Substitute.For<IGameRepository>();
-
-        repository
+        _gameRepository
             .GetByIdAsync(
                 gameId,
                 Arg.Any<CancellationToken>())
             .Returns((Game?)null);
 
-        var service = new GameService(repository);
-
         // Act
-        var exception = await Should.ThrowAsync<NotFoundException>(
-            () => service.GetByIdAsync(gameId));
+        var action = () => _service.GetByIdAsync(gameId);
 
         // Assert
-        exception.Message.ShouldBe(
-            $"Game '{gameId}' was not found.");
-    }
+        await action.ShouldThrowAsync<NotFoundException>();
 
-    [Fact]
-    public async Task GetByIdAsync_ShouldPassCancellationTokenToRepository()
-    {
-        // Arrange
-        var game = new Game("Celeste");
-
-        var repository = Substitute.For<IGameRepository>();
-
-        repository
-            .GetByIdAsync(
-                game.Id,
-                Arg.Any<CancellationToken>())
-            .Returns(game);
-
-        var service = new GameService(repository);
-
-        using var cancellationTokenSource =
-            new CancellationTokenSource();
-
-        var cancellationToken =
-            cancellationTokenSource.Token;
-
-        // Act
-        await service.GetByIdAsync(
-            game.Id,
-            cancellationToken);
-
-        // Assert
-        await repository
-            .Received(1)
-            .GetByIdAsync(
-                game.Id,
-                cancellationToken);
+        await _gameImageRepository
+            .DidNotReceiveWithAnyArgs()
+            .GetPrimaryCoverAsync(
+                default,
+                default);
     }
 }

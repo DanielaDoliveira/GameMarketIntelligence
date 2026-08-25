@@ -1,5 +1,7 @@
 ﻿using GameMarketIntel.Application.Abstractions.Persistence;
 using GameMarketIntel.Application.Games.Search;
+using GameMarketIntel.Domain.Enums;
+using GameMarketIntel.Infrastructure.ExternalServices.Images;
 using GameMarketIntel.Infrastructure.Games.Search;
 using GameMarketIntel.Infrastructure.Persistence.Repositories;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,9 +16,12 @@ public static class DepedencyInjection
  
         services.AddScoped<IDataSourceRepository, DataSourceRepository>();
         services.AddScoped<IGameRepository, GameRepository>();
+        services.AddScoped<IGameImageRepository, GameImageRepository>();
         services.AddScoped<IGenreRepository, GenreRepository>();
         services.AddScoped<IPlatformRepository, PlatformRepository>();
         services.AddScoped<IGameSearchRepository, GameSearchRepository>();
+        services.AddSingleton<IGameImageUrlResolver, GameImageUrlResolver>();
+
         return services;
     }
 }
