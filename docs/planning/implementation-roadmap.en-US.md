@@ -49,7 +49,8 @@ Each delivery should:
 - avoid irreversible domain or persistence decisions before real-source evidence is sufficient;
 - integrate sources incrementally without preventing future multi-source support;
 - avoid exposing the persistence model directly through API or frontend contracts;
-- treat storage limits as a product constraint.
+- treat storage limits as a product constraint;
+- preserve relevant catalog coverage before reducing metadata depth for capacity reasons.
 
 ## Milestone 0 — Project foundation
 
@@ -185,7 +186,7 @@ Multi-source reconciliation itself remains deferred to Milestone 3.
 
 ## 2.3 Domain and persistence implementation
 
-Status: **In progress — GMI-25 through GMI-29 implemented; GMI-30 pending**
+Status: **In progress — GMI-25 through GMI-29 completed and integrated; GMI-30 validation in progress**
 
 The persistence implementation is delivered through child Jira issues under GMI-14.
 
@@ -304,7 +305,7 @@ GMI-28 was merged into `develop`, pushed to the remote branch, and closed with a
 
 ### GMI-29 — Cover and screenshot metadata
 
-Status: **Implementation complete; documentation and final branch closure in progress**
+Status: **Completed and integrated**
 
 Delivered image metadata modeling:
 
@@ -333,8 +334,8 @@ Delivered integrity rules:
 Delivered persistence transition:
 
 - removed persisted `Game.ImageUrl`;
-- generated and validated the `game_images` migration;
-- generated and validated the migration removing `Games.ImageUrl`;
+- added and validated the `game_images` migration;
+- added and validated the migration removing `Games.ImageUrl`;
 - preserved `Platform.ImageUrl` outside the GMI-29 scope.
 
 Delivered source-aware URL resolution:
@@ -386,7 +387,7 @@ Synchronization policy defined for future Collector work:
 - source-specific changes must not propagate blindly to evidence from other sources;
 - the operational database stores treated current state plus minimum necessary provenance rather than indefinite detailed change history.
 
-Current GMI-29 quality gate:
+Final GMI-29 quality gate:
 
 ```text
 Build: passed
@@ -395,35 +396,109 @@ Failures: 0
 Ignored: 0
 ```
 
-Remaining GMI-29 closure steps:
-
-- complete bilingual documentation updates;
-- generate the final GMI-29 `AGENTS.md` revision;
-- run final build/test and Git quality gates;
-- commit final documentation;
-- merge the feature branch into `develop`;
-- push `develop`;
-- update Jira with migration/build/test evidence;
-- close the Jira subtask after integration is complete.
+GMI-29 was merged into `develop`, pushed to the remote branch, and closed with a clean working tree.
 
 ### GMI-30 — Persistence and storage-budget validation
 
-Status: **Planned**
+Status: **In progress — migration, query-plan, contract, and representative-volume validation completed**
 
-Expected scope:
+Validated migration and compatibility checks:
 
-- representative storage measurement;
-- high-cardinality table analysis;
-- release-row growth;
-- classification-association growth;
-- image-metadata growth;
-- index-size review;
-- free-tier Neon budget validation against the current approximately 0.5 GB per-project storage allowance;
-- measured usage by table and index;
-- retention decisions where needed;
-- documentation of measured limits and operational thresholds.
+- migration sequence reviewed through `RemoveGameImageUrl`;
+- `dotnet ef migrations has-pending-model-changes` confirmed no model drift;
+- the existing Neon-backed database reported no pending migrations;
+- the local PostgreSQL database successfully accepted all pending migrations when targeted explicitly through `--connection`;
+- a separate empty PostgreSQL validation database successfully applied the full migration chain from zero;
+- the complete solution build passed;
+- the complete automated suite passed with 460 of 460 tests;
+- current public image contracts remained compatible.
 
-Current capacity policy to validate with real data:
+Development-environment finding:
+
+- `DefaultConnection` may resolve from .NET User Secrets and therefore point to Neon;
+- local EF validation must use an explicit connection target when the intended database is Docker PostgreSQL.
+
+Representative local validation dataset:
+
+```text
+Games                  10,000
+GameGenres             20,000
+GamePlatforms          20,000
+ExternalGameRecords    10,000
+GameImages             16,666
+```
+
+Baseline measured after `ANALYZE`:
+
+```text
+Table data             ~7.4 MB
+Indexes                ~11 MB
+Total database objects ~19 MB
+```
+
+Representative query-plan findings:
+
+- name substring search with `ILIKE '%term%'` used a sequential scan and completed in approximately 3.7 ms at 10,000 games;
+- release-year filtering through `EXTRACT(YEAR FROM FirstReleaseDate)` used a sequential scan and completed in approximately 1.8 ms;
+- genre filtering used `IX_GameGenres_GenreId`;
+- platform filtering used `IX_GamePlatforms_PlatformId`;
+- batch cover lookup used `IX_game_images_GameId`;
+- no new index is justified solely to eliminate the currently inexpensive sequential scans.
+
+High-cardinality pressure scenario added, while preserving the same 10,000-game catalog:
+
+```text
+Contextual releases            30,000
+Theme associations             30,000
+Game-mode associations         20,000
+Player-perspective associations 20,000
+Keyword associations           80,000
+Company associations           20,000
+Collection associations         5,000
+Product relations               2,500
+```
+
+Measured after the high-cardinality extension:
+
+```text
+Table data             ~29 MB
+Indexes                ~33 MB
+Total database objects ~63 MB
+```
+
+The pressure scenario added approximately 44 MB without increasing the number of games.
+
+Largest observed storage consumers:
+
+- `game_keywords`: approximately 14 MB;
+- `game_releases`: approximately 10.1 MB;
+- `game_images`: approximately 5.3 MB;
+- `game_themes`: approximately 5.3 MB;
+- `game_companies`: approximately 5.3 MB.
+
+Measured budgeting evidence through `pg_total_relation_size`:
+
+| Relation | Rows | Approximate total bytes per row |
+|---|---:|---:|
+| `game_releases` | 30,000 | 344 B |
+| `game_images` | 16,666 | 328 B |
+| `Games` | 10,000 | 327 B |
+| `game_companies` | 20,000 | 271 B |
+| `game_themes` | 30,000 | 182 B |
+| `GameGenres` | 20,000 | 181 B |
+| `GamePlatforms` | 20,000 | 181 B |
+| `game_keywords` | 80,000 | 181 B |
+
+Capacity interpretation:
+
+- the measured ~63 MB / 10,000-game pressure scenario is a budgeting reference, not a fixed production forecast;
+- catalog coverage and metadata depth are separate capacity decisions;
+- relevant games should not be arbitrarily discarded merely to satisfy a fixed record-count target;
+- metadata depth and multiplicative associations should be controlled according to approved product questions and observed capacity;
+- indexes are a material part of storage cost and must be justified by real access paths;
+- keywords and contextual releases are the strongest synthetic high-cardinality pressure points measured so far.
+
+Current capacity policy:
 
 ```text
 < 70%
@@ -439,20 +514,29 @@ approaching 90%
 → protect essential writes and reduce non-essential ingestion
 ```
 
-Retention must preserve, in priority order:
+Retention priority remains:
 
 1. current canonical product state;
 2. active external identities;
 3. provenance still supporting the current state;
 4. recent useful historical/auxiliary data when such history exists.
 
-Historical or auxiliary data that is explicitly eligible for retention cleanup should be pruned from oldest to newest while preserving the most recent useful window.
+Capacity-driven deletion must never be interpreted as a source-domain fact.
 
-Capacity-driven deletion must never be interpreted as a source-domain fact. Storage retention and source reconciliation are separate concerns.
+Storage retention and source reconciliation remain separate concerns.
 
-New historical features should define their retention window when introduced rather than defaulting to permanent storage.
+Remaining GMI-30 closure work:
 
-No capacity conclusion should rely only on estimates when representative data can be measured.
+- consolidate the measured evidence in bilingual project documentation;
+- confirm the final operational budget wording and risk register;
+- remove or explicitly retain local synthetic-validation artifacts according to repository policy;
+- generate the final GMI-30 `AGENTS.md` revision;
+- rerun final build/test and Git quality gates;
+- commit documentation and validation artifacts;
+- merge the feature branch into `develop`;
+- push `develop`;
+- update Jira with migration, query-plan, storage, build, and test evidence;
+- close the Jira subtask after integration is complete.
 
 ## 2.4 Collector implementation
 
@@ -488,13 +572,15 @@ Required behavior:
 - ensure idempotent execution;
 - avoid logging secrets or tokens;
 - avoid storing complete raw payloads permanently;
-- preserve source identity and provenance.
+- preserve source identity and provenance;
+- preserve relevant catalog coverage while controlling non-essential metadata depth;
+- treat complete versus partial source observations explicitly before removing current associations.
 
 The Collector must not map provider responses directly into EF Core entities.
 
 ## 2.5 IGDB persistence and data quality
 
-Status: **Partially implemented through GMI-25–29**
+Status: **Persistence model implemented through GMI-29; operational validation in progress through GMI-30**
 
 Already implemented at the persistence-model level:
 
@@ -520,8 +606,9 @@ Still required in the ingestion path:
 - source-update behavior;
 - safe re-execution;
 - explicit handling of complete versus partial observations before removing current associations;
-- representative-data validation;
-- measured storage impact.
+- representative real-data validation;
+- measured production storage impact;
+- product-driven metadata-depth decisions for high-cardinality fields.
 
 ## 2.6 API and frontend integration
 
@@ -795,25 +882,26 @@ Deferred until stable data and validated questions exist:
 
 ```text
 Milestone 2 — IGDB vertical MVP
-→ GMI-28 final integration
-→ GMI-29 cover and screenshot metadata
-→ GMI-30 storage-budget validation
+→ GMI-30 persistence and storage-budget validation
+→ persistence-model checkpoint
+→ production-oriented Collector work
 ```
 
 Immediate sequence:
 
-1. finish GMI-28 branch closure and merge into `develop`;
-2. implement GMI-29;
-3. implement GMI-30;
-4. confirm the approved Milestone 2 persistence model;
-5. refactor the Collector into production-oriented responsibilities;
-6. implement idempotent IGDB ingestion;
-7. populate representative data;
-8. validate storage behavior;
-9. expose selected new concepts through API contracts;
-10. organize those contracts in the frontend;
-11. deploy and operate the Worker;
-12. validate the end-to-end real-data MVP.
+1. finish GMI-30 documentation and operational-budget validation;
+2. generate the final GMI-30 `AGENTS.md` revision;
+3. run final build/test and Git quality gates;
+4. integrate GMI-30 into `develop`;
+5. confirm the approved Milestone 2 persistence model;
+6. refactor the Collector into production-oriented responsibilities;
+7. implement idempotent IGDB ingestion;
+8. populate representative real data;
+9. validate production storage behavior against the measured local budget;
+10. expose selected new concepts through API contracts;
+11. organize those contracts in the frontend;
+12. deploy and operate the Worker;
+13. validate the end-to-end real-data MVP.
 
 ## Current architectural checkpoint
 
@@ -834,3 +922,12 @@ The persistence layer is intentionally richer than any single frontend screen.
 The API selects what each use case needs.
 
 The frontend organizes that selected information for the producer and must not become a direct mirror of the database.
+
+The current capacity lesson is equally explicit:
+
+```text
+Preserve relevant catalog coverage
+→ control metadata depth by product value
+→ monitor multiplicative associations and indexes
+→ act before storage pressure becomes an incident
+```

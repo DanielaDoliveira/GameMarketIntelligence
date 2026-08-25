@@ -27,7 +27,7 @@ This is a strong basic discovery flow but still represents a shallow comparison 
 
 ## Implementation status note — August 25, 2026
 
-The domain and persistence refinements anticipated by this document have advanced substantially through GMI-25 to GMI-29.
+The domain and persistence refinements anticipated by this document have advanced substantially through GMI-25 to GMI-29, while GMI-30 has now validated the current persistence model against migration, query-plan, and representative storage scenarios.
 
 Implemented foundations now include:
 
@@ -53,7 +53,19 @@ Implemented foundations now include:
 - restrictive delete behavior for provenance-bearing relationships;
 - PostgreSQL mappings, migrations, and integration tests.
 
-These additions are persistence and domain foundations.
+GMI-30 additionally validated that:
+
+- the migration chain can be applied from zero in PostgreSQL;
+- the local existing database can be migrated to the current schema;
+- the EF model and migration snapshot are aligned;
+- current public contracts remain compatible;
+- genre and platform filters use their expected indexes;
+- batch cover lookup uses the `GameId` image index;
+- current name substring and release-year searches still use sequential scans at the measured 10,000-game volume, but remain inexpensive enough that no additional index is currently justified;
+- indexes already represent a material part of storage cost;
+- high-cardinality associations can grow much faster than the canonical `Games` table.
+
+These additions are persistence, domain, and operational foundations.
 
 They are **not yet equivalent to public API or frontend features**.
 
@@ -102,9 +114,11 @@ Candidate filters include:
 - business model;
 - source reliability.
 
-The final scope depends on producer need, data availability, source reliability, legal and technical viability, and domain-model suitability.
+The final scope depends on producer need, data availability, source reliability, legal and technical viability, domain-model suitability, and measured storage/query cost.
 
 The existence of a persisted field or relationship does not automatically justify exposing it as a filter.
+
+The existence of a provider field also does not automatically justify ingesting it at maximum depth.
 
 ### Why progressive disclosure
 
@@ -294,6 +308,158 @@ Screenshots are persisted as metadata for future detail/gallery work but are not
 
 Temporal market metrics such as price, sales, reviews, and player counts should still not be static fields on `Game`.
 
+## Storage-aware ingestion boundary
+
+GMI-30 introduced an important product/persistence distinction:
+
+```text
+catalog coverage
+≠
+metadata depth
+```
+
+The target is not to ingest an arbitrary fixed maximum number of games simply because the database has a storage limit.
+
+If a source exposes a larger set of games that are relevant to the approved MVP scope, preserving those relevant catalog entries is preferred over discarding them solely to satisfy an arbitrary record-count cap.
+
+Capacity should instead be managed first through product-driven metadata depth.
+
+For example:
+
+```text
+preserve relevant games
+↓
+persist the classifications and relationships required by approved product questions
+↓
+limit, defer, or avoid non-essential high-cardinality metadata
+↓
+monitor actual table and index growth
+```
+
+This means the Collector should not interpret "the provider exposes it" as sufficient reason to persist every available field or every association at maximum depth.
+
+The source-product question map remains the decision boundary.
+
+### GMI-30 representative storage evidence
+
+The baseline synthetic scenario used:
+
+```text
+10,000 Games
+20,000 GameGenres
+20,000 GamePlatforms
+10,000 ExternalGameRecords
+16,666 GameImages
+```
+
+Measured PostgreSQL storage after `ANALYZE` was approximately:
+
+```text
+table data  ~7.4 MB
+indexes     ~11 MB
+total       ~19 MB
+```
+
+A second pressure scenario kept the same 10,000-game catalog and added:
+
+```text
+30,000 contextual releases
+30,000 theme associations
+20,000 game-mode associations
+20,000 player-perspective associations
+80,000 keyword associations
+20,000 company associations
+5,000 collection associations
+2,500 product relations
+```
+
+Measured storage became approximately:
+
+```text
+table data  ~29 MB
+indexes     ~33 MB
+total       ~63 MB
+```
+
+The increase was approximately 44 MB without adding more games.
+
+The strongest synthetic pressure points were:
+
+- `game_keywords`;
+- `game_releases`;
+- `game_images`;
+- `game_themes`;
+- `game_companies`.
+
+This evidence reinforces that storage risk is driven primarily by multiplicative associations and supporting indexes, not only by the canonical game count.
+
+The measured ~63 MB / 10,000-game pressure scenario is a budgeting reference only. It must not be treated as a fixed linear production forecast.
+
+## Query-plan observations relevant to Comparable Games
+
+GMI-30 measured the current query shapes with a 10,000-game synthetic local dataset.
+
+### Name search
+
+The current substring search:
+
+```text
+ILIKE '%term%'
+```
+
+used a sequential scan of `Games`.
+
+Approximate local execution time for the representative query was 3.7 ms.
+
+The current B-tree `NormalizedName` index does not support this substring pattern.
+
+Decision:
+
+- keep the current behavior for the measured MVP scale;
+- do not introduce a trigram or other specialized index until production-like volume or latency demonstrates a need.
+
+### Genre filter
+
+The genre path used `IX_GameGenres_GenreId`.
+
+Decision:
+
+- current index is justified;
+- no additional genre index is required.
+
+### Platform filter
+
+The platform path used `IX_GamePlatforms_PlatformId`.
+
+Decision:
+
+- current index is justified;
+- no additional platform index is required.
+
+### Release-year filter
+
+The current year query applies `EXTRACT(YEAR FROM FirstReleaseDate)` and used a sequential scan.
+
+Approximate local execution time for the representative query was 1.8 ms.
+
+Decision:
+
+- keep the current behavior for the measured MVP scale;
+- do not create a functional year index solely to remove the sequential scan.
+
+### Batch cover lookup
+
+Primary-cover lookup used `IX_game_images_GameId`.
+
+Decision:
+
+- current image index is justified;
+- the batch lookup remains the preferred search-page access path.
+
+These local measurements are evidence for current design decisions, not production service-level guarantees.
+
+A sequential scan is not automatically considered a defect.
+
 ## Persistence, API, and frontend responsibilities
 
 The current architecture separates three concerns.
@@ -301,6 +467,18 @@ The current architecture separates three concerns.
 ### Persistence
 
 Stores the treated canonical dataset plus the minimum external identity and provenance needed for integrity, auditability, source removal, and future reconciliation.
+
+Persistence must also respect the operational storage budget.
+
+That means it should preserve data because it supports:
+
+- an approved product question;
+- required provenance;
+- reconciliation;
+- attribution;
+- operational correctness.
+
+It should not become a warehouse of every provider field merely because those fields are available.
 
 ### Application and API
 
@@ -353,6 +531,10 @@ Source
 IGDB
 ```
 
+Storage-budget decisions are also backend/ingestion concerns.
+
+The frontend must not expose arbitrary metadata omissions as if a source definitively lacked that data.
+
 ## Migration rule
 
 The original migration rule remains valid as a general design principle:
@@ -368,21 +550,30 @@ The original migration rule remains valid as a general design principle:
 
 For the PoC-approved Milestone 2 persistence fields covered by GMI-25 to GMI-29, this sequence has now been completed.
 
+GMI-30 validated that the resulting schema can be applied both from zero and over the existing local database, with no pending EF model drift.
+
 Future schema changes must continue to follow the same evidence-first rule.
 
 Generated migrations must also be reviewed for unrelated schema changes before they are applied.
 
+New indexes are subject to the same evidence rule: they must answer a demonstrated query need and justify their storage/write cost.
+
 ## Current implementation boundary
 
-As of the GMI-29 implementation quality gate:
+As of the current GMI-30 validation checkpoint:
 
 ```text
 Domain and persistence foundations
 → implemented for GMI-25 to GMI-29
 
+Persistence operability
+→ migrations validated from zero and over the existing local database
+→ representative query plans measured
+→ representative storage pressure measured
+
 Public API exposure
 → still selective/current contracts only
-→ game image URLs are now derived from persisted metadata
+→ game image URLs are derived from persisted metadata
 
 Frontend presentation
 → current Comparable Games experience only
@@ -395,13 +586,22 @@ Multi-source reconciliation
 → deferred to Milestone 3
 ```
 
-The current full-solution quality gate during GMI-29 passed:
+The current full-solution quality gate during GMI-30 passed:
 
 ```text
 Tests: 460
 Passed: 460
 Failed: 0
 Ignored: 0
+```
+
+Current capacity principle:
+
+```text
+preserve relevant catalog coverage
+→ control metadata depth by product value
+→ monitor high-cardinality associations and indexes
+→ optimize only when measured evidence justifies it
 ```
 
 ## Out of scope for this MVP refinement
@@ -414,4 +614,5 @@ Also deferred until separate validated increments:
 - franchises;
 - arbitrary multi-keyword public filtering;
 - exposing every persisted classification as a frontend filter;
-- automatic propagation across related game products.
+- automatic propagation across related game products;
+- speculative search/index optimization unsupported by measured need.

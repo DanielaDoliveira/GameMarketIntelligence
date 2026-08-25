@@ -1,198 +1,226 @@
-# Refinamento do MVP de Comparable Games
+# Comparable Games — Refinamento do MVP
 
-> Status da revisão: atualizado após a conclusão técnica da GMI-28 em 24 de agosto de 2026.
+## Objetivo
 
-## MVP completo
+Comparable Games é a principal experiência de pesquisa do MVP do Game Market Intelligence.
 
-O MVP completo reúne três capacidades:
+Ela deve ajudar producers a descobrir e refinar jogos comparáveis candidatos por meio de pesquisa estruturada e consciente da origem dos dados.
 
-1. Comparable Games com filtros básicos e avançados sustentados por dados aprovados.
-2. Data Sources com a origem dos campos do jogo selecionado e informações institucionais sobre confiabilidade, limitações, atribuição, atualização e URLs das integrações.
-3. Modos Alta confiança, Equilibrado e Cobertura ampla.
+A funcionalidade não pretende declarar que todo jogo retornado é um concorrente direto.
 
-## Comparable Games
+## Capacidade atual
 
-Neste MVP com IGDB, o filtro de Comparable Games é a primeira entrega de valor do produto.
+A implementação existente fornece:
 
-O conjunto de filtros é orientado por evidências: cada campo incluído, restrito aos detalhes, adiado ou excluído reflete cobertura, semântica, comportamento operacional e limitações legais avaliadas na PoC.
+- busca por nome;
+- filtro por gênero;
+- filtro por plataforma;
+- filtro por ano de lançamento;
+- botão Search visível;
+- envio combinado do formulário;
+- estado da busca na URL;
+- paginação;
+- estados de loading, erro, vazio e sem resultados;
+- cards responsivos de jogos.
 
-A experiência deve oferecer a maior confiança prática possível dentro da operação com custo zero, identificando a fonte e comunicando ao producer dados ausentes ou limitados.
+Esse é um fluxo básico de descoberta sólido, mas ainda representa uma etapa superficial de comparação.
 
-Filtros básicos:
+## Nota de status de implementação — 25 de agosto de 2026
 
-- nome;
+Os refinamentos de domínio e persistência previstos por este documento avançaram substancialmente por meio da GMI-25 até a GMI-29, enquanto a GMI-30 agora validou o modelo atual de persistência em cenários de migration, planos de consulta e armazenamento representativo.
+
+As fundações implementadas agora incluem:
+
+- identidade externa de jogo source-neutral por `DataSource + ExternalId`;
+- `Game.FirstReleaseDate` separado de `GameRelease` contextual;
+- releases contextuais com provenance;
+- themes, game modes, player perspectives e keywords canônicos;
+- identidades externas e associações com provenance para essas classificações;
+- `Game.ProductType`;
+- relacionamentos direcionados de produto com provenance;
+- companies canônicas;
+- identidades externas de company;
+- roles game/company com provenance;
+- collections canônicas;
+- identidades externas de collection;
+- associações game/collection com provenance;
+- metadados de imagem de jogo derivados da fonte por meio de `GameImage`;
+- `GameImageType` com `Cover` e `Screenshot`;
+- identidade do registro de imagem da fonte por `ExternalId`;
+- endereçamento do asset da fonte por `SourceImageId`;
+- resolução source-aware de URL pública de imagem no backend;
+- lookup batch de cover primário para resultados paginados;
+- comportamento de delete restritivo para relacionamentos com provenance;
+- mappings PostgreSQL, migrations e testes de integração.
+
+A GMI-30 também validou que:
+
+- a cadeia de migrations pode ser aplicada do zero no PostgreSQL;
+- o banco local existente pode ser migrado para o schema atual;
+- o modelo EF e o snapshot de migrations estão alinhados;
+- os contratos públicos atuais permanecem compatíveis;
+- filtros por gênero e plataforma usam seus índices esperados;
+- o lookup batch de covers usa o índice de imagem por `GameId`;
+- as buscas atuais por substring de nome e por ano de release ainda usam sequential scans no volume medido de 10.000 jogos, mas continuam baratas o suficiente para que nenhum índice adicional seja atualmente justificado;
+- os índices já representam parte material do custo de armazenamento;
+- associações de alta cardinalidade podem crescer muito mais rápido que a tabela canônica `Games`.
+
+Essas adições são fundações de persistência, domínio e operação.
+
+Elas **ainda não equivalem a funcionalidades públicas de API ou frontend**.
+
+Filtros avançados, detalhes mais ricos, apresentação de fonte, controles de reliability e outras mudanças de UI ainda exigem decisões separadas em Application/API e frontend.
+
+O modelo de persistência é intencionalmente mais rico que qualquer tela ou endpoint individual.
+
+## Objetivos de refinamento do MVP
+
+O MVP completo deve refinar duas áreas existentes e conectá-las por uma terceira capacidade:
+
+1. filtros avançados em Comparable Games;
+2. Data Sources populado e informativo;
+3. filtragem por reliability.
+
+## 1. Filtros básicos e avançados
+
+Comparable Games deve permanecer uma única página com progressive disclosure.
+
+### Filtros básicos
+
+Visíveis por padrão:
+
+- nome do jogo;
 - gênero;
 - plataforma;
-- período/ano.
+- ano ou período de lançamento;
+- ação Search.
 
-No primeiro MVP com IGDB, a divulgação progressiva poderá acrescentar:
+### Filtros avançados
 
-- temas;
-- modos;
-- empresas envolvidas;
-- product type;
-- navegação contextual por keyword.
+Um controle como `Advanced filters` deve revelar critérios adicionais sem sobrecarregar a interface inicial.
 
-Esses recursos devem permanecer qualificados pela fonte e só devem ser expostos quando responderem a uma pergunta validada de produto e houver cobertura suficiente.
-
-As decisões atuais são:
-
-- modos podem ser filtro público, tratando ausência na fonte como desconhecido;
-- perspectivas são detalhes opcionais, não filtro público;
-- o clique numa keyword exibida pode abrir jogos relacionados com um critério contextual removível;
-- seleção manual, múltiplas keywords com `AND` e autocomplete foram adiados;
-- capas são opcionais e não dominantes nos resultados e detalhes;
-- screenshots ficam nos detalhes e em galerias abertas sob demanda;
-- product type é um candidato forte a filtro público futuro;
-- relações entre produtos devem aparecer prioritariamente nos detalhes, não como propagação automática de dados entre jogos;
-- empresas podem ser apresentadas agrupadas por papel, como developer, publisher, porting e supporting;
-- collections são contexto útil de detalhe, mas não precisam aparecer em todos os cards;
-- dados de proveniência técnica não devem ser expostos diretamente ao usuário.
-
-Iterações futuras poderão avaliar ou acrescentar:
+Filtros candidatos incluem:
 
 - subgênero;
-- temas e tags mais ricos;
-- filtro de perspectiva se a cobertura se tornar suficiente ou puder ser qualificada por fontes complementares;
-- developer e publisher como filtros;
-- status de lançamento;
-- características mais profundas de single-player, multiplayer e coop;
-- filtro manual com múltiplas keywords;
-- buscas salvas;
-- filtros por product type;
-- filtros por collection quando houver uma pergunta de produto que justifique isso;
-- filtros por período de lançamento mais ricos.
+- tags ou características de gameplay;
+- themes;
+- game modes;
+- player perspective;
+- developer;
+- publisher;
+- release status;
+- product type;
+- suporte a single-player, multiplayer, cooperative ou competitive;
+- business model;
+- reliability da fonte.
 
-Os resultados são candidatos comparáveis, não concorrentes diretos automáticos.
+O escopo final depende da necessidade do producer, disponibilidade dos dados, reliability da fonte, viabilidade legal e técnica, adequação ao modelo de domínio e custo medido de armazenamento/consulta.
 
-## Status da fundação de domínio e persistência
+A existência de um campo ou relacionamento persistido não justifica automaticamente expô-lo como filtro.
 
-As necessidades de domínio antecipadas por este documento avançaram substancialmente por meio da GMI-25 até a GMI-28.
+A existência de um campo no provider também não justifica automaticamente ingeri-lo em profundidade máxima.
 
-Já estão implementadas as seguintes fundações:
+### Por que progressive disclosure
 
-- identidade externa source-neutral via `DataSource + ExternalId`;
-- `Game.FirstReleaseDate` separado de `GameRelease`;
-- releases contextuais com proveniência;
-- themes, game modes, player perspectives e keywords como classificações canônicas separadas;
-- identidades externas para essas classificações;
-- associações entre jogo e classificação com proveniência;
-- `Game.ProductType`;
-- `GameProductType`;
-- `GameProductRelationType`;
-- `GameProductRelation`;
-- `Company`;
-- `ExternalCompanyRecord`;
-- `GameCompanyRole`;
-- `GameCompany`;
-- `Collection`;
-- `ExternalCollectionRecord`;
-- `GameCollection`;
-- delete behavior restritivo nas relações com proveniência;
-- mappings do EF Core;
-- migrations PostgreSQL;
-- integration tests de persistência e integridade.
+Um único formulário grande poderia ser difícil de usar. Uma página separada de busca avançada dividiria uma única intenção de pesquisa entre rotas diferentes.
 
-Essas estruturas pertencem ao domínio e à persistência.
+Progressive disclosure preserva uma página, um modelo de resultado, uma URL compartilhável, um objetivo claro para o usuário, uma experiência inicial simples e espaço para pesquisa mais profunda.
 
-Elas **não significam que todos esses campos já estão expostos na API ou no frontend**.
+## 2. Data Sources como funcionalidade de produto
 
-A camada de persistência é intencionalmente mais rica do que qualquer tela ou endpoint individual.
+Para cada fonte, a página deve mostrar:
 
-## Data Sources
+- nome da fonte;
+- organização ou owner;
+- tipo de fonte;
+- status oficial ou independente;
+- categorias de dados fornecidas;
+- reliability por categoria de dado;
+- limitações conhecidas;
+- método de coleta;
+- frequência de atualização ou verificação;
+- requisitos de atribuição;
+- restrições relevantes de uso;
+- URL original da fonte.
 
-Data Sources deixa de ser apenas um catálogo institucional.
+Data Sources deve ajudar producers a compreender provenance, inspecionar o site original, distinguir fatos de estimativas e entender dados ausentes.
 
-Para o jogo selecionado, mostra quais fontes contribuíram e relaciona cada campo ou contexto relevante à sua origem, sem repetir os valores já apresentados nos detalhes do jogo.
+Fornecer links de origem reforça que a aplicação é uma ferramenta de pesquisa não comercial e não um substituto das plataformas originais.
 
-Um link nos detalhes poderá abrir essa auditoria diretamente.
+A experiência de fonte deve apresentar provenance em formato compreensível para humanos.
 
-Em uma seção complementar, para cada fonte, mostrar:
+Identificadores internos de persistência como `ExternalGameRecordId`, `ExternalCompanyRecordId` ou `ExternalCollectionRecordId` não devem ser expostos diretamente no frontend.
 
-- organização e status oficial/independente;
-- categorias fornecidas;
-- confiabilidade por categoria;
-- limitações;
-- coleta/atualização;
-- atribuição e restrições;
-- URL original.
+## 3. Filtro de reliability
 
-O GMI materializa um resultado canônico segundo regras por campo e contexto.
+Um filtro de reliability é a expansão preferida após filtros avançados e Data Sources.
 
-O producer não escolhe entre cópias alternativas do catálogo por provider porque essas cópias não serão mantidas.
+Ele se alinha mais diretamente à proposta de valor da aplicação do que um filtro por fonte.
 
-A natureza oficial, curada ou comunitária continua visível como evidência e limitação.
+### Modos possíveis
 
-### Proveniência técnica versus apresentação
+- High confidence;
+- Balanced;
+- Broad coverage.
 
-A persistência pode manter identificadores como:
+### High confidence
 
-```text
-ExternalGameRecordId
-ExternalCompanyRecordId
-ExternalCollectionRecordId
-DataSourceId
-SourceUpdatedAt
-```
+Prioriza dados oficiais, primários, fortemente verificados ou concordância entre fontes confiáveis.
 
-Esses identificadores não devem aparecer diretamente na interface.
+A interface deve avisar que a cobertura pode ser reduzida.
 
-O frontend deve apresentar proveniência de forma compreensível, por exemplo:
+### Balanced
 
-```text
-Developer
-Grezzo
+Combina dados oficiais, fontes curadas, agregadores confiáveis e valores normalizados com provenance aceitável.
 
-Fonte
-IGDB
-```
+Esse é o provável padrão.
 
-A API deve fazer a mediação entre persistência e frontend por meio de contratos específicos de caso de uso.
+### Broad coverage
 
-## Modos de confiabilidade
+Pode incluir estimativas reconhecidas, dados comunitários estruturados, atributos de menor confiança ou registros conflitantes.
 
-- **Alta confiança:** oficial, primário, fortemente verificado ou concordância confiável; cobertura menor é esperada.
-- **Equilibrado:** dados oficiais, curados e normalizados com proveniência aceitável; provável padrão.
-- **Cobertura ampla:** pode incluir estimativas reconhecidas, comunidade e conflitos, sempre identificados.
+Toda essa informação deve permanecer claramente identificada.
 
-Os modos de confiabilidade qualificam o resultado canônico; não selecionam uma cópia diferente do catálogo nem substituem a proveniência por campo.
+## Por que reliability vem antes de filtro por fonte
 
-## Por que confiabilidade vem antes do filtro por fonte
+Um producer normalmente se importa primeiro com a confiabilidade de um valor, e não com qual site o forneceu.
 
-Para uma producer, normalmente é mais importante saber se um valor é confiável do que escolher manualmente qual provider deve fornecê-lo.
+Filtragem por reliability permite que workers e regras de normalização continuem selecionando e reconciliando dados enquanto o producer controla o limiar de confiança aceitável.
 
-O filtro de confiabilidade permite que o GMI continue normalizando e selecionando os dados segundo regras internas, enquanto o usuário controla o nível de confiança aceitável.
+## Filtro por fonte como possibilidade posterior
 
-Um filtro por fonte continua possível no futuro, principalmente para auditoria, investigação e reprodutibilidade.
+Um filtro por fonte permanece válido, mas com prioridade menor.
 
-## Dados normalizados e proveniência
+Se implementado, deve suportar múltiplas fontes selecionadas, preservar agregação, esclarecer comportamento any/all e funcionar principalmente como ferramenta avançada de auditoria ou reprodutibilidade.
 
-A experiência padrão deve apresentar dados normalizados do Game Market Intelligence preservando o contexto de origem.
+## Dados normalizados e provenance
+
+A experiência padrão deve apresentar dados normalizados pelo Game Market Intelligence enquanto preserva detalhes de origem.
 
 Exemplo:
 
 ```text
-Data de lançamento
-18 de outubro de 2024
+Release date
+October 18, 2024
 
-Normalizado pelo Game Market Intelligence
-Fontes:
-- fonte oficial
-- fonte curada com o mesmo valor
-- fonte agregadora com valor conflitante
+Normalized by Game Market Intelligence
+Sources:
+- Steam — official
+- IGDB — curated, matching value
+- Aggregated source — conflicting date
 ```
 
-A composição acima é ilustrativa.
+A composição exata de fontes nesse exemplo é ilustrativa.
 
-No Milestone 2, a IGDB permanece a fonte ativa.
+O Milestone 2 usa atualmente IGDB como fonte ativa. Wikidata e Steam permanecem integrações futuras do Milestone 3.
 
-Wikidata e Steam continuam como integrações futuras do Milestone 3.
+## Impacto no modelo de domínio
 
-## Direção de domínio
+O refinamento original identificou conceitos que o modelo inicial de `Game` eventualmente precisaria suportar.
 
-O domínio já evoluiu além do modelo inicial de `Game`, mas sem concentrar toda a informação diretamente nessa entidade.
+Grande parte dessa fundação já foi implementada, mas nem toda informação foi adicionada diretamente a `Game`.
 
-A estrutura atual inclui conceitos como:
+A estrutura source-neutral atual inclui conceitos como:
 
 ```text
 Game
@@ -207,16 +235,17 @@ Game
 ├── Collections
 ├── Contextual Releases
 ├── Product Relationships
+├── GameImage metadata
 └── External source identities and provenance
 ```
 
-Isso confirma uma decisão importante:
+Isso confirma uma decisão importante de modelagem do refinamento original:
 
-> Nem toda informação deve ser uma propriedade direta de `Game`.
+> Nem toda informação deve ser adicionada diretamente a `Game`.
 
-Identidade específica de fonte e proveniência são modeladas separadamente.
+Identidade específica da fonte e provenance são modeladas separadamente.
 
-Exemplo:
+Por exemplo:
 
 ```text
 Game
@@ -226,23 +255,19 @@ ExternalGameRecord
 DataSource + ExternalId
 ```
 
-As associações contextuais preservam também os registros externos que sustentam a informação.
+E associações contextuais preservam os registros externos que as sustentam.
 
-### First release versus release contextual
-
-O modelo distingue:
+O modelo atual também distingue:
 
 ```text
 Game.FirstReleaseDate
-→ valor canônico resumido usado no filtro atual por ano
+→ valor canônico de resumo usado pelo filtro atual de ano
 
 GameRelease
-→ evidência contextual de release por plataforma, região e fonte
+→ evidência contextual de release por plataforma/região/fonte
 ```
 
-### Tipo de produto versus relação entre produtos
-
-Também existe uma separação explícita entre:
+Relacionamentos de produto permanecem separados de tipo de produto:
 
 ```text
 GameProductType
@@ -252,175 +277,342 @@ GameProductRelationType
 → como um produto se relaciona com outro
 ```
 
-Produtos relacionados permanecem `Game`s independentes.
+Produtos relacionados não herdam nem propagam automaticamente gêneros, plataformas, releases, companies, collections, classificações ou outros metadados.
 
-Uma relação não propaga automaticamente:
+O tratamento de imagens agora segue o mesmo princípio de separação.
 
-- gêneros;
-- plataformas;
-- releases;
-- empresas;
-- collections;
-- classifications;
-- outros metadados.
+O `Game` canônico não persiste mais uma `ImageUrl` pronta.
 
-## Empresas
+Em vez disso:
 
-Empresas são modeladas como entidades canônicas source-neutral.
+```text
+GameImage
+→ ExternalGameRecord
+→ DataSource
+```
 
-O papel não pertence permanentemente à empresa, mas à relação entre empresa e jogo.
+armazena metadados derivados da fonte e provenance, enquanto um resolver no backend converte `SourceImageId` em URL pública quando um caso de leitura precisa dela.
 
-Papéis atuais:
+Os contratos públicos atuais permanecem propositalmente simples:
 
-- Developer;
-- Publisher;
-- Porting;
-- Supporting.
+```text
+GameDetails.ImageUrl?
+GameSearchItem.ImageUrl?
+```
 
-Isso permite que uma mesma empresa:
+O frontend recebe portanto uma URL pronta para uso ou `null` para fallback e não precisa conhecer identificadores específicos de imagem do provider ou regras de CDN.
 
-- participe de vários jogos;
-- tenha papéis diferentes em jogos diferentes;
-- tenha mais de um papel no mesmo jogo quando a evidência sustentar isso.
+O fluxo atual de busca resolve covers primários em batch para os jogos da página, evitando N+1 de imagens.
 
-No frontend, esses dados devem ser organizados por papel e não apresentados como estruturas técnicas de persistência.
+Screenshots são persistidos como metadados para trabalho futuro de detalhes/galeria, mas não são expostos pelo contrato de leitura atual do MVP.
 
-## Collections
+Métricas temporais de mercado como preço, vendas, reviews e player counts ainda não devem ser campos estáticos em `Game`.
 
-Collections são entidades canônicas próprias e podem agrupar ou contextualizar múltiplos jogos.
+## Fronteira de ingestão consciente de armazenamento
 
-A relação entre `Game` e `Collection` é N:N e preserva proveniência.
+A GMI-30 introduziu uma distinção importante de produto/persistência:
 
-Collections estão aprovadas para o Milestone 2.
+```text
+cobertura de catálogo
+≠
+profundidade de metadados
+```
 
-Franchises permanecem adiadas.
+O objetivo não é ingerir um máximo fixo e arbitrário de jogos simplesmente porque o banco possui limite de armazenamento.
 
-## Persistência, API e frontend
+Se uma fonte expõe um conjunto maior de jogos que são relevantes ao escopo aprovado do MVP, preservar essas entradas relevantes do catálogo é preferível a descartá-las apenas para satisfazer um limite arbitrário de quantidade de registros.
 
-A arquitetura atual separa claramente três responsabilidades.
+A capacidade deve ser gerenciada primeiro por profundidade de metadados orientada a produto.
+
+Por exemplo:
+
+```text
+preservar jogos relevantes
+↓
+persistir classificações e relacionamentos exigidos por perguntas aprovadas de produto
+↓
+limitar, adiar ou evitar metadados não essenciais de alta cardinalidade
+↓
+monitorar crescimento real de tabelas e índices
+```
+
+Isso significa que o Collector não deve interpretar "o provider expõe" como motivo suficiente para persistir todo campo disponível ou toda associação na profundidade máxima.
+
+O source-product question map continua sendo a fronteira de decisão.
+
+### Evidência representativa de armazenamento da GMI-30
+
+O cenário sintético baseline utilizou:
+
+```text
+10.000 Games
+20.000 GameGenres
+20.000 GamePlatforms
+10.000 ExternalGameRecords
+16.666 GameImages
+```
+
+O armazenamento PostgreSQL medido após `ANALYZE` foi aproximadamente:
+
+```text
+dados de tabela  ~7,4 MB
+índices          ~11 MB
+total            ~19 MB
+```
+
+Um segundo cenário de pressão manteve o mesmo catálogo de 10.000 jogos e adicionou:
+
+```text
+30.000 releases contextuais
+30.000 associações de theme
+20.000 associações de game mode
+20.000 associações de player perspective
+80.000 associações de keyword
+20.000 associações de company
+5.000 associações de collection
+2.500 product relations
+```
+
+O armazenamento medido passou para aproximadamente:
+
+```text
+dados de tabela  ~29 MB
+índices          ~33 MB
+total            ~63 MB
+```
+
+O aumento foi de aproximadamente 44 MB sem adicionar mais jogos.
+
+Os pontos sintéticos de maior pressão foram:
+
+- `game_keywords`;
+- `game_releases`;
+- `game_images`;
+- `game_themes`;
+- `game_companies`.
+
+Essa evidência reforça que o risco de armazenamento é impulsionado principalmente por associações multiplicativas e seus índices de apoio, não apenas pela quantidade de jogos canônicos.
+
+O cenário medido de ~63 MB / 10.000 jogos é apenas uma referência de orçamento. Ele não deve ser tratado como previsão linear fixa de produção.
+
+## Observações de planos de consulta relevantes para Comparable Games
+
+A GMI-30 mediu os formatos atuais das consultas com um dataset local sintético de 10.000 jogos.
+
+### Busca por nome
+
+A busca substring atual:
+
+```text
+ILIKE '%term%'
+```
+
+usou sequential scan de `Games`.
+
+O tempo local aproximado de execução para a consulta representativa foi 3,7 ms.
+
+O índice B-tree atual de `NormalizedName` não sustenta esse padrão de substring.
+
+Decisão:
+
+- manter o comportamento atual no volume medido do MVP;
+- não introduzir trigram ou outro índice especializado até que volume próximo de produção ou latência demonstre necessidade.
+
+### Filtro por gênero
+
+O caminho de gênero usou `IX_GameGenres_GenreId`.
+
+Decisão:
+
+- o índice atual é justificado;
+- nenhum índice adicional de gênero é necessário.
+
+### Filtro por plataforma
+
+O caminho de plataforma usou `IX_GamePlatforms_PlatformId`.
+
+Decisão:
+
+- o índice atual é justificado;
+- nenhum índice adicional de plataforma é necessário.
+
+### Filtro por ano de release
+
+A consulta atual de ano aplica `EXTRACT(YEAR FROM FirstReleaseDate)` e usou sequential scan.
+
+O tempo local aproximado de execução para a consulta representativa foi 1,8 ms.
+
+Decisão:
+
+- manter o comportamento atual no volume medido do MVP;
+- não criar índice funcional de ano apenas para eliminar o sequential scan.
+
+### Lookup batch de covers
+
+O lookup de cover primário usou `IX_game_images_GameId`.
+
+Decisão:
+
+- o índice atual de imagem é justificado;
+- o lookup batch permanece o access path preferido da página de busca.
+
+Essas medições locais são evidência para as decisões atuais de design, e não garantias de nível de serviço em produção.
+
+Sequential scan não é considerado automaticamente um defeito.
+
+## Responsabilidades de persistência, API e frontend
+
+A arquitetura atual separa três preocupações.
 
 ### Persistência
 
-Mantém:
+Armazena o dataset canônico tratado mais a identidade externa e provenance mínima necessária para integridade, auditabilidade, remoção de fonte e reconciliação futura.
 
-- dados canônicos tratados;
-- identidades externas;
-- relações;
-- proveniência mínima necessária;
-- integridade referencial;
-- informação suficiente para auditoria, remoção de fonte e reconciliação futura.
+A persistência também deve respeitar o orçamento operacional de armazenamento.
 
-### Application/API
+Isso significa preservar dados porque eles sustentam:
 
-Expõe contratos orientados a caso de uso.
+- uma pergunta aprovada de produto;
+- provenance exigida;
+- reconciliação;
+- atribuição;
+- correção operacional.
 
-A API não precisa devolver todos os campos existentes no banco.
+Ela não deve se tornar um warehouse de todo campo do provider apenas porque esses campos estão disponíveis.
 
-Conceitos futuros de leitura podem incluir:
+### Application e API
+
+Expõem contratos específicos por caso de uso.
+
+A API não precisa retornar toda propriedade persistida.
+
+Os contratos atuais de leitura já incluem uma fronteira de imagem propositalmente simples:
+
+- `GameDetails.ImageUrl?`;
+- `GameSearchItem.ImageUrl?`.
+
+Esses valores são derivados de metadados persistidos de imagem, em vez de armazenados diretamente em `Game`.
+
+Conceitos futuros possíveis de leitura incluem:
 
 - product type;
 - produtos relacionados;
-- empresas agrupadas por papel;
+- companies agrupadas por role;
 - collections;
 - releases contextuais;
 - classificações selecionadas;
-- informação amigável de fonte e atribuição.
+- dados de screenshot/galeria se validados pela experiência de detalhe;
+- informações de fonte compreensíveis para humanos.
 
 ### Frontend
 
-Organiza os contratos da API para o fluxo de decisão do producer.
+Organiza os contratos da API para o workflow do producer.
 
 O frontend não deve espelhar o schema do banco.
 
-Nos cards, a prioridade continua sendo concisão.
+Essa regra agora se aplica explicitamente ao tratamento de imagem: `GameImage`, `ExternalGameRecord`, `SourceImageId` e regras específicas de CDN do provider permanecem preocupações do backend. O frontend consome apenas o `ImageUrl?` resolvido exigido pela experiência atual de card/detalhes.
 
-Nos detalhes, pode haver maior riqueza de contexto.
+Por exemplo, a persistência pode manter:
+
+```text
+ExternalGameRecordId
+ExternalCompanyRecordId
+DataSourceId
+SourceUpdatedAt
+```
+
+enquanto a experiência visível ao usuário pode mostrar:
+
+```text
+Developer
+Grezzo
+
+Source
+IGDB
+```
+
+Decisões de orçamento de armazenamento também são preocupações de backend/ingestão.
+
+O frontend não deve expor omissões arbitrárias de metadados como se uma fonte definitivamente não tivesse esses dados.
 
 ## Regra de migration
 
-A regra original permanece válida como princípio geral:
+A regra original de migration continua válida como princípio geral de design:
 
-1. confirmar a necessidade do producer;
-2. definir campos e filtros aprovados para o MVP;
+1. confirmar necessidades do producer;
+2. definir campos e filtros do MVP;
 3. avaliar fontes candidatas;
 4. verificar disponibilidade e permissões;
-5. revisar o domínio;
+5. revisar o modelo de domínio;
 6. propor o novo modelo;
-7. validar impacto arquitetural e de ingestão;
+7. validar impacto de arquitetura e ingestão;
 8. criar migration.
 
-Para os campos do Milestone 2 aprovados pela PoC e implementados na GMI-25 até a GMI-28, essa sequência já foi cumprida.
+Para os campos de persistência do Milestone 2 aprovados pela PoC e cobertos pela GMI-25 até GMI-29, essa sequência foi concluída.
 
-Mudanças futuras de schema devem continuar seguindo essa regra orientada por evidência.
+A GMI-30 validou que o schema resultante pode ser aplicado tanto do zero quanto sobre o banco local existente, sem drift pendente do modelo EF.
 
-Migrations geradas também devem ser revisadas para garantir que não incluam alterações não relacionadas ao incremento atual.
+Mudanças futuras de schema devem continuar seguindo a mesma regra evidence-first.
 
-## Checkpoint atual
+Migrations geradas também devem ser revisadas para mudanças não relacionadas antes de serem aplicadas.
 
-Após a GMI-28:
+Novos índices seguem a mesma regra de evidência: devem responder a necessidade demonstrada de consulta e justificar seu custo de armazenamento/write.
+
+## Fronteira atual de implementação
+
+No checkpoint atual da GMI-30:
 
 ```text
-Domain e persistência
-→ fundações GMI-25 a GMI-28 implementadas
+Fundações de Domain e persistência
+→ implementadas para GMI-25 até GMI-29
 
-API pública
-→ continua expondo os contratos atuais selecionados
+Operabilidade de persistência
+→ migrations validadas do zero e sobre o banco local existente
+→ planos de consulta representativos medidos
+→ pressão representativa de armazenamento medida
 
-Frontend
-→ continua com a experiência atual de Comparable Games
+Exposição pública da API
+→ ainda seletiva/contratos atuais apenas
+→ URLs de imagem de jogo são derivadas de metadados persistidos
 
-Collector de produção
+Apresentação no frontend
+→ experiência atual de Comparable Games apenas
+→ fronteira existente de cover/fallback preservada
+
+Ingestão do Collector em produção
 → ainda pendente
 
-Reconciliação multi-fonte
+Reconciliação multi-source
 → adiada para o Milestone 3
 ```
 
-Quality gate completo da solução:
+O quality gate atual da solução completa durante a GMI-30 passou:
 
 ```text
-Total de testes: 424
-Passaram: 424
+Testes: 460
+Aprovados: 460
 Falharam: 0
 Ignorados: 0
 ```
 
-## Próximos passos
+Princípio atual de capacidade:
 
-Dentro da persistência do Milestone 2:
+```text
+preservar cobertura relevante do catálogo
+→ controlar profundidade de metadados pelo valor de produto
+→ monitorar associações de alta cardinalidade e índices
+→ otimizar apenas quando evidência medida justificar
+```
 
-1. GMI-29 — metadados de cover e screenshots;
-2. GMI-30 — validação do orçamento de armazenamento.
+## Fora do escopo deste refinamento de MVP
 
-Depois da conclusão do modelo de persistência aprovado:
+Capacidades futuras incluem análise de vendas e receita, tendências de engajamento, histórico de preços, review sentiment, análise de audiência, saturação de mercado, pesquisas salvas, comparação lado a lado e modelos preditivos.
 
-1. implementar/refatorar o Worker/Collector de produção;
-2. ingerir o subconjunto aprovado da IGDB;
-3. popular dados reais representativos;
-4. validar storage;
-5. expor os novos conceitos selecionados na Application/API;
-6. definir o que pertence aos cards, detalhes e filtros;
-7. apresentar proveniência e atribuição de forma compreensível;
-8. validar o MVP ponta a ponta com dados reais.
+Também adiados até incrementos separados e validados:
 
-## Fora do escopo deste refinamento do MVP
-
-Capacidades futuras incluem:
-
-- análise de vendas e receita;
-- tendências de engajamento;
-- histórico de preço;
-- sentimento de reviews;
-- análise de audiência;
-- saturação de mercado;
-- pesquisa salva;
-- comparação lado a lado;
-- modelos preditivos.
-
-Também permanecem adiados para incrementos separados:
-
-- reconciliação multi-fonte;
+- reconciliação multi-source;
 - franchises;
 - filtragem pública arbitrária por múltiplas keywords;
-- exposição automática de toda classificação persistida como filtro;
-- propagação automática entre produtos relacionados.
+- expor toda classificação persistida como filtro de frontend;
+- propagação automática entre produtos relacionados;
+- otimização especulativa de busca/índices sem necessidade medida.
