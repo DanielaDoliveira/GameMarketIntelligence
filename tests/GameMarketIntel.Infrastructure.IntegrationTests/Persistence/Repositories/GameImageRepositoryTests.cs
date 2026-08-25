@@ -12,8 +12,7 @@ public sealed class GameImageRepositoryTests
 {
     private readonly PostgreSqlFixture _fixture;
 
-    public GameImageRepositoryTests(PostgreSqlFixture fixture) =>
-        _fixture = fixture;
+    public GameImageRepositoryTests(PostgreSqlFixture fixture) => _fixture = fixture;
 
     [Fact]
     public async Task GetPrimaryCoverAsync_ShouldReturnPrimaryCover()
@@ -24,9 +23,7 @@ public sealed class GameImageRepositoryTests
         var game = new Game("Metroid Prime");
         var dataSource = CreateDataSource("igdb");
 
-        var externalGameRecord = CreateLinkedExternalGameRecord(
-            dataSource,
-            game);
+        var externalGameRecord = CreateLinkedExternalGameRecord(dataSource, game);
 
         var screenshot = new GameImage(
             externalGameRecord,

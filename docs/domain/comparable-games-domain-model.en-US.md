@@ -6,7 +6,7 @@ Define the current domain model and read behavior that support the Comparable Ga
 
 The model should provide enough information to support early production and market-analysis questions while remaining source-neutral, provenance-aware, and compatible with the storage constraints of the MVP.
 
-The model is intentionally pragmatic. It has evolved from the initial Comparable Games foundation through the source-identity, contextual-release, classification, product-relation, company, and collection increments validated during Milestone 2.
+The model is intentionally pragmatic. It has evolved from the initial Comparable Games foundation through the source-identity, contextual-release, classification, product-relation, company, collection, and image-metadata increments validated during Milestone 2.
 
 ## Product Questions
 
@@ -63,6 +63,9 @@ The current domain and persistence scope includes:
 * `Collection`;
 * `ExternalCollectionRecord`;
 * `GameCollection`;
+* `GameImage`;
+* `GameImageType`;
+* source-aware image URL resolution;
 * game-to-genre relationships;
 * game-to-platform relationships;
 * read contracts for the current Comparable Games search.
@@ -96,6 +99,9 @@ Implemented:
 * canonical collection modeling;
 * collection external identities;
 * game/collection associations with provenance;
+* cover and screenshot metadata with provenance;
+* source-aware construction of public image URLs from persisted image metadata;
+* batch primary-cover lookup for paginated search results;
 * restrictive delete behavior for provenance-bearing relationships;
 * EF Core configurations;
 * PostgreSQL migrations;
@@ -125,7 +131,7 @@ Implemented:
 * responsive Blazor Comparable Games experience;
 * visible Search action;
 * loading, error, empty, and no-results states;
-* 424 automated tests passing across the solution at the GMI-28 final quality gate.
+* 460 automated tests passing across the solution during the GMI-29 implementation quality gate.
 
 Not yet implemented in the public read experience:
 
@@ -156,7 +162,6 @@ A canonical `Game` is not tied permanently to one provider. Source-specific iden
 | `NormalizedName` | Yes | Technical normalized name used for lookup and candidate discovery |
 | `Description` | No | Short descriptive context |
 | `FirstReleaseDate` | No | First known canonical product release date used by the current year filter |
-| `ImageUrl` | No | Selected external image reference |
 | `ProductType` | No | Canonical product type when known |
 
 ### Name Normalization
@@ -193,6 +198,7 @@ A game may:
 * have multiple keywords;
 * have multiple company associations;
 * belong to multiple collections;
+* have multiple source-derived image metadata records;
 * participate in directed product relationships.
 
 No product relationship automatically propagates genres, platforms, releases, companies, collections, classifications, or other fields from one `Game` to another.
@@ -237,6 +243,118 @@ GameRelease
 ```
 
 Ports, remakes, remasters, bundles, expansions, and other distinct products are not collapsed into one game merely because they are related.
+
+## Game Images
+
+### `GameImage`
+
+`GameImage` stores source-derived image metadata associated with a canonical `Game`.
+
+It replaces the previous persistence dependency on `Game.ImageUrl`.
+
+Implemented properties:
+
+| Property | Required | Purpose |
+| --- | ---: | --- |
+| `Id` | Yes | Internal image-metadata identity |
+| `GameId` | Yes | Canonical game receiving the image contribution |
+| `ExternalGameRecordId` | Yes | Source game observation that supplied the image |
+| `ExternalId` | Yes | Identity of the image record inside the source |
+| `SourceImageId` | Yes | Source asset token used later to construct a public image URL |
+| `Type` | Yes | Source-neutral image purpose: `Cover` or `Screenshot` |
+| `Width` | No | Source-reported width when available |
+| `Height` | No | Source-reported height when available |
+| `SortOrder` | No | Source ordering hint when one is available |
+
+`ExternalId` and `SourceImageId` have intentionally different responsibilities:
+
+```text
+ExternalId
+→ identifies the source image record
+
+SourceImageId
+→ identifies/addressses the source asset used to construct a rendition URL
+```
+
+For example, an IGDB observation may expose:
+
+```text
+id       = 12345
+image_id = co8abc
+```
+
+which is represented as:
+
+```text
+ExternalId    = "12345"
+SourceImageId = "co8abc"
+Type          = Cover
+```
+
+The database does not persist a ready-made game image URL and does not store image binary content.
+
+### Image Provenance
+
+`GameImage` does not duplicate `DataSourceId`.
+
+The source is derived through:
+
+```text
+GameImage
+→ ExternalGameRecord
+→ DataSource
+```
+
+A `GameImage` can be created only from an `ExternalGameRecord` already linked to a canonical `Game`.
+
+The current persistence identity protects duplicate evidence through the unique combination:
+
+```text
+ExternalGameRecordId
++ ExternalId
++ Type
+```
+
+Delete behavior is restrictive for both the canonical game and the supporting external game record so that provenance cannot be removed silently.
+
+### URL Resolution
+
+Public image URLs are constructed after persistence.
+
+The current read flow is:
+
+```text
+GameImage metadata
+→ primary-cover selection
+→ DataSource.Code
+→ IGameImageUrlResolver
+→ public ImageUrl
+→ Shared contract
+→ frontend
+```
+
+The domain does not know CDN or provider-specific URL rules.
+
+The current source-aware resolver supports IGDB image metadata and constructs the appropriate rendition URL from `SourceImageId`.
+
+The public search and game-details contracts continue to expose `ImageUrl?` because the frontend needs a ready-to-use URL or `null` for its existing fallback behavior. Provider identifiers, CDN rules, and `GameImage` persistence metadata remain backend concerns.
+
+### Primary Cover Selection
+
+The current read model selects at most one cover for the existing search and details experience.
+
+Selection rules are deterministic:
+
+1. only `GameImageType.Cover` records are considered;
+2. a populated `SortOrder` is preferred over `null`;
+3. lower `SortOrder` values are preferred;
+4. `GameImage.Id` is used as a stable tie-breaker.
+
+Game details retrieve one primary cover.
+
+Paginated search results retrieve primary-cover metadata in batch for all games on the page, avoiding an N+1 query pattern.
+
+Screenshots are persisted as metadata for future detail/gallery use but are not exposed by the current public read contract.
 
 ## Product Type
 
@@ -370,7 +488,7 @@ Represents a canonical game platform used for filtering, release context, market
 * A game may be associated with multiple platforms.
 * A contextual `GameRelease` belongs to one platform.
 
-Platform and game images are referenced by URL rather than stored as binary content.
+Platform image handling remains unchanged in the current model. Game images are stored as source-derived metadata and resolved to public URLs only when required by a read use case; no game image binaries are stored in PostgreSQL.
 
 ## Queryable Classifications
 
@@ -595,7 +713,8 @@ Examples include:
 * queryable classification associations;
 * product relationships;
 * game/company roles;
-* game/collection membership.
+* game/collection membership;
+* game image metadata.
 
 The current design deliberately avoids a generic polymorphic field-history table.
 
@@ -617,6 +736,7 @@ Game
   ├── provenance associations → Keyword
   ├── provenance associations → Company + Role
   ├── provenance associations → Collection
+  ├── source-derived image metadata → GameImage
   └── directed provenance relations → Game
 ```
 
@@ -869,7 +989,7 @@ Ignored: 0
 
 Within the persistence milestone:
 
-1. GMI-29 — cover and screenshot metadata;
+1. complete GMI-29 documentation and close the image-metadata increment;
 2. GMI-30 — persistence and storage-budget validation.
 
 After the approved persistence model is complete:
