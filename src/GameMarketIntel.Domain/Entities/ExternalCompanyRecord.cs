@@ -18,25 +18,35 @@ public sealed class ExternalCompanyRecord
 
     public DateTimeOffset? SourceUpdatedAt { get; private set; }
 
-    private ExternalCompanyRecord() { }
+    private ExternalCompanyRecord()
+    {
+    }
 
-    public ExternalCompanyRecord(Guid dataSourceId, string externalId, DateTimeOffset observedAt)
+    public ExternalCompanyRecord(
+        Guid dataSourceId,
+        string externalId,
+        DateTimeOffset observedAt,
+        DateTimeOffset? sourceUpdatedAt = null)
     {
         if (dataSourceId == Guid.Empty)
             throw new ArgumentException(
                 "The data source ID cannot be empty.",
                 nameof(dataSourceId));
 
-        if (observedAt == default)
-            throw new ArgumentException(
-                "The observed timestamp cannot be the default value.",
-                nameof(observedAt));
+        var normalizedObservedAt = NormalizeTimestamp(
+            observedAt,
+            nameof(observedAt));
 
         Id = Guid.NewGuid();
         DataSourceId = dataSourceId;
         ExternalId = NormalizeAndValidateExternalId(externalId);
-        FirstSeenAt = observedAt;
-        LastSeenAt = observedAt;
+        FirstSeenAt = normalizedObservedAt;
+        LastSeenAt = normalizedObservedAt;
+        SourceUpdatedAt = sourceUpdatedAt.HasValue
+            ? NormalizeTimestamp(
+                sourceUpdatedAt.Value,
+                nameof(sourceUpdatedAt))
+            : null;
     }
 
     public void LinkToCompany(Guid companyId)
@@ -55,17 +65,27 @@ public sealed class ExternalCompanyRecord
 
     public void MarkSeen(DateTimeOffset observedAt, DateTimeOffset? sourceUpdatedAt = null)
     {
-        if (observedAt == default)
+        var normalizedObservedAt = NormalizeTimestamp(observedAt, nameof(observedAt));
+
+        if (normalizedObservedAt < LastSeenAt)
             throw new ArgumentException(
-                "The observed timestamp cannot be the default value.",
+                "The observation timestamp cannot be earlier than the last observation.",
                 nameof(observedAt));
 
-        if (observedAt > LastSeenAt)
-            LastSeenAt = observedAt;
+        LastSeenAt = normalizedObservedAt;
 
-        if (sourceUpdatedAt.HasValue &&
-            (!SourceUpdatedAt.HasValue || sourceUpdatedAt.Value > SourceUpdatedAt.Value))
-            SourceUpdatedAt = sourceUpdatedAt;
+        if (!sourceUpdatedAt.HasValue)
+            return;
+
+        var normalizedSourceUpdatedAt = 
+            NormalizeTimestamp(
+                sourceUpdatedAt.Value,
+                nameof(sourceUpdatedAt)
+                );
+
+        if (!SourceUpdatedAt.HasValue ||
+            normalizedSourceUpdatedAt > SourceUpdatedAt.Value)
+            SourceUpdatedAt = normalizedSourceUpdatedAt;
     }
 
     private static string NormalizeAndValidateExternalId(string externalId)
@@ -83,5 +103,17 @@ public sealed class ExternalCompanyRecord
                 nameof(externalId));
 
         return normalizedExternalId;
+    }
+
+    private static DateTimeOffset NormalizeTimestamp(
+        DateTimeOffset timestamp,
+        string parameterName)
+    {
+        if (timestamp == default)
+            throw new ArgumentException(
+                "The timestamp cannot be the default value.",
+                parameterName);
+
+        return timestamp.ToUniversalTime();
     }
 }
