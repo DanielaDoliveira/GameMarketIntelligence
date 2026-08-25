@@ -25,9 +25,9 @@ The existing implementation provides:
 
 This is a strong basic discovery flow but still represents a shallow comparison stage.
 
-## Implementation status note — August 24, 2026
+## Implementation status note — August 25, 2026
 
-The domain and persistence refinements anticipated by this document have advanced substantially through GMI-25 to GMI-28.
+The domain and persistence refinements anticipated by this document have advanced substantially through GMI-25 to GMI-29.
 
 Implemented foundations now include:
 
@@ -44,6 +44,12 @@ Implemented foundations now include:
 - canonical collections;
 - external collection identities;
 - game/collection associations with provenance;
+- source-derived game image metadata through `GameImage`;
+- `GameImageType` with `Cover` and `Screenshot`;
+- source image record identity through `ExternalId`;
+- source asset addressing through `SourceImageId`;
+- source-aware public image URL resolution in the backend;
+- batch primary-cover lookup for paginated search results;
 - restrictive delete behavior for provenance-bearing relationships;
 - PostgreSQL mappings, migrations, and integration tests.
 
@@ -215,6 +221,7 @@ Game
 ├── Collections
 ├── Contextual Releases
 ├── Product Relationships
+├── GameImage metadata
 └── External source identities and provenance
 ```
 
@@ -258,6 +265,33 @@ GameProductRelationType
 
 Related products do not automatically inherit or propagate genres, platforms, releases, companies, collections, classifications, or other metadata.
 
+Game image handling now follows the same separation principle.
+
+The canonical `Game` no longer persists a ready-made `ImageUrl`.
+
+Instead:
+
+```text
+GameImage
+→ ExternalGameRecord
+→ DataSource
+```
+
+stores source-derived metadata and provenance, while a backend resolver converts `SourceImageId` into a public URL when a read use case needs one.
+
+The current public contracts intentionally remain simple:
+
+```text
+GameDetails.ImageUrl?
+GameSearchItem.ImageUrl?
+```
+
+The frontend therefore receives a ready-to-use URL or `null` for fallback behavior and does not need to know provider-specific image identifiers or CDN rules.
+
+The current search flow resolves primary covers in batch for the games on the page, avoiding N+1 image queries.
+
+Screenshots are persisted as metadata for future detail/gallery work but are not exposed by the current MVP read contract.
+
 Temporal market metrics such as price, sales, reviews, and player counts should still not be static fields on `Game`.
 
 ## Persistence, API, and frontend responsibilities
@@ -274,6 +308,13 @@ Expose use-case-specific contracts.
 
 The API does not need to return every persistence property.
 
+Current read contracts already include a deliberately simple image boundary:
+
+- `GameDetails.ImageUrl?`;
+- `GameSearchItem.ImageUrl?`.
+
+These values are derived from persisted image metadata rather than stored directly on `Game`.
+
 Potential future read concepts include:
 
 - product type;
@@ -282,6 +323,7 @@ Potential future read concepts include:
 - collections;
 - contextual releases;
 - selected classifications;
+- screenshot/gallery data if validated by the detail experience;
 - human-readable source information.
 
 ### Frontend
@@ -289,6 +331,8 @@ Potential future read concepts include:
 Organizes the API contracts for the producer's workflow.
 
 The frontend should not mirror the database schema.
+
+That rule now applies explicitly to image handling as well: `GameImage`, `ExternalGameRecord`, `SourceImageId`, and provider-specific CDN rules remain backend concerns. The frontend consumes only the resolved `ImageUrl?` required by the current card/details experience.
 
 For example, persistence may retain:
 
@@ -322,7 +366,7 @@ The original migration rule remains valid as a general design principle:
 7. validate architecture and ingestion impact;
 8. create migration.
 
-For the PoC-approved Milestone 2 persistence fields covered by GMI-25 to GMI-28, this sequence has now been completed.
+For the PoC-approved Milestone 2 persistence fields covered by GMI-25 to GMI-29, this sequence has now been completed.
 
 Future schema changes must continue to follow the same evidence-first rule.
 
@@ -330,17 +374,19 @@ Generated migrations must also be reviewed for unrelated schema changes before t
 
 ## Current implementation boundary
 
-As of the GMI-28 quality gate:
+As of the GMI-29 implementation quality gate:
 
 ```text
 Domain and persistence foundations
-→ implemented for GMI-25 to GMI-28
+→ implemented for GMI-25 to GMI-29
 
 Public API exposure
 → still selective/current contracts only
+→ game image URLs are now derived from persisted metadata
 
 Frontend presentation
 → current Comparable Games experience only
+→ existing cover/fallback boundary preserved
 
 Collector production ingestion
 → still pending
@@ -349,11 +395,11 @@ Multi-source reconciliation
 → deferred to Milestone 3
 ```
 
-The full solution quality gate after GMI-28 passed:
+The current full-solution quality gate during GMI-29 passed:
 
 ```text
-Tests: 424
-Passed: 424
+Tests: 460
+Passed: 460
 Failed: 0
 Ignored: 0
 ```

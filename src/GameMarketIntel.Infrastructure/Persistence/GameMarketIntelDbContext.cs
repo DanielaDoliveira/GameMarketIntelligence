@@ -9,24 +9,33 @@ public sealed class GameMarketIntelDbContext(
 {
     public DbSet<DataSource> DataSources => Set<DataSource>();
 
-    public DbSet<ExternalGameRecord> ExternalGameRecords => Set<ExternalGameRecord>();
+    public DbSet<ExternalGameRecord> ExternalGameRecords =>
+        Set<ExternalGameRecord>();
 
-    public DbSet<ExternalThemeRecord> ExternalThemeRecords => Set<ExternalThemeRecord>();
+    public DbSet<ExternalThemeRecord> ExternalThemeRecords =>
+        Set<ExternalThemeRecord>();
 
-    public DbSet<ExternalGameModeRecord> ExternalGameModeRecords => Set<ExternalGameModeRecord>();
+    public DbSet<ExternalGameModeRecord> ExternalGameModeRecords =>
+        Set<ExternalGameModeRecord>();
 
-    public DbSet<ExternalPlayerPerspectiveRecord> ExternalPlayerPerspectiveRecords
-        => Set<ExternalPlayerPerspectiveRecord>();
+    public DbSet<ExternalPlayerPerspectiveRecord> ExternalPlayerPerspectiveRecords =>
+        Set<ExternalPlayerPerspectiveRecord>();
 
-    public DbSet<ExternalKeywordRecord> ExternalKeywordRecords => Set<ExternalKeywordRecord>();
+    public DbSet<ExternalKeywordRecord> ExternalKeywordRecords =>
+        Set<ExternalKeywordRecord>();
 
-    public DbSet<ExternalCompanyRecord> ExternalCompanyRecords => Set<ExternalCompanyRecord>();
+    public DbSet<ExternalCompanyRecord> ExternalCompanyRecords =>
+        Set<ExternalCompanyRecord>();
 
-    public DbSet<ExternalCollectionRecord> ExternalCollectionRecords => Set<ExternalCollectionRecord>();
+    public DbSet<ExternalCollectionRecord> ExternalCollectionRecords =>
+        Set<ExternalCollectionRecord>();
 
     public DbSet<GameRelease> GameReleases => Set<GameRelease>();
 
-    public DbSet<GameProductRelation> GameProductRelations => Set<GameProductRelation>();
+    public DbSet<GameProductRelation> GameProductRelations =>
+        Set<GameProductRelation>();
+
+    public DbSet<GameImage> GameImages => Set<GameImage>();
 
     public DbSet<Game> Games => Set<Game>();
 
@@ -42,7 +51,8 @@ public sealed class GameMarketIntelDbContext(
 
     public DbSet<GameMode> GameModes => Set<GameMode>();
 
-    public DbSet<PlayerPerspective> PlayerPerspectives => Set<PlayerPerspective>();
+    public DbSet<PlayerPerspective> PlayerPerspectives =>
+        Set<PlayerPerspective>();
 
     public DbSet<Keyword> Keywords => Set<Keyword>();
 
@@ -50,8 +60,8 @@ public sealed class GameMarketIntelDbContext(
 
     public DbSet<GameGameMode> GameGameModes => Set<GameGameMode>();
 
-    public DbSet<GamePlayerPerspective> GamePlayerPerspectives
-        => Set<GamePlayerPerspective>();
+    public DbSet<GamePlayerPerspective> GamePlayerPerspectives =>
+        Set<GamePlayerPerspective>();
 
     public DbSet<GameKeyword> GameKeywords => Set<GameKeyword>();
 
@@ -63,7 +73,5 @@ public sealed class GameMarketIntelDbContext(
     {
         modelBuilder.ApplyConfigurationsFromAssembly(
             typeof(GameMarketIntelDbContext).Assembly);
-
-        base.OnModelCreating(modelBuilder);
     }
 }

@@ -103,51 +103,6 @@ public class GameTests
         game.Description.ShouldBeNull();
     }
 
-    [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    [InlineData("   ")]
-    public void Constructor_ShouldNormalizeInvalidOptionalImageUrlToNull(string? imageUrl)
-    {
-        // Arrange & Act
-        var game = new Game(
-            name: "Hades",
-            imageUrl: imageUrl);
-
-        // Assert
-        game.ImageUrl.ShouldBeNull();
-    }
-
-    [Theory]
-    [InlineData("https://example.com/hades.png")]
-    [InlineData("http://example.com/hades.png")]
-    public void Constructor_ShouldStoreValidAbsoluteImageUrl(string imageUrl)
-    {
-        // Arrange & Act
-        var game = new Game(
-            name: "Hades",
-            imageUrl: imageUrl);
-
-        // Assert
-        game.ImageUrl.ShouldBe(imageUrl);
-    }
-
-    [Theory]
-    [InlineData("hades.png")]
-    [InlineData("/images/hades.png")]
-    [InlineData("ftp://example.com/hades.png")]
-    [InlineData("not-a-url")]
-    public void Constructor_ShouldThrowException_WhenImageUrlIsInvalid(string imageUrl)
-    {
-        // Arrange & Act
-        var action = () => new Game(
-            name: "Hades",
-            imageUrl: imageUrl);
-
-        // Assert
-        action.ShouldThrow<ArgumentException>();
-    }
-
     [Fact]
     public void Constructor_ShouldStoreFirstReleaseDate()
     {

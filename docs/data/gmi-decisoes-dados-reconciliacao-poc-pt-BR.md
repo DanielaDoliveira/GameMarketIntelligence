@@ -1,98 +1,69 @@
 # Game Market Intelligence — Decisões de Dados, Reconciliação e PoC
 
-**Status da PoC da IGDB:** concluída e aprovada em 14/08/2026 como investigação
-técnica e de produto. A aprovação orienta o Collector definitivo, mas não
-representa prontidão para produção.
-
 ## 1. Objetivo
 
-Este documento consolida as decisões que orientam o MVP do **Game Market
-Intelligence (GMI)** e foi atualizado conforme a PoC da IGDB produziu
-evidências.
+Este documento consolida as decisões que orientam o MVP do **Game Market Intelligence (GMI)** após a prova de conceito com IGDB e os refinamentos posteriores do modelo de persistência.
 
-O GMI não pretende armazenar todos os dados possíveis sobre jogos. Seu objetivo é selecionar, organizar e apresentar apenas o que realmente ajuda producers em pesquisa inicial de mercado, descoberta de comparáveis, exploração de nichos e compreensão do contexto competitivo.
+O GMI não pretende armazenar todo dado possível sobre jogos. Seu objetivo é selecionar, organizar e apresentar apenas o que realmente ajuda producers em pesquisa inicial de mercado, descoberta de jogos comparáveis, exploração de nichos e análise de contexto competitivo.
 
-> O valor do GMI está no pouco que agrega valor, não no excesso de dados que dificulta a análise.
+> O GMI cria valor por meio de um conjunto focado de dados úteis, não pelo excesso de informação que dificulta a análise.
 
 ## 2. Escopo do MVP
 
-Para esta iteração, o filtro de Comparable Games é a primeira entrega de maior
-valor do produto. A seleção do que entra, sai, permanece apenas nos detalhes ou
-fica adiado resulta da análise específica de cobertura, semântica, operação e
-restrições da IGDB. Dentro do custo zero, o objetivo é oferecer a maior
-confiabilidade prática possível e ser transparente com o producer sobre fonte,
-ausências e limitações dos dados.
+O MVP fornecerá:
 
-O primeiro MVP com IGDB deverá oferecer:
-
-- pesquisa por nome; aliases poderão ser adicionados apenas a partir de campos
-  e fontes com política de proveniência aprovada;
+- busca por nome e aliases;
 - exploração por keywords;
-- filtros por gênero, tema, plataforma, modo, multiplayer e período de lançamento;
-- perspectivas como dado opcional de detalhe quando informadas pela fonte;
-- capas como apoio visual opcional e não dominante nos resultados e detalhes;
-- screenshots como contexto visual opcional nos detalhes dos jogos;
-- contexto de empresas envolvidas;
-- collections/séries;
-- relações entre produtos, como remake, remaster, port, edição, DLC e expansão;
-- proveniência e nível de confiança;
+- filtros por genre, theme, platform, game mode, perspective, multiplayer e período de lançamento;
+- contexto sobre empresas envolvidas;
+- franchises e collections/series;
+- relações de produto como remake, remaster, port, edition, DLC e expansion;
+- proveniência e níveis de confiança;
 - transparência sobre limitações, conflitos e cobertura.
 
-Ficam fora do primeiro MVP com IGDB, sem serem removidos da visão de produto
-para iterações posteriores:
+Fora de escopo:
 
 - métricas financeiras, vendas e receita;
-- previsão de sucesso e pontuação automática de oportunidade;
+- previsão de sucesso e scoring automático de oportunidade;
 - taxonomia própria de subgêneros;
-- modelagem separada de IP, subfranquia, universo, linha editorial, marca, propriedade licenciada ou grupo corporativo;
-- multiplayer aprofundado;
+- modelagem separada de IP, subfranchise, universe, editorial line, brand, licensed property ou corporate group;
+- análise profunda de multiplayer;
 - histórico corporativo complexo;
-- comparação detalhada entre edições;
-- arquivamento ilimitado de observações antigas.
+- comparação detalhada de conteúdo entre editions;
+- armazenamento arquivístico ilimitado de observações antigas.
 
-Métricas financeiras poderão ser consideradas em iterações posteriores, após a
-conclusão e validação do primeiro MVP com dados reais.
+Métricas financeiras podem ser consideradas depois da conclusão do MVP.
 
 ## 3. Fontes selecionadas
 
 ### IGDB
 
-A IGDB está aprovada com ressalvas como principal fonte de catálogo e taxonomia canônica do primeiro MVP para gêneros, temas, modos, perspectivas, keywords, tipos, relações, plataformas, datas, empresas, collections e identificadores externos. Ela é adequada para validar o primeiro MVP, mas não é uma fonte autoritativa: registros e relações individuais podem estar incompletos, inconsistentes ou representar conteúdo não oficial. `franchises` permanece disponível na fonte, mas fica adiado para depois do primeiro MVP.
-
-O primeiro MVP preservará proveniência e aplicará proteções básicas de catálogo sem bloquear a entrega por um sistema de comprovação de oficialidade entre fontes. Detecção mais sofisticada de conflitos, confiança por campo, quarentena e validação cruzada serão refinadas no incremento seguinte, quando uma segunda fonte for integrada.
+A IGDB será a principal fonte de catálogo e a taxonomia canônica do MVP para genres, themes, modes, perspectives, keywords, product types, relationships, platforms, release dates, companies, franchises, collections e identificadores externos.
 
 ### Wikidata
 
-Será usada para reconciliação, enriquecimento, validação auxiliar e identificadores cruzados. Não substituirá automaticamente a IGDB como taxonomia canônica.
+Wikidata dará suporte à reconciliação, enriquecimento, validação auxiliar e identificadores cross-source. Ela não substituirá automaticamente a IGDB como taxonomia canônica.
 
 ### Steam
 
-Será uma fonte especializada para fatos do ecossistema Steam, como data de lançamento e identidade do produto na plataforma. A arquitetura e a reconciliação não poderão depender da Steam.
+Steam será uma fonte especializada para fatos específicos do ecossistema Steam, como datas de lançamento e identidade de produto na plataforma. A arquitetura e o processo de reconciliação não podem depender da Steam.
 
-## 4. Mapping da IGDB
+## 4. Mapping IGDB
 
 ### 4.1 Identidade e descoberta
 
-**Incluir:** `id`, `name`, `game_type`, `version_parent`, `game_status`, `summary`.
+**Incluir:** `id`, `name`, `alternative_names`, `game_type`, `version_parent`, `game_status`, `summary`.
 
-**Adiar ou excluir:** excluir `alternative_names` do mapping do MVP; adiar
-`slug`; não importar `storyline` inicialmente.
+**Adiar ou excluir:** adiar `slug`; não importar `storyline` inicialmente.
 
 Regras:
 
 - identidade externa = `Source + ExternalId`;
-- nome nunca basta para reconciliação automática;
-- `alternative_names` não deve ser usado para exibição, busca, identidade ou
-  reconciliação no MVP, pois os valores observados misturam variações regionais
-  e linguísticas com nomes de executáveis, títulos provisórios e aliases
-  ambíguos sem proveniência suficiente;
-- avaliar `game_localizations` separadamente como candidato mais estruturado
-  para nomes regionais, sem presumir que a estrutura regional comprove uso
-  oficial;
-- `game_status` é contexto;
-- `summary` serve à página de detalhes, não à identidade.
+- nome isolado nunca sustenta reconciliação automática;
+- `game_status` é contextual;
+- `summary` apoia detalhes, não identidade.
 
-### 4.2 Plataformas e lançamentos
+### 4.2 Platforms e releases
 
 **Incluir:** `platforms`, `release_dates.platform`, `date`, `date_format`, `release_region`, `status`, `updated_at`.
 
@@ -102,35 +73,35 @@ Regras:
 
 Regras:
 
-- preservar datas por plataforma e região;
+- preservar datas por platform e region;
 - preservar a precisão original;
-- não transformar ano ou mês em datas fictícias;
-- permitir consultas por intervalo;
-- datas diferentes em plataformas diferentes não são conflito.
+- nunca converter dado apenas de ano ou mês em datas artificiais;
+- suportar consultas por intervalo de datas;
+- datas diferentes em platforms diferentes não são conflitos.
 
 ### 4.3 Empresas envolvidas
 
 **Incluir papéis:** developer, publisher, porting e supporting.
 
-**Incluir dados mínimos:** identificador externo, nome, status quando disponível e `updated_at`.
+**Incluir dados mínimos de company:** identificador externo, nome, status quando disponível e `updated_at`.
 
-**Adiar:** `changed_company_id`, websites, parent company, histórico corporativo e descrição extensa.
+**Adiar:** `changed_company_id`, websites, parent company, histórico corporativo e descrições longas.
 
 Regras:
 
-- empresas são relações multivaloradas;
-- o papel é obrigatório;
-- ausência numa fonte não é conflito;
+- companies são relações multivaloradas;
+- role é obrigatório;
+- ausência em uma fonte não é conflito;
 - papéis diferentes podem ser complementares;
 - porting e supporting não substituem developer ou publisher.
 
-### 4.4 Tipos e relações entre produtos
+### 4.4 Tipos de produto e relações
 
 **Incluir:** `game_type`, `parent_game`, `dlcs`, `expansions`, `standalone_expansions`, `ports`, `remakes`, `remasters`, `bundles`, `version_parent`, `version_title`.
 
-**Adiar:** `expanded_games`, detalhes de `game_versions`, `forks` e `similar_games`.
+**Adiar:** `expanded_games`, `game_versions` detalhados, `forks` e `similar_games`.
 
-> Produtos relacionados permanecem registros distintos.
+> Produtos relacionados permanecem registros separados.
 
 ### 4.5 Identificadores externos e websites
 
@@ -138,290 +109,58 @@ Regras:
 
 **Incluir de `websites`:** `type`, `url`.
 
-**Adiar:** países, formato de lançamento e checksums específicos de websites.
+**Adiar:** countries, release format e checksums específicos de websites.
 
 Regras:
 
-- `Source + UID` identifica o registro externo;
-- URLs precisam de validação;
-- `trusted` é apenas sinal auxiliar.
+- `Source + UID` identifica um registro externo;
+- URLs devem ser validadas;
+- `trusted` é apenas um sinal auxiliar.
 
 ### 4.6 Filtros e taxonomia
 
-- **Gêneros:** múltiplos IDs usam AND; gêneros adicionais são permitidos.
-- **Temas:** múltiplos usam AND; temas adicionais são permitidos.
-- **Modos:** múltiplos usam AND; o filtro significa que a fonte associa todos os modos selecionados ao registro do jogo, e não que todos estejam disponíveis em cada plataforma ou edição.
-- **Perspectivas:** ingerir como detalhe opcional em relação muitos-para-muitos;
-  adiar o filtro público porque a cobertura atual produziria falsos negativos em
-  excesso.
-- **Keywords:** usar IDs estruturados da fonte; ingerir e exibir como dado
-  opcional; no primeiro MVP, uma keyword será clicável e abrirá Comparable Games
-  com essa keyword como critério contextual removível. Seleção manual,
-  múltiplas keywords com `AND`, autocomplete, keywords próprias e unificação
-  automática de termos ficam adiados.
-- **Plataformas:** múltiplas usam OR.
-- **Multiplayer:** incluir multiplayer, co-op online e multiplayer local/offline; capacidades selecionadas usam AND, sem exclusividade.
+- **Genres:** múltiplos IDs usam AND; genres extras são permitidos.
+- **Themes:** múltiplos valores usam AND; themes extras são permitidos.
+- **Game modes:** múltiplos valores usam AND.
+- **Perspectives:** múltiplos valores usam AND.
+- **Keywords:** múltiplos valores usam AND; keywords são centrais para o valor do GMI; usar IDs estruturados; não criar keywords customizadas nem mesclar termos automaticamente.
+- **Platforms:** múltiplos valores usam OR.
+- **Multiplayer:** incluir multiplayer, online co-op e local/offline multiplayer; capacidades selecionadas usam AND sem exclusividade.
 
-Ficam fora do multiplayer do MVP: quantidade máxima de jogadores, LAN, drop-in/drop-out e configurações detalhadas por plataforma.
+Fora de escopo para multiplayer: número máximo de jogadores, LAN, drop-in/drop-out e configurações detalhadas específicas por platform.
 
-#### Decisão sobre modos de jogo
+### 4.7 Franchises e collections
 
-`game_modes` está aprovado para o MVP com ressalvas. Na amostra fixa de 100
-jogos, 84 registros apresentaram ao menos um modo, 69 apresentaram exatamente
-um, 15 apresentaram múltiplos modos e 16 não apresentaram nenhum. Não foram
-encontrados IDs duplicados, IDs inválidos, nomes vazios nem nomes conflitantes
-para o mesmo ID. Uma amostra direcionada separada de 26 jogos de nove séries
-conhecidas teve cobertura de 100% e continua útil para inspeção semântica, mas
-não representa a completude geral do catálogo. A relação é muitos-para-muitos e
-anulável.
+**Incluir:** franchises, collections/series, identificadores, nomes e metadados técnicos de sincronização.
 
-O campo pertence a cada registro de jogo da IGDB e não possui granularidade por plataforma. Ele não informa um modo principal, não distingue cooperação limitada ou assimétrica, não mede importância ou qualidade do modo e não comprova que um modo informado se aplique a todas as plataformas e edições. Modos ausentes devem ser tratados como dado desconhecido da fonte, e não como prova de que a capacidade não existe. Os modos não serão propagados entre originais, ports, remakes, remasters, edições, updates ou outros registros relacionados e não constituem evidência forte de reconciliação.
+**Não modelar separadamente:** IP, subfranchise, universe, editorial line, brand, licensed property ou corporate group.
 
-Uma inspeção semântica direcionada também encontrou uma suposta versão Android de `Super Mario Galaxy`. Como não existe versão oficial do jogo para Android, esse resultado não pode servir como evidência sobre o produto oficial. O caso demonstra que busca por nome, associação de plataforma e relações da IGDB não comprovam oficialidade isoladamente. Resultados de busca por nome são apenas candidatos de descoberta; registros relacionados não devem influenciar modos, plataformas ou lançamentos de outro jogo sem validação suficiente de identidade.
+Estrutura simplificada:
 
-Para este MVP, o risco residual é aceito e documentado. O catálogo identificará a fonte e não apresentará os dados como completos ou infalíveis. A validação entre fontes e o tratamento mais forte de registros suspeitos ficam adiados até a integração de uma segunda base.
+```text
+Franchise
+└── Collection / Series
+    └── Game
+```
 
-A cobertura de 84% na amostra fixa é suficiente para aprovar um filtro público
-qualificado pela fonte. O filtro significa "jogos para os quais a IGDB informa o
-modo selecionado"; ele não deve sugerir que jogos omitidos não possuem esse modo.
-O campo também poderá ser exibido nos detalhes e usado em comparações quando
-disponível.
+Franchises e collections podem se tornar filtros avançados.
 
-#### Decisão sobre perspectivas do jogador
-
-`player_perspectives` está aprovado para ingestão e exibição opcional nos
-detalhes do MVP, mas não como filtro público. Na mesma amostra fixa de 100 jogos,
-45 registros apresentaram ao menos uma perspectiva, 42 apresentaram exatamente
-uma, três apresentaram múltiplas perspectivas e 55 não apresentaram nenhuma. Não
-foram encontrados IDs duplicados, IDs inválidos, nomes vazios nem nomes
-conflitantes para o mesmo ID. Os cinco valores da fonte apareceram. A relação é
-muitos-para-muitos e anulável.
-
-A amostra direcionada de 26 jogos conhecidos teve cobertura de 100%, contra 45%
-na amostra fixa. A diferença demonstra forte viés de completude em favor de
-registros famosos e bem mantidos. Por isso, a amostra fixa mede cobertura, e a
-amostra de jogos conhecidos permanece apenas para interpretação semântica.
-
-O campo não identifica perspectiva principal ou predominante e pode combinar
-perspectivas usadas em sistemas, cenas ou modos diferentes. Ele não possui
-granularidade por plataforma ou edição. Ausência significa dado desconhecido, e
-não que o jogo não possua perspectiva. Os valores não serão propagados entre
-produtos relacionados e não constituem evidência forte de reconciliação. Com
-55% da amostra fixa sem o campo, um filtro público produziria falsos negativos
-demais; ele fica adiado até que a cobertura possa ser ampliada ou qualificada
-com outra fonte.
-
-### 4.7 Collections e franchises
-
-**Incluir no MVP:** `collections`, com IDs, nomes, relações com jogos e metadados técnicos de sincronização.
-
-**Adiar para depois do MVP:** `franchises`.
-
-Uma amostra direcionada de 26 jogos pertencentes a nove séries conhecidas apresentou 26 registros com `collections` e 26 correspondências com a collection esperada. O resultado sustenta o uso de `collections` para representar séries e agrupamentos relacionados, mas não demonstra cobertura universal da IGDB.
-
-A relação entre jogos e collections é muitos-para-muitos. Um jogo pode pertencer simultaneamente a agrupamentos amplos e específicos. A IGDB não forneceu hierarquia, prioridade ou indicação de collection principal; portanto, nenhuma dessas propriedades será inferida pela ordem ou pelo nome das associações.
-
-Na mesma amostra, `franchises` apareceu em 24 de 26 registros. Em 21 desses 24 casos, ao menos um rótulo de franchise também aparecia entre as collections. Os cinco registros com algum rótulo adicional mostraram que `franchises` pode representar contexto mais amplo, mas também crossovers, participações e propriedades licenciadas. `Mario Kart 8` e `Kingdom Hearts III`, por exemplo, retornaram múltiplas franchises sem indicar qual seria a principal.
-
-Decisões:
-
-- usar `collections` no MVP como relação muitos-para-muitos;
-- não presumir collection principal nem hierarquia entre collections;
-- adiar `franchises`, sem descartá-lo definitivamente;
-- não usar `franchises` na ingestão principal, nos filtros ou na reconciliação do MVP;
-- tratar ausência de collection ou franchise como dado desconhecido ou não aplicável, e não como prova de que o jogo é isolado;
-- não interpretar collection ou franchise como evidência de sucesso comercial, tamanho de público ou propriedade jurídica;
-- não modelar separadamente IP, subfranquia, universo, linha editorial, marca, propriedade licenciada ou grupo corporativo.
-
-`franchises` poderá ser reavaliado futuramente se o produto precisar analisar crossovers, presença de propriedades intelectuais licenciadas ou alcance de uma marca entre séries diferentes. Mesmo nesse cenário, deverá ser uma relação muitos-para-muitos, sem escolha automática da primeira associação.
-
-### 4.8 Capas, screenshots e artworks
-
-`cover` está aprovado com ressalvas jurídicas e operacionais para uso opcional
-nos resultados de busca e nos detalhes do jogo. Na amostra congelada de 100
-registros, 93 apresentaram capa e sete não apresentaram. Não foram observados
-IDs inválidos, `image_id` vazio, URL vazia, dimensões não positivas, IDs de
-imagem duplicados nem metadados conflitantes.
-
-`screenshots` está aprovado com ressalvas jurídicas e operacionais somente para
-os detalhes do jogo. Na mesma amostra, 84 registros apresentaram screenshots e
-16 não apresentaram. Os 84 registros preenchidos continham 507 imagens: quatro
-tinham exatamente uma, 80 tinham múltiplas imagens e o intervalo observado foi
-de uma a 21, com média de 6,04. Não foram observados defeitos estruturais, IDs
-de imagem duplicados nem metadados conflitantes.
-
-`artworks` fica adiado, e não descartado. O campo poderá ser reconsiderado numa
-capacidade futura de pesquisa visual ou apoio à direção de arte, mas não
-responde diretamente às perguntas atuais de Comparable Games.
-
-Regras de produto e apresentação:
-
-- capas e screenshots são anuláveis; ausência significa que a fonte não
-  informou uma imagem, e não que o produto não possua material visual;
-- imagens são complementares e não podem se tornar essenciais para compreender
-  um resultado nem dominar sua hierarquia;
-- os resultados usam uma única estrutura de card mobile first; quando houver
-  capa válida, ela poderá aparecer como miniatura compacta à direita;
-- quando a capa estiver ausente ou inválida, o contêiner permanente da imagem
-  será omitido e o conteúdo textual usará o espaço disponível; um placeholder
-  ainda poderá ser usado durante o carregamento ou quando a composição da
-  página de detalhes exigir;
-- o contêiner é padronizado, mas a imagem preserva sua proporção original com
-  ajuste equivalente a `contain`; evitam-se corte obrigatório, distorção e
-  ampliação excessiva;
-- screenshots não aparecem em filtros nem nos cards iniciais de resultados; os
-  detalhes poderão mostrar uma imagem principal e poucas prévias, com imagens
-  adicionais sob demanda e lazy loading;
-- a ordem da fonte poderá ser preservada, mas o GMI não inferirá que a primeira
-  screenshot é a melhor, principal ou mais representativa;
-- imagens não são filtros, evidência de identidade, prova de oficialidade ou
-  sinal forte de reconciliação, e não serão propagadas entre registros
-  relacionados.
-
-Política operacional e de direitos para o primeiro MVP:
-
-- armazenar ID do registro de imagem da IGDB, `image_id`, dimensões,
-  proveniência da fonte e metadados de sincronização; o armazenamento dos
-  arquivos binários fica adiado;
-- construir URLs HTTPS com o tamanho da CDN da IGDB adequado ao componente;
-- não oferecer download das imagens, criar um repositório independente de
-  imagens nem realizar transformações substanciais além dos tamanhos suportados
-  pela fonte;
-- manter caminho de atualização e remoção, pois a IGDB informa que imagens
-  removidas ou substituídas permanecem disponíveis por aproximadamente 30 dias;
-- fornecer atribuição visível e estática à IGDB no produto, sem sugerir que a
-  IGDB seja proprietária das artes subjacentes;
-- informar que os direitos das imagens permanecem com seus respectivos
-  titulares;
-- reavaliar os termos e contatar a IGDB antes de monetização ou outra ampliação
-  material do uso.
-
-A documentação da IGDB permite armazenar e manter cache dos dados da API e
-descreve atribuição visível ao usuário para integrações comerciais, mas não
-fornece uma licença autoral explícita e individual para cada capa ou
-screenshot. A política do MVP é, portanto, uma decisão operacional cautelosa, e
-não uma determinação jurídica de que o GMI possua ou possa redistribuir
-livremente as imagens.
-
-### 4.9 Cobertura e nulabilidade consolidadas
-
-A amostra congelada de 100 registros retornou todos os IDs esperados, sem
-registros inesperados nem duplicados. A matriz consolidada de presença foi:
-
-| Campo | Presente | Ausente |
-|---|---:|---:|
-| `name` | 100% | 0% |
-| `summary` | 88% | 12% |
-| `first_release_date` | 100% | 0% |
-| `updated_at` | 100% | 0% |
-| `game_type` | 100% | 0% |
-| `game_status` | 7% | 93% |
-| `parent_game` | 21% | 79% |
-| `version_parent` | 2% | 98% |
-| `platforms` | 100% | 0% |
-| `genres` | 92% | 8% |
-| `themes` | 61% | 39% |
-| `keywords` | 43% | 57% |
-| `involved_companies` | 52% | 48% |
-| `collections` | 17% | 83% |
-| `franchises` | 3% | 97% |
-| `release_dates` | 100% | 0% |
-| `external_games` | 89% | 11% |
-| `websites` | 96% | 4% |
-
-O resultado de 100% para `first_release_date` decorre da seleção e não constitui
-afirmação sobre a cobertura geral da IGDB: a população congelada exigia uma
-primeira data não nula anterior ao corte. `game_status`, relações entre
-produtos, collections e franchises são campos condicionais; ausência pode
-significar não aplicável ou não informado e não deve ser classificada
-automaticamente como defeito dos dados.
-
-As relações permaneceram separadas: 21 registros tinham somente `parent_game`,
-dois tinham somente `version_parent`, nenhum tinha ambos e 77 não tinham nenhum
-deles. Todos os registros amostrados apresentaram plataformas e datas
-detalhadas, enquanto 98 tinham ao menos `external_games` ou `websites`. Esses
-resultados da amostra não autorizam herança de campos entre produtos
-relacionados.
-
-A cobertura de 43% para keywords é insuficiente para um filtro manual em todo o
-catálogo que o usuário possa interpretar razoavelmente como exaustivo.
-Keywords continuam aprovadas para ingestão muitos-para-muitos anulável e
-exibição nos detalhes. O clique abre jogos relacionados qualificados pela fonte
-com um critério contextual removível; os resultados não serão apresentados
-como exaustivos. O modelo de dados e a fronteira de busca devem preservar IDs
-da fonte, proveniência e entrada futura em coleção para permitir filtro manual
-com múltiplas keywords sem remodelagem estrutural, mas essa interface completa
-não pertence ao primeiro MVP.
-
-Não é necessária nova segmentação por `game_type` para a decisão atual: tipos e
-relações já foram avaliados em amostras controladas, e o escopo reduzido de
-keywords deixou de depender de um limite de cobertura para um filtro manual
-global. A tarefa GMI-8 de cobertura e nulabilidade está concluída no escopo
-atual da PoC.
-
-### 4.10 Paginação, rate limit e execução operacional
-
-A validação operacional combina chamadas reais controladas e testes HTTP
-simulados. A API real não será submetida deliberadamente a excesso de carga ou
-a uma tentativa de provocar HTTP 429.
-
-Na execução real, a consulta encontrou 279.206 registros elegíveis no corte
-congelado de `2026-08-04T00:00:00Z`. Os offsets `0`, `1`, `2`, `499`, `500`,
-`501`, `139603` e `279205` retornaram um registro cada, sem páginas vazias nem
-IDs duplicados. A repetição do offset `500` retornou o mesmo ID `506`,
-confirmando estabilidade para a ordenação controlada por ID.
-
-O Worker manteve intervalo mínimo configurado de 275 ms entre inícios de
-requisições. O menor intervalo observado foi aproximadamente 594,87 ms, todas
-as chamadas reais retornaram HTTP 200 e nenhum HTTP 429 foi provocado.
-
-Onze casos automatizados específicos do handler aprovaram:
-
-- respeito a `Retry-After` após HTTP 429;
-- backoff exponencial de 250, 500 e 1.000 ms;
-- retries para HTTP 500, 502, 503 e 504;
-- máximo de três retries além da tentativa original;
-- retry após timeout transitório;
-- cancelamento durante a espera;
-- renovação única do token após HTTP 401;
-- ausência de loop quando o token renovado também recebe HTTP 401;
-- clonagem da requisição antes de cada nova tentativa.
-
-Depois dos testes focados, a suíte completa da solução também passou com 119
-testes, sem regressões identificadas.
-
-A política aprovada é de recuperação limitada, nunca retry infinito. O atraso
-informado pelo servidor terá teto de 30 segundos por tentativa. Jitter poderá
-ser acrescentado se houver múltiplas instâncias sincronizadas do Collector.
-
-A PoC ainda não persiste checkpoints. O futuro job de importação somente poderá
-avançar um checkpoint depois de confirmar sua unidade completa de trabalho;
-reexecutar uma página deverá ser idempotente, e lote parcial ou com falha não
-poderá ser marcado como concluído. Checkpoint, checksum, retomada persistente e
-janela de sobreposição continuam critérios da implementação futura, não
-capacidades já comprovadas.
-
-## 5. Pesquisa e experiência do usuário
+## 5. Busca e experiência do usuário
 
 O GMI distinguirá duas intenções:
 
 ### Encontrar um jogo conhecido
 
 - nome;
-- aliases aprovados com proveniência suficiente;
-- refinamento por plataforma, período e tipo.
+- aliases;
+- refinamento por platform, período e tipo.
 
 ### Explorar uma ideia ou nicho
 
-- uma keyword selecionada contextualmente nos detalhes de um jogo;
-- refinamento com gêneros, temas, modos, plataformas e período;
-- perspectivas exibidas como detalhes complementares quando disponíveis.
+- uma ou múltiplas keywords;
+- refinamento por genres, themes, modes, perspectives, platforms e período de lançamento.
 
-As imagens apoiam o reconhecimento e o respiro visual sem substituir a
-comparação textual. Capas são opcionais nos resultados, enquanto screenshots
-permanecem nos detalhes e em galerias abertas sob demanda.
-
-Busca apenas por nome poderá mostrar versões relacionadas agrupadas e expansíveis.
+Busca somente por nome pode exibir versões relacionadas em um agrupamento expansível.
 
 ```text
 Mario Kart 8
@@ -433,52 +172,50 @@ Mario Kart 8
 
 ### 6.1 Identidade
 
-- cada jogo terá um `Game.Id` no GMI;
-- cada identidade externa será `Source + ExternalId`.
+- cada jogo possui um `Game.Id` do GMI;
+- cada identidade externa é `Source + ExternalId`.
 
-### 6.2 Correspondência automática
+### 6.2 Match automático
 
-Somente quando houver:
+Permitido somente com:
 
-- ID externo cruzado exato;
-- tipo de produto compatível;
-- ausência de conflito grave.
+- um external ID cross-source exato;
+- product type compatível;
+- nenhum conflito severo não resolvido.
 
-### 6.3 Correspondência provável
+### 6.3 Match provável
 
-Sem ID forte, usar sinais compostos: nome normalizado, aliases aprovados com
-proveniência suficiente, tipo, empresas, plataformas, período, collections e
-relações declaradas.
+Sem ID forte, usar sinais compostos: nome normalizado, aliases, type, companies, platforms, release period, franchise, collection e relationships declaradas.
 
-Correspondência composta gera candidato, não fusão automática.
+Matches compostos criam candidatos, não merges automáticos.
 
-### 6.4 Produtos distintos relacionados
+### 6.4 Produtos distintos, porém relacionados
 
-Remakes, remasters, ports, edições, DLCs, expansões, bundles, demos, soundtracks e ferramentas permanecem separados.
+Remakes, remasters, ports, editions, DLCs, expansions, bundles, demos, soundtracks e tools permanecem separados.
 
-Quando o vínculo for claro e o tipo específico divergir, usar:
+Quando a relação é clara, mas o tipo exato conflita, usar:
 
 ```text
 RelatedVersionOf
 ```
 
-Conflitos graves, como jogo-base versus DLC, demo, soundtrack ou ferramenta, bloqueiam reconciliação automática.
+Conflitos severos como base game versus DLC, demo, soundtrack ou tool bloqueiam reconciliação automática.
 
-### 6.5 Filtro simples de nome-base + complemento
+### 6.5 Filtro simples por base-name + suffix
 
-O worker poderá detectar:
+O worker pode detectar:
 
 ```text
 Mario Kart 8
 Mario Kart 8 Deluxe
 ```
 
-Se um título normalizado completo for seguido por complemento após fronteira válida:
+Quando um título normalizado completo é seguido por conteúdo adicional após um limite válido:
 
 - os produtos permanecem distintos;
-- podem virar candidatos a relação;
-- o worker não precisa interpretar o complemento;
-- a regra não confirma sozinha remake, remaster, port ou edição.
+- podem virar candidatos a relacionamento;
+- o worker não precisa interpretar semanticamente o suffix;
+- a regra nunca confirma remake, remaster, port ou edition sozinha.
 
 A PoC avaliará viabilidade e falsos positivos.
 
@@ -488,15 +225,15 @@ Fluxo:
 
 ```text
 Fonte externa
-→ validações baratas
+→ validação barata
 → camada intermediária
-→ validações de identidade e negócio
+→ validação de identidade e negócio
 → modelo canônico
 ```
 
 ### 7.1 Na borda
 
-Aplicar JSON válido, campos mínimos, tipos básicos, nome não vazio, identificador externo, normalização simples, `updated_at`, checksum e descarte de dados obviamente inválidos.
+Aplicar JSON válido, campos mínimos, tipos básicos, nome não vazio, identificador externo, normalização simples, `updated_at`, checksum e rejeição de dados obviamente inválidos.
 
 ### 7.2 Camada intermediária
 
@@ -504,114 +241,170 @@ Persistir apenas:
 
 - candidatos de reconciliação;
 - conflitos reais;
-- relações candidatas;
+- candidatos de relacionamento;
 - registros inválidos recuperáveis;
-- observações ausentes, em revisão ou inativas;
+- observações sob revisão;
 - decisões manuais;
 - evidência mínima necessária.
 
-Não persistir permanentemente payloads brutos completos, snapshots repetidos, respostas completas já processadas ou logs detalhados de casos normais.
+Não persistir permanentemente payloads brutos completos, snapshots repetidos, respostas completas de API já processadas, logs detalhados para casos normais ou histórico indefinido de observações missing/inactive.
 
 ### 7.3 Modelo canônico
 
-Aceitar apenas dados que satisfaçam identidade, compatibilidade de tipo, consistência de relações, proveniência, precedência contextual e ausência de conflitos graves não resolvidos.
+Aceitar somente dados que satisfaçam identidade, compatibilidade de tipo, consistência de relacionamento, proveniência, precedência contextual e ausência de conflito severo não resolvido.
 
 ## 8. Tratamento de conflitos
 
-### 8.1 Datas
+### 8.1 Datas de lançamento
 
-Comparar como conflito apenas no mesmo produto, plataforma, região, tipo/status e precisão.
+Tratar como conflito somente para o mesmo produto, platform, region, release type/status e precision.
 
-Em conflito real:
+Para conflito real:
 
-- priorizar a fonte mais adequada e confiável para a plataforma;
-- preservar a observação divergente;
-- mostrar plataforma junto da data;
-- mostrar ecossistema quando útil, por exemplo `PC — 07/08/2020 (Steam)`.
+- preferir a fonte mais apropriada e confiável para aquela platform;
+- preservar a observação divergente somente quando ela ainda for útil para reconciliação, auditoria ou decisão ativa de produto;
+- exibir platform junto da data;
+- mostrar contexto do ecossistema quando útil, como `PC — 2020-08-07 (Steam)`.
 
-### 8.2 Empresas
+### 8.2 Companies
 
-- tratar como relações multivaloradas;
+- tratar companies como relações multivaloradas;
 - combinar informações complementares;
-- considerar produto, versão, plataforma e papel;
-- não fundir empresas apenas pelo nome;
-- preservar conflitos relevantes.
+- considerar product, version, platform e role;
+- não mesclar companies por nome isolado;
+- preservar conflitos relevantes enquanto ainda exigirem reconciliação ou explicação para o usuário.
 
 ### 8.3 Classificações
 
-A IGDB será canônica para gêneros, temas, modos, perspectivas e keywords.
+A IGDB é canônica para genres, themes, modes, perspectives e keywords.
 
-Classificações externas serão preservadas com proveniência, mas não serão misturadas nem alterarão os filtros canônicos automaticamente.
+Classificações externas permanecem preservadas com proveniência quando materializadas, mas não são mescladas automaticamente e não alteram filtros canônicos.
 
-### 8.4 Tipos e relações
+### 8.4 Product types e relationships
 
 - manter produtos separados;
-- preservar classificações originais;
-- usar relação genérica quando o vínculo for claro e o tipo específico divergir;
+- preservar classificações originais quando exigido por proveniência ativa;
+- usar relação genérica quando a conexão é clara, mas o tipo específico conflita;
 - bloquear reconciliação automática em conflitos de natureza básica.
 
 ## 9. Política de confiança
 
-A confiança será contextual por dado, não pelo jogo inteiro.
+Confiança é contextual por ponto de dado, não atribuída ao jogo inteiro.
 
-### High confidence
+### Alta confiança
 
-Fonte altamente adequada, contexto completo, sem conflito relevante, evidência forte ou confirmação adicional, dado recente e preciso.
+Fonte altamente apropriada, contexto completo, nenhum conflito relevante, evidência forte ou confirmação, e dado recente e preciso.
 
-### Balanced
+### Equilibrada
 
-Fonte confiável, dado útil porém parcial, precisão limitada, sem confirmação adicional ou com pequena limitação contextual.
+Fonte confiável, dado útil porém parcial, precisão limitada, sem confirmação adicional ou pequena limitação contextual.
 
-### Broad coverage
+### Cobertura ampla
 
-Maior abrangência, fonte menos adequada, conflito ou ambiguidade relevante, contexto incompleto ou correspondência ainda provável.
+Maior cobertura, fonte menos apropriada, conflito ou ambiguidade relevante, contexto incompleto ou correspondência ainda provável.
 
-Não haverá fórmula numérica complexa no MVP.
+O MVP não usará uma fórmula numérica complexa.
 
-## 10. Ausência, inativação e retenção
+## 10. Dados ausentes, sincronização e retenção
 
-### 10.1 Ausências consecutivas
+### 10.1 Ausência não prova remoção
+
+Um valor ou associação que não aparece em uma execução de coleta não é automaticamente considerado removido.
+
+Possíveis causas incluem:
+
+- respostas parciais da fonte;
+- campo não solicitado naquela execução;
+- paginação ou falhas transitórias;
+- comportamento da fonte/API que não garante snapshot atual completo.
+
+Portanto:
 
 ```text
-1ª ausência
-→ manter e marcar
-
-2ª ausência
-→ reavaliar
-
-3ª ausência
-→ desativar
-
-remoção explícita ou snapshot completo confiável
-→ desativar imediatamente
+não observado na execução atual
+≠
+confirmado como removido pela fonte
 ```
 
-Ausência não significa remoção automática.
+O Collector deve preservar o estado atual aceito quando a observação for incompleta ou quando sua completude for desconhecida.
 
-### 10.2 Reativação
+### 10.2 Sincronizando uma mudança confirmada de estado atual
 
-Se o registro reaparecer:
+Uma contribuição existente de uma fonte pode ser sincronizada para fora do estado atual somente quando o Collector sabe que:
 
-- reativar;
-- zerar o contador de ausências;
-- reavaliar o valor canônico.
+- o campo ou conjunto de relações relevante foi solicitado explicitamente;
+- a resposta da fonte para aquele escopo terminou com sucesso;
+- a semântica da fonte indica que o conjunto retornado representa o estado atual completo, ou a fonte informa remoção explicitamente;
+- nenhuma evidência independente de outra fonte está sendo apagada por aquela mudança específica.
 
-### 10.3 Exclusão física
+Uma remoção confirmada de associação não remove o `External*Record` correspondente.
 
-Não haverá exclusão automática brusca.
+Por exemplo:
 
-Registros inativos ficarão dentro de um orçamento máximo de armazenamento. Quando ele for ultrapassado:
+```text
+GameTheme removido da contribuição IGDB
+→ remover/sincronizar aquela associação sustentada pela IGDB
 
-- remover os inativos mais antigos;
-- excluir apenas registros não protegidos;
-- processar em pequenos lotes;
-- deixar ativos e itens em revisão fora da limpeza.
+ExternalThemeRecord
+→ continua sendo uma identidade válida para o conceito na fonte
+```
 
-O limite será baseado em bytes ocupados, não numa quantidade fixa de registros.
+Mudanças específicas de uma fonte não devem ser propagadas cegamente para evidências de outras fontes.
 
-A PoC medirá tamanho médio de ativos, intermediários e inativos, custo dos índices, crescimento por ciclo e espaço seguro no Neon.
+### 10.3 Política de armazenamento de estado atual
 
-## 11. Atualização incremental e custo
+O banco operacional é desenhado para armazenar:
+
+```text
+estado canônico tratado atual
++
+identidades externas ativas
++
+proveniência mínima necessária para explicar e recomputar esse estado
+```
+
+Ele não é destinado a ser um warehouse histórico indefinido.
+
+Histórico detalhado de observações, snapshots repetidos ou cópias inativas por ciclo não devem ser introduzidos sem uma necessidade concreta de produto ou operação.
+
+Se uma feature futura exigir histórico, sua janela de retenção deve ser definida quando a feature for introduzida.
+
+### 10.4 Retenção orientada por capacidade
+
+Retenção de storage e reconciliação da fonte são preocupações separadas.
+
+Excluir dados porque o banco está se aproximando do limite de capacidade nunca deve ser interpretado como evidência de que uma fonte removeu ou alterou um fato.
+
+O limite atual de planejamento do Neon Free é de aproximadamente 0,5 GB por projeto.
+
+Os gatilhos operacionais são:
+
+```text
+< 70%
+→ operação normal
+
+70%+
+→ investigar crescimento por tabela e índice
+
+antes de 80%
+→ executar retenção controlada ou ação de capacidade
+
+aproximando de 90%
+→ proteger escritas essenciais e reduzir ingestão não essencial
+```
+
+A prioridade de retenção é:
+
+1. estado canônico atual;
+2. identidades externas ativas;
+3. proveniência que ainda sustenta o estado atual;
+4. dados históricos ou auxiliares recentes e úteis, quando existirem.
+
+Quando dados históricos ou auxiliares forem explicitamente elegíveis para limpeza, remover primeiro os dados elegíveis mais antigos, preservando a janela recente útil.
+
+Decisões de capacidade devem se basear em bytes ocupados e crescimento medido por tabela/índice, e não em uma quantidade fixa de registros.
+
+## 11. Atualizações incrementais e custo
 
 A PoC comparará:
 
@@ -624,60 +417,57 @@ updated_at + checksum
 Objetivos:
 
 - evitar reprocessamento;
-- reduzir gravações;
-- reduzir tempo do worker;
-- controlar infraestrutura;
+- reduzir writes;
+- reduzir tempo de execução do worker;
+- controlar uso de infraestrutura;
 - garantir idempotência.
 
-Checksum será técnico e não fará parte da experiência do usuário.
+Checksum é técnico e não fará parte da experiência do usuário.
 
 ## 12. Critérios de aprovação da PoC
 
-Os critérios originalmente definidos para a PoC e para o pipeline futuro foram:
+A PoC deve demonstrar:
 
 ### Cobertura
 
-- campos essenciais com cobertura suficiente;
-- limitações identificáveis e comunicáveis;
-- ausência de dependência de campos pouco confiáveis.
+- cobertura suficiente dos campos essenciais;
+- limitações identificáveis e explicáveis;
+- nenhuma dependência de campos pouco confiáveis.
 
 ### Keywords
 
-- preservar IDs da fonte, proveniência e associações muitos-para-muitos anuláveis;
-- exibir keywords disponíveis nos detalhes do jogo;
-- permitir que uma keyword clicada abra jogos relacionados não exaustivos;
-- adiar seleção manual, múltiplas keywords com `AND` e autocomplete;
-- manter a fronteira de busca extensível sem exigir remodelagem estrutural;
-- não criar keywords próprias nem unificar termos automaticamente.
+- volume útil;
+- resultados relevantes;
+- combinações AND;
+- autocomplete viável;
+- duplicatas e aliases compreensíveis;
+- valor real para exploração de nicho.
 
 ### Filtros
 
-- AND para gêneros, temas, modos e multiplayer;
-- sem filtro manual de keywords no primeiro MVP; uma keyword contextual poderá
-  estar ativa pela navegação de jogos relacionados;
-- sem filtro público de perspectivas no primeiro MVP;
-- OR para plataformas;
+- AND para genres, themes, modes, perspectives, keywords e multiplayer;
+- OR para platforms;
 - AND entre categorias;
 - busca por nome;
-- busca por período.
+- busca por período de lançamento.
 
-### Datas
+### Datas de lançamento
 
-- preservação de plataforma, região e precisão;
-- múltiplos lançamentos;
-- consultas por intervalo;
-- diferenças por plataforma tratadas corretamente.
+- preservação de platform, region e precision;
+- múltiplos releases;
+- consultas por intervalo de datas;
+- tratamento correto de diferenças específicas por platform.
 
-### Relações
+### Relationships
 
-- cobertura suficiente para DLC, expansão, port, remake, remaster, bundle e versões;
-- prevenção de fusões indevidas;
-- teste da regra nome-base + complemento.
+- cobertura suficiente para DLC, expansion, port, remake, remaster, bundle e versions;
+- prevenção de merges incorretos;
+- avaliação da regra base-name + suffix.
 
 ### Reconciliação
 
-- IDs cruzados exatos;
-- validação de tipo;
+- external IDs cross-source exatos;
+- validação de type;
 - candidatos compostos;
 - candidatos rejeitados não recriados repetidamente;
 - produtos relacionados mantidos separados.
@@ -685,86 +475,34 @@ Os critérios originalmente definidos para a PoC e para o pipeline futuro foram:
 ### Worker
 
 - autenticação;
-- paginação por offset validada do primeiro ao último registro elegível;
-- rate limit respeitado por espaçamento controlado, sem provocar HTTP 429;
-- retries limitados para HTTP 429, 500, 502, 503, 504 e timeout;
-- `Retry-After`, cancelamento e renovação única após HTTP 401 validados;
-- retomada persistente adiada até existir checkpoint no job de importação;
+- paginação;
+- respeito a rate limit;
+- retomada após falha;
 - idempotência;
-- atualização incremental;
-- comparação de checksum;
-- redução de reprocessamento.
+- updates incrementais;
+- avaliação de checksum;
+- redução de reprocessamento;
+- distinção explícita entre observações completas e parciais antes de sincronizar associações existentes para fora do estado atual.
 
-### Validação em camadas
+### Camadas de validação
 
 - casos normais seguem sem persistência intermediária completa;
-- casos ambíguos preservam apenas evidência mínima;
-- modelo canônico recebe apenas dados aprovados.
+- casos ambíguos retêm somente evidência mínima;
+- modelo canônico recebe somente dados aprovados.
 
-### Armazenamento
+### Storage
 
-- crescimento compatível com o Neon gratuito;
-- orçamento de inativos mensurável;
-- retenção controlável;
+- crescimento compatível com o Neon free tier;
+- crescimento medido por tabela e índice;
+- retenção controlável para qualquer dado explicitamente histórico ou auxiliar;
 - índices sustentáveis;
-- nenhum payload bruto desnecessário.
+- nenhum payload bruto desnecessário retido;
+- preservação do estado canônico atual e da proveniência ativa sob pressão de storage.
 
-### Critério futuro de aceitação do pipeline
+### Critério final
 
-> O pipeline definitivo será considerado suficiente para o MVP quando produzir
-> pesquisas úteis, preservar contexto e proveniência, evitar fusões perigosas,
-> operar de forma incremental e idempotente e permanecer compatível com a
-> infraestrutura gratuita.
-
-### 12.1 Consolidação da aprovação — GMI-10
-
-Os critérios foram originalmente escritos reunindo duas fases diferentes: o
-que a PoC exploratória poderia demonstrar sem persistência e o que somente um
-pipeline real poderá medir. A ausência das capacidades da segunda fase não
-invalida a investigação; transforma esses itens em critérios de aceitação da
-implementação futura.
-
-| Área | Classificação | Conclusão |
-|---|---|---|
-| Utilidade para Comparable Games | Aprovada | A IGDB oferece dados suficientes para pesquisa, comparação, filtros e detalhes do MVP. |
-| Cobertura e nulabilidade | Aprovada com limitações | Ausências foram medidas e devem permanecer explícitas, sem valores inventados. |
-| Tipos e relações | Aprovada com condições | `game_type`, `parent_game` e `version_parent` devem ser interpretados em conjunto e não autorizam fusão automática. |
-| Datas por plataforma e região | Aprovada com condições | São úteis, porém podem ser incompletas e apresentar precisão variável. |
-| Campos complementares | Classificados | Cada candidato foi aprovado, adiado ou descartado para o primeiro MVP. |
-| Keywords | Aprovada parcialmente | Ingestão, detalhes e navegação contextual aprovados; filtro manual completo adiado. |
-| Capas e screenshots | Aprovada com restrições | Uso opcional e não dominante, com atribuição visível e direitos preservados. |
-| Paginação e ritmo | Aprovada | Offsets reais, incluindo o último elegível, e espaçamento seguro foram validados. |
-| Resiliência HTTP | Aprovada | HTTP 429, `Retry-After`, falhas 5xx, timeout, cancelamento e limite de tentativas foram testados. |
-| Autenticação | Aprovada | OAuth funcionou e uma renovação após HTTP 401 foi validada sem loop. |
-| Reconciliação entre fontes | Não validada nesta PoC | As regras estão definidas, mas IGDB, Wikidata e Steam não foram integradas conjuntamente. |
-| Persistência e idempotência | Implementação futura | A PoC não grava no banco. |
-| Checkpoint e retomada | Implementação futura | Ainda não existe estado persistido de sincronização. |
-| `updated_at` versus checksum | Implementação futura | A comparação depende da ingestão e persistência reais. |
-| Armazenamento no Neon | Implementação futura | Volume, índices, retenção e custo deverão ser medidos com dados importados. |
-| Modelo canônico definitivo | Fora do escopo da PoC | Será desenhado a partir das decisões consolidadas. |
-
-A IGDB não é considerada uma fonte perfeita nem completa. A decisão é de
-adequação ao contexto atual: para uma aplicação gratuita, com infraestrutura e
-orçamento limitados, o valor observado é satisfatório para o primeiro MVP. O
-produto deverá comunicar ausências e proveniência em vez de esconder as
-lacunas. Iterações futuras poderão melhorar cobertura e confiança combinando
-fontes complementares, sem tornar a Steam requisito de identidade ou inclusão.
-
-### Decisão de encerramento da investigação
-
-> A PoC da IGDB está aprovada como investigação técnica e de produto. A fonte é
-> adequada para sustentar o MVP de Comparable Games, desde que campos anuláveis,
-> proveniência, relações entre produtos, datas incompletas e restrições de
-> imagens sejam preservados. A aprovação autoriza o desenho de um Collector
-> definitivo, mas não representa prontidão para produção. Persistência,
-> idempotência, checkpoints, atualização incremental, checksum, armazenamento e
-> reconciliação entre fontes deverão ser validados durante a implementação do
-> pipeline real.
+> IGDB e o pipeline são suficientes para o MVP quando produzem buscas úteis, preservam contexto e proveniência, evitam merges perigosos, operam de forma incremental e idempotente, e permanecem compatíveis com infraestrutura gratuita.
 
 ## 13. Próximo passo
 
-A PoC da IGDB está encerrada. Somente a documentação consolidada será levada à
-branch `develop`; a branch temporária permanecerá como evidência técnica. A
-próxima iteração deverá desenhar e implementar um Collector definitivo e limpo,
-validando persistência, idempotência, checkpoint, atualização incremental,
-checksum, armazenamento e reconciliação entre fontes.
+O modelo atual de persistência até a GMI-29 está implementado. O próximo passo de persistência é a GMI-30, que validará comportamento de storage e capacidade com dados representativos antes da finalização da ingestão orientada à produção no Collector.

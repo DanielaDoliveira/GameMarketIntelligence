@@ -63,6 +63,9 @@ O escopo atual de domínio e persistência inclui:
 * `Collection`;
 * `ExternalCollectionRecord`;
 * `GameCollection`;
+* `GameImage`;
+* `GameImageType`;
+* resolução de URL de imagem consciente da fonte;
 * relacionamentos jogo-gênero;
 * relacionamentos jogo-plataforma;
 * contratos de leitura da busca atual de Comparable Games.
@@ -125,7 +128,7 @@ Implementado:
 * experiência responsiva de Comparable Games no Blazor;
 * ação visível de Search;
 * estados de loading, error, empty e no-results;
-* 424 testes automatizados passando no quality gate final da GMI-28.
+* 460 testes automatizados passando durante o quality gate de implementação da GMI-29.
 
 Ainda não implementado na experiência pública de leitura:
 
@@ -595,7 +598,8 @@ Exemplos:
 * associações de classificações consultáveis;
 * relações entre produtos;
 * papéis de empresas em jogos;
-* associação jogo/collection.
+* associação jogo/collection;
+* metadados de imagem do jogo.
 
 O design atual evita deliberadamente uma tabela genérica polimórfica de histórico por campo.
 
@@ -617,6 +621,7 @@ Game
   ├── associações com proveniência → Keyword
   ├── associações com proveniência → Company + Role
   ├── associações com proveniência → Collection
+  ├── metadados de imagem derivados da fonte → GameImage
   └── relações direcionadas com proveniência → Game
 ```
 

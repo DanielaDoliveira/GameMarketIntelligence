@@ -23,7 +23,6 @@ public sealed class GamePersistenceTests
             name: "Hades",
             description: "A roguelike action game.",
             firstReleaseDate: new DateOnly(2020, 9, 17),
-            imageUrl: "https://example.com/hades.png",
             productType: GameProductType.MainGame);
 
         var genre = new Genre("Action");

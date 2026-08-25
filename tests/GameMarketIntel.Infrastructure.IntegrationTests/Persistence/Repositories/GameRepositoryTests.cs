@@ -35,18 +35,15 @@ public sealed class GameRepositoryTests : IAsyncLifetime
                 new Game(
                     name: "Hades",
                     description: null,
-                    firstReleaseDate: new DateOnly(2020, 9, 17),
-                    imageUrl: null),
+                    firstReleaseDate: new DateOnly(2020, 9, 17)),
                 new Game(
                     name: "Hades II",
                     description: null,
-                    firstReleaseDate: new DateOnly(2024, 5, 6),
-                    imageUrl: null),
+                    firstReleaseDate: new DateOnly(2024, 5, 6)),
                 new Game(
                     name: "Dead Cells",
                     description: null,
-                    firstReleaseDate: new DateOnly(2018, 8, 7),
-                    imageUrl: null));
+                    firstReleaseDate: new DateOnly(2018, 8, 7)));
 
             await arrangeDbContext.SaveChangesAsync();
         }
@@ -133,7 +130,6 @@ public sealed class GameRepositoryTests : IAsyncLifetime
                 ignoreOrder: true);
     }
 
-
     [Fact]
     public async Task SearchAsync_ShouldReturnGamesMatchingAnySelectedPlatform()
     {
@@ -144,17 +140,23 @@ public sealed class GameRepositoryTests : IAsyncLifetime
         var switchPlatform = new Platform("Nintendo Switch");
         var playstation = new Platform("PlayStation 5");
 
-        var hades = new Game( name: "Hades", firstReleaseDate: new DateOnly(2020, 9, 17));
+        var hades = new Game(
+            name: "Hades",
+            firstReleaseDate: new DateOnly(2020, 9, 17));
 
         hades.AddGenre(action);
         hades.AddPlatform(pc);
 
-        var mario = new Game( name: "Super Mario Odyssey", firstReleaseDate: new DateOnly(2017, 10, 27));
+        var mario = new Game(
+            name: "Super Mario Odyssey",
+            firstReleaseDate: new DateOnly(2017, 10, 27));
 
         mario.AddGenre(action);
         mario.AddPlatform(switchPlatform);
 
-        var tlou = new Game( name: "The Last of Us", firstReleaseDate: new DateOnly(2013, 6, 14));
+        var tlou = new Game(
+            name: "The Last of Us",
+            firstReleaseDate: new DateOnly(2013, 6, 14));
 
         tlou.AddGenre(action);
         tlou.AddPlatform(playstation);
@@ -187,10 +189,11 @@ public sealed class GameRepositoryTests : IAsyncLifetime
             .ShouldBe(
                 [
                     "Hades",
-                "Super Mario Odyssey"
+                    "Super Mario Odyssey"
                 ],
                 ignoreOrder: true);
     }
+
     [Fact]
     public async Task SearchAsync_ShouldCombineGenreAndPlatformFiltersUsingAnd()
     {
@@ -246,8 +249,6 @@ public sealed class GameRepositoryTests : IAsyncLifetime
         result.Count.ShouldBe(1);
         result.Single().Name.ShouldBe("Hades");
     }
-
-
 
     [Fact]
     public async Task SearchAsync_ShouldReturnEmptyWhenNoGameMatches()

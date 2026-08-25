@@ -3,6 +3,7 @@ using System;
 using GameMarketIntel.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace GameMarketIntel.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(GameMarketIntelDbContext))]
-    partial class GameMarketIntelDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260824134603_AddGameImages")]
+    partial class AddGameImages
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -465,6 +468,10 @@ namespace GameMarketIntel.Infrastructure.Persistence.Migrations
 
                     b.Property<DateOnly?>("FirstReleaseDate")
                         .HasColumnType("date");
+
+                    b.Property<string>("ImageUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)");
 
                     b.Property<string>("Name")
                         .IsRequired()

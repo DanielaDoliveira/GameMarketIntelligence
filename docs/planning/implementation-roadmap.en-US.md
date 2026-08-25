@@ -1,6 +1,6 @@
 # Implementation Roadmap
 
-> Updated: August 24, 2026
+> Updated: August 25, 2026
 
 ## Purpose
 
@@ -185,7 +185,7 @@ Multi-source reconciliation itself remains deferred to Milestone 3.
 
 ## 2.3 Domain and persistence implementation
 
-Status: **In progress — GMI-25 through GMI-28 completed locally**
+Status: **In progress — GMI-25 through GMI-29 implemented; GMI-30 pending**
 
 The persistence implementation is delivered through child Jira issues under GMI-14.
 
@@ -253,7 +253,7 @@ The implementation preserves source identity and does not treat normalized names
 
 ### GMI-28 — Products, companies, collections, and relationships
 
-Status: **Implementation complete; final branch integration pending**
+Status: **Completed and integrated**
 
 Delivered product modeling:
 
@@ -300,33 +300,111 @@ Failures: 0
 Ignored: 0
 ```
 
-Remaining GMI-28 closure steps:
-
-- commit final documentation/test changes;
-- verify clean working tree;
-- merge feature branch into `develop`;
-- push `develop`;
-- record migration/build/test evidence in Jira;
-- transition the Jira subtask only after integration is complete.
+GMI-28 was merged into `develop`, pushed to the remote branch, and closed with a clean working tree.
 
 ### GMI-29 — Cover and screenshot metadata
 
-Status: **Next**
+Status: **Implementation complete; documentation and final branch closure in progress**
 
-Expected scope:
+Delivered image metadata modeling:
 
-- approved cover metadata;
-- screenshot metadata;
-- source identity/provenance;
-- nullability;
-- storage-safe image references;
+- source-neutral `GameImage`;
+- `GameImageType` with `Cover` and `Screenshot`;
+- source image record identity through `ExternalId`;
+- source asset addressing through `SourceImageId`;
+- optional width and height;
+- optional `SortOrder`;
+- canonical `GameId`;
+- provenance through `ExternalGameRecordId`;
+- no duplicated `DataSourceId`;
 - no image binary persistence;
-- mappings;
-- constraints;
-- tests;
-- migration.
+- no persisted ready-made game image URL.
 
-The exact schema must remain aligned with the approved PoC image decisions.
+Delivered integrity rules:
+
+- `GameImage` can be created only from an `ExternalGameRecord` already linked to a canonical `Game`;
+- required/trimmed external and source-image identifiers;
+- positive optional dimensions;
+- non-negative optional sort order;
+- unique evidence through `ExternalGameRecordId + ExternalId + Type`;
+- restrictive delete behavior for both the canonical game and supporting external record;
+- PostgreSQL test reset updated for the new table.
+
+Delivered persistence transition:
+
+- removed persisted `Game.ImageUrl`;
+- generated and validated the `game_images` migration;
+- generated and validated the migration removing `Games.ImageUrl`;
+- preserved `Platform.ImageUrl` outside the GMI-29 scope.
+
+Delivered source-aware URL resolution:
+
+```text
+GameImage metadata
+→ primary-cover selection
+→ ExternalGameRecord
+→ DataSource.Code
+→ IGameImageUrlResolver
+→ public ImageUrl
+→ Shared contract
+→ frontend
+```
+
+Current IGDB URL resolution is derived from `SourceImageId`.
+
+The frontend continues to receive a simple `ImageUrl?`; provider-specific identifiers, CDN rules, and persistence metadata remain backend concerns.
+
+Delivered primary-cover selection:
+
+- only `Cover` records are eligible;
+- populated `SortOrder` is preferred over `null`;
+- lower `SortOrder` is preferred;
+- `GameImage.Id` provides a deterministic tie-breaker;
+- details use a single primary-cover lookup;
+- paginated search uses batch cover lookup to avoid N+1 queries.
+
+Delivered Application/API-read integration:
+
+- `GameDetails.ImageUrl` is populated from resolved image metadata when available;
+- `GameSearchItem.ImageUrl` is populated after batch cover lookup;
+- existing frontend fallback behavior remains valid when no cover or supported URL is available;
+- screenshots remain persisted for future detail/gallery use and are not yet exposed by the current public contract.
+
+Consistency review completed during GMI-29:
+
+- canonical links in `External*Record` remain protected from relinking to a different canonical entity;
+- `ExternalCompanyRecord` and `ExternalCollectionRecord` timestamp rules were aligned with the other external-record models;
+- observation timestamps are normalized to UTC;
+- `LastSeenAt` does not move backwards;
+- `SourceUpdatedAt` advances only when a newer source timestamp is observed.
+
+Synchronization policy defined for future Collector work:
+
+- absence in one collection run does not automatically mean source removal;
+- only a known-complete, reliable observation may justify synchronizing an association out of the current state;
+- removing an association does not remove the corresponding `External*Record`;
+- source-specific changes must not propagate blindly to evidence from other sources;
+- the operational database stores treated current state plus minimum necessary provenance rather than indefinite detailed change history.
+
+Current GMI-29 quality gate:
+
+```text
+Build: passed
+Tests: 460 passed
+Failures: 0
+Ignored: 0
+```
+
+Remaining GMI-29 closure steps:
+
+- complete bilingual documentation updates;
+- generate the final GMI-29 `AGENTS.md` revision;
+- run final build/test and Git quality gates;
+- commit final documentation;
+- merge the feature branch into `develop`;
+- push `develop`;
+- update Jira with migration/build/test evidence;
+- close the Jira subtask after integration is complete.
 
 ### GMI-30 — Persistence and storage-budget validation
 
@@ -340,9 +418,39 @@ Expected scope:
 - classification-association growth;
 - image-metadata growth;
 - index-size review;
-- free-tier Neon budget validation;
+- free-tier Neon budget validation against the current approximately 0.5 GB per-project storage allowance;
+- measured usage by table and index;
 - retention decisions where needed;
-- documentation of measured limits.
+- documentation of measured limits and operational thresholds.
+
+Current capacity policy to validate with real data:
+
+```text
+< 70%
+→ normal operation
+
+70%+
+→ investigate growth by table and index
+
+before 80%
+→ execute controlled retention or capacity action
+
+approaching 90%
+→ protect essential writes and reduce non-essential ingestion
+```
+
+Retention must preserve, in priority order:
+
+1. current canonical product state;
+2. active external identities;
+3. provenance still supporting the current state;
+4. recent useful historical/auxiliary data when such history exists.
+
+Historical or auxiliary data that is explicitly eligible for retention cleanup should be pruned from oldest to newest while preserving the most recent useful window.
+
+Capacity-driven deletion must never be interpreted as a source-domain fact. Storage retention and source reconciliation are separate concerns.
+
+New historical features should define their retention window when introduced rather than defaulting to permanent storage.
 
 No capacity conclusion should rely only on estimates when representative data can be measured.
 
@@ -386,7 +494,7 @@ The Collector must not map provider responses directly into EF Core entities.
 
 ## 2.5 IGDB persistence and data quality
 
-Status: **Partially implemented through GMI-25–28**
+Status: **Partially implemented through GMI-25–29**
 
 Already implemented at the persistence-model level:
 
@@ -398,6 +506,8 @@ Already implemented at the persistence-model level:
 - product relationships;
 - companies and roles;
 - collections;
+- cover/screenshot metadata;
+- source-aware image URL construction for current read use cases;
 - restrictive delete behavior;
 - provenance-bearing associations.
 
@@ -409,6 +519,7 @@ Still required in the ingestion path:
 - handling of rejected/problematic source records;
 - source-update behavior;
 - safe re-execution;
+- explicit handling of complete versus partial observations before removing current associations;
 - representative-data validation;
 - measured storage impact.
 
@@ -420,7 +531,14 @@ The API should expose source-neutral use-case contracts.
 
 It should **not** expose every persisted field or internal provenance identifier simply because it exists in the database.
 
-Potential API/detail concepts after persistence completion include:
+The current read contracts already preserve a simple frontend image boundary:
+
+- `GameDetails.ImageUrl?`;
+- `GameSearchItem.ImageUrl?`.
+
+These URLs are resolved from persisted image metadata in the backend rather than stored directly on `Game`.
+
+Potential additional API/detail concepts after persistence completion include:
 
 - product type;
 - related products;
@@ -428,6 +546,7 @@ Potential API/detail concepts after persistence completion include:
 - collections;
 - contextual releases;
 - selected classification context;
+- screenshots/gallery metadata if a validated detail experience requires them;
 - source/attribution information.
 
 The frontend should organize these contracts for the user's decision workflow rather than mirror the database schema.
@@ -473,7 +592,8 @@ Validation with real data must include:
 
 - populated genre/platform controls;
 - populated result cards;
-- pagination;
+- cover URL resolution and fallback behavior;
+- pagination without image-query N+1 behavior;
 - game details;
 - source and provenance presentation;
 - reliability and limitations;

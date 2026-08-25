@@ -1,358 +1,466 @@
-# Roadmap de Implementação
+# Implementation Roadmap
 
-> Atualizado em: 24 de agosto de 2026
+> Updated: August 25, 2026
 
-## Propósito
+## Purpose
 
-Este documento fornece uma visão em nível de milestones da implementação do Game Market Intelligence.
+This document provides a milestone-level view of the Game Market Intelligence implementation.
 
-Ele registra incrementos concluídos, o foco atual de entrega e a evolução esperada do produto sem substituir a documentação detalhada de domínio, arquitetura, avaliação de fontes, design, provas de conceito ou incrementos específicos.
+It records completed increments, the current delivery focus, and the expected evolution of the product without replacing detailed domain, architecture, source-assessment, design, proof-of-concept, or increment-specific documentation.
 
-O roadmap pode mudar conforme fontes reais, restrições de infraestrutura, validação de produto, aprendizado de deployment e medições de armazenamento produzam novas evidências.
+The roadmap may change as real data sources, infrastructure constraints, product validation, deployment learning, and storage measurements provide new evidence.
 
-## Direção do produto
+## Product direction
 
-Game Market Intelligence é uma plataforma de apoio à decisão para Game Producers e pequenos estúdios.
+Game Market Intelligence is a decision-support platform for Game Producers and small studios.
 
-O produto organiza jogos comparáveis, referências confiáveis de pesquisa, evidências com contexto de fonte e, futuramente, contexto comercial em um fluxo que ajuda a reduzir incerteza no planejamento inicial de produto.
+The product organizes comparable games, trustworthy research references, source-aware evidence, and future commercial context into a workflow that helps reduce uncertainty during early product planning.
 
 ```text
-Ideia de jogo
+Game idea
     ↓
-Descoberta de jogos comparáveis
+Comparable-games discovery
     ↓
-Referências de pesquisa
+Research references
     ↓
-Evidências comerciais
+Commercial evidence
     ↓
-Análise de mercado
+Market analysis
     ↓
-Apoio à decisão de stakeholders
+Stakeholder decision support
 ```
 
-A plataforma deve preservar proveniência, distinguir observações de fonte de conclusões internas e permanecer extensível para múltiplas fontes.
+The platform must preserve provenance, distinguish source observations from internal conclusions, and remain extensible to multiple sources.
 
-## Princípios de entrega
+## Delivery principles
 
-Game Market Intelligence é desenvolvido por meio de incrementos verticais pequenos e completos.
+Game Market Intelligence is developed through small, complete vertical increments.
 
-Cada entrega deve:
+Each delivery should:
 
-- responder ou viabilizar uma pergunta real de produto;
-- fornecer uma experiência ponta a ponta utilizável quando apropriado;
-- preservar as fronteiras entre Domain, Application, Infrastructure, API, Collector, Shared e Web;
-- preservar proveniência e identidades externas;
-- incluir testes automatizados adequados;
-- atualizar a documentação técnica e de produto;
-- passar pela validação de Pull Request antes de entrar em `main`;
-- permanecer implantável na infraestrutura gratuita aprovada;
-- evitar decisões irreversíveis de domínio ou persistência antes de existir evidência suficiente de fontes reais;
-- integrar fontes incrementalmente sem impedir suporte futuro a múltiplas fontes;
-- evitar expor diretamente o modelo de persistência em contratos de API ou frontend;
-- tratar limites de armazenamento como restrição de produto.
+- answer or enable a real product question;
+- provide a usable end-to-end experience when appropriate;
+- preserve Domain, Application, Infrastructure, API, Collector, Shared, and Web boundaries;
+- preserve source provenance and external identities;
+- include appropriate automated tests;
+- update technical and product documentation;
+- pass Pull Request validation before entering `main`;
+- remain deployable through the approved zero-cost infrastructure;
+- avoid irreversible domain or persistence decisions before real-source evidence is sufficient;
+- integrate sources incrementally without preventing future multi-source support;
+- avoid exposing the persistence model directly through API or frontend contracts;
+- treat storage limits as a product constraint.
 
-## Milestone 0 — Fundação do projeto
+## Milestone 0 — Project foundation
 
-Status: **Concluído**
+Status: **Completed**
 
-Entregue:
+Delivered:
 
-- estrutura da solução .NET;
-- projetos Domain, Application, Infrastructure, API, Shared, Collector e Web;
-- ambiente local com PostgreSQL;
-- configuração do EF Core e Npgsql;
-- modelagem inicial de `DataSource` e `SourceReliability`;
-- fundações de testes automatizados;
-- Continuous Integration com GitHub Actions;
-- fundações de Terraform e deployment;
-- documentação inicial de arquitetura e produto.
+- .NET solution structure;
+- Domain, Application, Infrastructure, API, Shared, Collector, and Web projects;
+- PostgreSQL local development environment;
+- EF Core and Npgsql configuration;
+- initial `DataSource` and `SourceReliability` modeling;
+- automated-test foundations;
+- GitHub Actions Continuous Integration;
+- Terraform and deployment foundations;
+- initial architecture and product documentation.
 
-## Milestone 1 — Fundação de Comparable Games e primeira experiência de leitura
+## Milestone 1 — Comparable Games foundation and first read experience
 
-Status: **Concluído**
+Status: **Completed**
 
-Entregue:
+Delivered:
 
-- fundações de domínio para `Genre`, `Platform` e `Game`;
-- regras de nome normalizado e prevenção de duplicidade;
-- relacionamentos N:N entre jogos, gêneros e plataformas;
-- persistência PostgreSQL e integration tests;
-- endpoints de busca e detalhes de Comparable Games;
-- endpoints de listagem de gêneros e plataformas;
-- suporte a nome parcial, gênero, plataforma, ano de lançamento e paginação;
-- tratamento centralizado de exceções com `ProblemDetails`;
-- integração do Blazor WebAssembly com a API;
-- shell responsivo, navegação, filtros, estados de resultado, paginação e componentes reutilizáveis;
-- integração de deployment por ambiente;
-- validação no navegador com o dataset de produção ainda vazio;
-- ação visível e explícita de submissão da busca;
-- documentação e revisão de aprendizado do primeiro milestone de frontend.
+- `Genre`, `Platform`, and `Game` domain foundations;
+- normalized-name rules and duplicate prevention;
+- many-to-many game relationships with genres and platforms;
+- PostgreSQL persistence and integration tests;
+- Comparable Games search and details endpoints;
+- genre and platform listing endpoints;
+- partial-name, genre, platform, release-year, and pagination support;
+- centralized exception handling with `ProblemDetails`;
+- Blazor WebAssembly API integration;
+- responsive shell, navigation, filters, result states, pagination, and reusable components;
+- environment-based deployment integration;
+- browser validation with the current empty production dataset;
+- visible and explicit search submission in the filter form;
+- documentation and learning review for the first frontend milestone.
 
-A validação dependente de dados permanece pendente até que dados reais representativos sejam persistidos.
+Data-dependent validation remains pending until representative real data is persisted.
 
-## Milestone 2 — MVP vertical com IGDB
+## Milestone 2 — IGDB vertical MVP
 
-Status: **Em andamento**
+Status: **In progress**
 
-### Objetivo
+### Goal
 
-Entregar o primeiro MVP funcional com dados reais usando a IGDB como primeira fonte ativa, da coleta autorizada até persistência, deployment, uso pela API e apresentação no produto.
+Deliver the first functional real-data MVP using IGDB as the first active source, from authorized collection through persistence, deployment, API use, and product presentation.
 
-Este milestone **não** abandona a estratégia multi-fonte.
+This milestone does **not** abandon the multi-source strategy.
 
-Ele entrega uma fonte de ponta a ponta para que o projeto possa validar:
+It delivers one source vertically so the project can validate:
 
-- comportamento do Collector;
-- contratos específicos de fonte;
-- persistência canônica;
-- proveniência;
-- impacto de armazenamento;
+- Collector behavior;
+- source-specific contracts;
+- canonical persistence;
+- provenance;
+- storage impact;
 - deployment;
-- uso pela API;
-- apresentação no frontend;
-- atribuição e comportamento operacional.
+- API use;
+- frontend presentation;
+- attribution and operational behavior.
 
-## 2.1 Prova de conceito da IGDB
+## 2.1 IGDB proof of concept
 
-Status: **Concluída para o escopo de persistência aprovado no Milestone 2**
+Status: **Completed for the approved Milestone 2 persistence scope**
 
-Áreas validadas incluem:
+Validated areas include:
 
-- autenticação Twitch OAuth;
-- recuperação de jogos da IGDB;
-- contratos específicos da fonte;
-- amostras controladas;
-- amostras reproduzíveis;
-- tipos de produto;
-- comportamento de parent e produtos relacionados;
+- Twitch OAuth authentication;
+- IGDB game retrieval;
+- source-specific contracts;
+- controlled samples;
+- reproducible samples;
+- product types;
+- parent and related-product behavior;
 - bundles;
-- releases contextuais por plataforma;
-- precisão e nulabilidade de datas;
-- regiões e status;
-- gêneros;
-- temas;
-- modos de jogo;
-- perspectivas do jogador;
+- contextual platform releases;
+- release precision and nullability;
+- regions and statuses;
+- genres;
+- themes;
+- game modes;
+- player perspectives;
 - keywords;
-- empresas envolvidas;
+- involved companies;
 - collections;
-- covers e metadados de imagem;
-- observações sobre títulos alternativos/localizados;
-- nulabilidade e registros incompletos;
-- utilidade de campos para Comparable Games;
-- limitações específicas da fonte.
+- covers and image metadata;
+- alternative/localized-title observations;
+- nullability and incomplete records;
+- field usefulness for Comparable Games;
+- source-specific limitations.
 
-Decisões importantes produzidas pela PoC incluem:
+Key implementation decisions produced by the PoC include:
 
-- `first_release_date` permanece como valor canônico resumido e usado no filtro atual;
-- releases contextuais exigem um modelo separado;
-- jogos originais, ports, remakes, remasters, bundles, DLCs, expansões e versões permanecem produtos distintos;
-- relações não propagam automaticamente classificações ou metadados;
-- empresas exigem papéis e proveniência;
-- collections foram aprovadas;
-- franchises permanecem adiadas;
-- themes, modes, perspectives e keywords são persistidos como classificações source-neutral separadas;
-- binários de imagem não são armazenados;
-- nulabilidade da fonte permanece semanticamente relevante e não é convertida em valores falsos;
-- nomes normalizados ajudam em lookup, mas não são evidência suficiente de identidade.
+- `first_release_date` remains a canonical summary/filter value;
+- contextual releases require a separate release model;
+- original games, ports, remakes, remasters, bundles, DLCs, expansions, and versions remain distinct products;
+- relationships must not automatically propagate classifications or metadata;
+- companies require roles and provenance;
+- collections are approved;
+- franchises remain deferred;
+- themes, modes, perspectives, and keywords are persisted as separate source-neutral classifications;
+- image binaries are not stored;
+- source nullability remains meaningful and is not converted into false values;
+- normalized names are useful for lookup but are not sufficient identity evidence.
 
-Os documentos históricos da PoC permanecem como evidência das decisões detalhadas por campo e não devem ser reescritos como documentos de implementação.
+Historical PoC documents remain the evidence source for detailed field decisions and should not be rewritten as implementation documents.
 
-## 2.2 Spike leve de compatibilidade multi-fonte
+## 2.2 Lightweight multi-source compatibility spike
 
-Status: **Concluído**
+Status: **Completed**
 
-O spike confirmou que a arquitetura do Milestone 2 consegue suportar IGDB agora sem depender estruturalmente dela.
+The compatibility spike confirmed that the Milestone 2 architecture can support IGDB now without structurally depending on it.
 
-Regras arquiteturais validadas incluem:
+Validated architectural rules include:
 
-- identificadores canônicos internos;
-- múltiplas identidades externas via `DataSource + ExternalId`;
-- contratos específicos por fonte;
-- mappers específicos por fonte;
-- entidades canônicas independentes de fonte;
-- entidades contextuais com proveniência;
-- metadados específicos de fonte fora dos conceitos universais do domínio;
-- reconciliação futura conservadora;
-- nenhuma dependência da Steam para identidade canônica;
-- nenhuma propriedade de ID específica de provider no `Game`.
+- internal canonical identifiers;
+- multiple external identities through `DataSource + ExternalId`;
+- source-specific contracts;
+- source-specific mappers;
+- source-independent canonical entities;
+- provenance-bearing contextual entities;
+- source-specific metadata outside universal domain concepts;
+- conservative future reconciliation;
+- no dependency on Steam for canonical identity;
+- no provider-specific ID properties on `Game`.
 
-Critério de saída atingido:
+Exit criterion achieved:
 
-> O design de persistência orientado inicialmente à IGDB pode prosseguir sem exigir redesenho estrutural quando Wikidata e Steam forem introduzidas posteriormente.
+> The IGDB-oriented persistence design can proceed without requiring structural redesign when Wikidata and Steam are later introduced.
 
-A reconciliação multi-fonte em si permanece adiada para o Milestone 3.
+Multi-source reconciliation itself remains deferred to Milestone 3.
 
-## 2.3 Implementação de domínio e persistência
+## 2.3 Domain and persistence implementation
 
-Status: **Em andamento — GMI-25 a GMI-28 concluídas localmente**
+Status: **In progress — GMI-25 through GMI-29 implemented; GMI-30 pending**
 
-A implementação de persistência é entregue por issues filhas sob a GMI-14.
+The persistence implementation is delivered through child Jira issues under GMI-14.
 
-### GMI-25 — Identidade externa de fonte
+### GMI-25 — External source identity
 
-Status: **Concluída**
+Status: **Completed**
 
-Entregue:
+Delivered:
 
-- separação entre identidade canônica e identidade externa;
+- canonical/external identity separation;
 - `ExternalGameRecord`;
-- identidade de fonte via `DataSourceId + ExternalId`;
-- vínculo opcional do registro externo com `Game` canônico;
-- timestamps de observação;
-- timestamp de atualização na fonte;
-- prevenção de duplicidade;
-- mappings do EF Core;
+- source identity through `DataSourceId + ExternalId`;
+- optional link from external record to canonical `Game`;
+- observation timestamps;
+- source-update timestamp;
+- duplicate prevention;
+- EF Core mappings;
 - migration;
 - persistence tests.
 
-### GMI-26 — Releases contextuais com proveniência
+### GMI-26 — Contextual releases with provenance
 
-Status: **Concluída**
+Status: **Completed**
 
-Entregue:
+Delivered:
 
-- `GameRelease` contextual;
-- `Game.FirstReleaseDate` canônico;
-- contexto de release por plataforma;
-- identidade externa do release;
-- `ExternalGameRecord` de origem;
-- representação de data parcial;
-- região, status e metadados de observação;
-- delete behavior restritivo;
-- mappings do EF Core;
+- contextual `GameRelease`;
+- canonical `Game.FirstReleaseDate`;
+- platform-specific release context;
+- external release identity;
+- source `ExternalGameRecord`;
+- partial release-date representation;
+- region, status, and observation metadata;
+- restrictive delete behavior;
+- EF Core mappings;
 - migration;
 - persistence tests.
 
-### GMI-27 — Classificações consultáveis aprovadas
+### GMI-27 — Approved queryable classifications
 
-Status: **Concluída**
+Status: **Completed**
 
-Classificações canônicas entregues:
+Delivered canonical classifications:
 
 - `Theme`;
 - `GameMode`;
 - `PlayerPerspective`;
 - `Keyword`.
 
-Identidades externas entregues:
+Delivered external identities:
 
 - `ExternalThemeRecord`;
 - `ExternalGameModeRecord`;
 - `ExternalPlayerPerspectiveRecord`;
 - `ExternalKeywordRecord`.
 
-Associações com proveniência entregues:
+Delivered provenance-bearing associations:
 
 - `GameTheme`;
 - `GameGameMode`;
 - `GamePlayerPerspective`;
 - `GameKeyword`.
 
-A implementação preserva identidade de fonte e não trata nomes normalizados como prova de equivalência cross-source.
+The implementation preserves source identity and does not treat normalized names as proof of cross-source equivalence.
 
-### GMI-28 — Produtos, empresas, collections e relações
+### GMI-28 — Products, companies, collections, and relationships
 
-Status: **Implementação concluída; integração final da branch pendente**
+Status: **Completed and integrated**
 
-Modelagem de produto entregue:
+Delivered product modeling:
 
 - `Game.ProductType`;
 - `GameProductType`;
 - `GameProductRelationType`;
 - `GameProductRelation`;
-- relações direcionadas entre produtos canônicos distintos;
-- proveniência pelos `ExternalGameRecord` de origem e destino;
-- nenhuma propagação automática entre produtos relacionados.
+- directed relationships between distinct canonical products;
+- provenance through source and target `ExternalGameRecord`;
+- no automatic propagation between related products.
 
-Modelagem de empresas entregue:
+Delivered company modeling:
 
-- `Company` canônica;
+- canonical `Company`;
 - `ExternalCompanyRecord`;
 - `GameCompanyRole`;
-- `GameCompany` com proveniência;
-- cardinalidade N:N entre jogos e empresas;
-- múltiplos papéis quando sustentados por evidência.
+- provenance-bearing `GameCompany`;
+- N:N game/company cardinality;
+- multiple roles when supported by evidence.
 
-Modelagem de collections entregue:
+Delivered collection modeling:
 
-- `Collection` canônica;
+- canonical `Collection`;
 - `ExternalCollectionRecord`;
-- `GameCollection` com proveniência;
-- cardinalidade N:N entre jogos e collections.
+- provenance-bearing `GameCollection`;
+- N:N game/collection cardinality.
 
-Integridade de persistência entregue:
+Delivered persistence integrity:
 
-- conceitos canônicos source-neutral;
-- identidades externas únicas por fonte;
-- chaves compostas de associação;
-- delete behavior restritivo;
-- cobertura de migration;
-- testes de deleção/integridade;
-- reset do banco de integration tests atualizado para as novas tabelas do schema.
+- source-neutral canonical concepts;
+- unique external identities per source;
+- composite association keys;
+- restrictive delete behavior;
+- migration coverage;
+- delete/integrity tests;
+- integration-test database reset updated for new schema tables.
 
-Quality gate final da GMI-28:
+Final GMI-28 quality gate:
 
 ```text
-Build: passou
-Testes: 424 passaram
-Falhas: 0
-Ignorados: 0
+Build: passed
+Tests: 424 passed
+Failures: 0
+Ignored: 0
 ```
 
-Passos restantes para fechamento da GMI-28:
+GMI-28 was merged into `develop`, pushed to the remote branch, and closed with a clean working tree.
 
-- commitar alterações finais de documentação/testes;
-- verificar working tree limpa;
-- fazer merge da feature branch em `develop`;
-- fazer push de `develop`;
-- registrar evidências de migration/build/test no Jira;
-- transicionar a subtask no Jira somente após a integração estar concluída.
+### GMI-29 — Cover and screenshot metadata
 
-### GMI-29 — Metadados de cover e screenshots
+Status: **Implementation complete; documentation and final branch closure in progress**
 
-Status: **Próxima**
+Delivered image metadata modeling:
 
-Escopo esperado:
+- source-neutral `GameImage`;
+- `GameImageType` with `Cover` and `Screenshot`;
+- source image record identity through `ExternalId`;
+- source asset addressing through `SourceImageId`;
+- optional width and height;
+- optional `SortOrder`;
+- canonical `GameId`;
+- provenance through `ExternalGameRecordId`;
+- no duplicated `DataSourceId`;
+- no image binary persistence;
+- no persisted ready-made game image URL.
 
-- metadados aprovados de cover;
-- metadados de screenshots;
-- identidade/proveniência de fonte;
-- nulabilidade;
-- referências de imagem seguras para armazenamento;
-- sem persistência de binários de imagem;
-- mappings;
-- constraints;
-- testes;
-- migration.
+Delivered integrity rules:
 
-O schema exato deve permanecer alinhado às decisões de imagem aprovadas na PoC.
+- `GameImage` can be created only from an `ExternalGameRecord` already linked to a canonical `Game`;
+- required/trimmed external and source-image identifiers;
+- positive optional dimensions;
+- non-negative optional sort order;
+- unique evidence through `ExternalGameRecordId + ExternalId + Type`;
+- restrictive delete behavior for both the canonical game and supporting external record;
+- PostgreSQL test reset updated for the new table.
 
-### GMI-30 — Validação de persistência e orçamento de armazenamento
+Delivered persistence transition:
 
-Status: **Planejada**
+- removed persisted `Game.ImageUrl`;
+- generated and validated the `game_images` migration;
+- generated and validated the migration removing `Games.ImageUrl`;
+- preserved `Platform.ImageUrl` outside the GMI-29 scope.
 
-Escopo esperado:
+Delivered source-aware URL resolution:
 
-- medição de armazenamento com dados representativos;
-- análise de tabelas de alta cardinalidade;
-- crescimento de linhas de releases;
-- crescimento de associações de classificações;
-- crescimento de metadados de imagem;
-- revisão de tamanho de índices;
-- validação do orçamento do free tier da Neon;
-- decisões de retenção quando necessário;
-- documentação dos limites medidos.
+```text
+GameImage metadata
+→ primary-cover selection
+→ ExternalGameRecord
+→ DataSource.Code
+→ IGameImageUrlResolver
+→ public ImageUrl
+→ Shared contract
+→ frontend
+```
 
-Nenhuma conclusão de capacidade deve depender apenas de estimativas quando dados representativos puderem ser medidos.
+Current IGDB URL resolution is derived from `SourceImageId`.
 
-## 2.4 Implementação do Collector
+The frontend continues to receive a simple `ImageUrl?`; provider-specific identifiers, CDN rules, and persistence metadata remain backend concerns.
 
-Status: **Pendente após a conclusão do modelo de persistência aprovado**
+Delivered primary-cover selection:
 
-O Collector deve ser refatorado da estrutura de PoC para responsabilidades orientadas à produção.
+- only `Cover` records are eligible;
+- populated `SortOrder` is preferred over `null`;
+- lower `SortOrder` is preferred;
+- `GameImage.Id` provides a deterministic tie-breaker;
+- details use a single primary-cover lookup;
+- paginated search uses batch cover lookup to avoid N+1 queries.
 
-Estrutura esperada:
+Delivered Application/API-read integration:
+
+- `GameDetails.ImageUrl` is populated from resolved image metadata when available;
+- `GameSearchItem.ImageUrl` is populated after batch cover lookup;
+- existing frontend fallback behavior remains valid when no cover or supported URL is available;
+- screenshots remain persisted for future detail/gallery use and are not yet exposed by the current public contract.
+
+Consistency review completed during GMI-29:
+
+- canonical links in `External*Record` remain protected from relinking to a different canonical entity;
+- `ExternalCompanyRecord` and `ExternalCollectionRecord` timestamp rules were aligned with the other external-record models;
+- observation timestamps are normalized to UTC;
+- `LastSeenAt` does not move backwards;
+- `SourceUpdatedAt` advances only when a newer source timestamp is observed.
+
+Synchronization policy defined for future Collector work:
+
+- absence in one collection run does not automatically mean source removal;
+- only a known-complete, reliable observation may justify synchronizing an association out of the current state;
+- removing an association does not remove the corresponding `External*Record`;
+- source-specific changes must not propagate blindly to evidence from other sources;
+- the operational database stores treated current state plus minimum necessary provenance rather than indefinite detailed change history.
+
+Current GMI-29 quality gate:
+
+```text
+Build: passed
+Tests: 460 passed
+Failures: 0
+Ignored: 0
+```
+
+Remaining GMI-29 closure steps:
+
+- complete bilingual documentation updates;
+- generate the final GMI-29 `AGENTS.md` revision;
+- run final build/test and Git quality gates;
+- commit final documentation;
+- merge the feature branch into `develop`;
+- push `develop`;
+- update Jira with migration/build/test evidence;
+- close the Jira subtask after integration is complete.
+
+### GMI-30 — Persistence and storage-budget validation
+
+Status: **Planned**
+
+Expected scope:
+
+- representative storage measurement;
+- high-cardinality table analysis;
+- release-row growth;
+- classification-association growth;
+- image-metadata growth;
+- index-size review;
+- free-tier Neon budget validation against the current approximately 0.5 GB per-project storage allowance;
+- measured usage by table and index;
+- retention decisions where needed;
+- documentation of measured limits and operational thresholds.
+
+Current capacity policy to validate with real data:
+
+```text
+< 70%
+→ normal operation
+
+70%+
+→ investigate growth by table and index
+
+before 80%
+→ execute controlled retention or capacity action
+
+approaching 90%
+→ protect essential writes and reduce non-essential ingestion
+```
+
+Retention must preserve, in priority order:
+
+1. current canonical product state;
+2. active external identities;
+3. provenance still supporting the current state;
+4. recent useful historical/auxiliary data when such history exists.
+
+Historical or auxiliary data that is explicitly eligible for retention cleanup should be pruned from oldest to newest while preserving the most recent useful window.
+
+Capacity-driven deletion must never be interpreted as a source-domain fact. Storage retention and source reconciliation are separate concerns.
+
+New historical features should define their retention window when introduced rather than defaulting to permanent storage.
+
+No capacity conclusion should rely only on estimates when representative data can be measured.
+
+## 2.4 Collector implementation
+
+Status: **Pending after the approved persistence model is complete**
+
+The Collector should be refactored from PoC structure into production-oriented responsibilities.
+
+Expected structure:
 
 ```text
 Scheduler
@@ -367,350 +475,362 @@ Scheduler
 → shutdown
 ```
 
-Comportamento necessário:
+Required behavior:
 
-- manter o Worker pequeno;
-- separar Jobs;
-- isolar contratos da IGDB;
-- mapear DTOs da fonte para input source-neutral de Application/Domain;
-- implementar paginação;
-- respeitar rate limits;
-- implementar retries e comportamento seguro em falhas;
-- suportar coleta incremental via `updated_at`;
-- garantir execução idempotente;
-- evitar logar secrets ou tokens;
-- evitar persistência permanente de payloads completos;
-- preservar identidade de fonte e proveniência.
+- keep the Worker small;
+- separate Jobs;
+- isolate IGDB contracts;
+- map source DTOs into source-neutral application/domain input;
+- implement pagination;
+- respect rate limits;
+- implement retries and safe failure behavior;
+- support incremental collection through `updated_at`;
+- ensure idempotent execution;
+- avoid logging secrets or tokens;
+- avoid storing complete raw payloads permanently;
+- preserve source identity and provenance.
 
-O Collector não deve mapear respostas de provider diretamente para entidades do EF Core.
+The Collector must not map provider responses directly into EF Core entities.
 
-## 2.5 Persistência IGDB e qualidade de dados
+## 2.5 IGDB persistence and data quality
 
-Status: **Parcialmente implementada por meio da GMI-25–28**
+Status: **Partially implemented through GMI-25–29**
 
-Já implementado no nível de modelo de persistência:
+Already implemented at the persistence-model level:
 
-- identidade externa;
-- prevenção de duplicidade por identidade de fonte;
-- releases contextuais;
-- classificações aprovadas;
-- tipos de produto;
-- relações entre produtos;
-- empresas e papéis;
+- external identity;
+- duplicate prevention by source identity;
+- contextual releases;
+- approved classifications;
+- product types;
+- product relationships;
+- companies and roles;
 - collections;
-- delete behavior restritivo;
-- associações com proveniência.
+- cover/screenshot metadata;
+- source-aware image URL construction for current read use cases;
+- restrictive delete behavior;
+- provenance-bearing associations.
 
-Ainda necessário no caminho de ingestão:
+Still required in the ingestion path:
 
-- orquestração idempotente de create/update;
-- regras de seleção canônica;
-- regras conservadoras de inclusão;
-- tratamento de registros rejeitados/problemáticos;
-- comportamento de atualização da fonte;
-- reexecução segura;
-- validação com dados representativos;
-- impacto de armazenamento medido.
+- idempotent create/update orchestration;
+- canonical selection rules;
+- conservative inclusion rules;
+- handling of rejected/problematic source records;
+- source-update behavior;
+- safe re-execution;
+- explicit handling of complete versus partial observations before removing current associations;
+- representative-data validation;
+- measured storage impact.
 
-## 2.6 Integração API e frontend
+## 2.6 API and frontend integration
 
-Status: **Pendente de dados reais representativos e trabalho de API pós-persistência**
+Status: **Pending representative real data and post-persistence API work**
 
-A API deve expor contratos source-neutral orientados a casos de uso.
+The API should expose source-neutral use-case contracts.
 
-Ela **não** deve expor todo campo persistido ou identificador interno de proveniência apenas porque existe no banco.
+It should **not** expose every persisted field or internal provenance identifier simply because it exists in the database.
 
-Conceitos potenciais para API/details após a conclusão da persistência incluem:
+The current read contracts already preserve a simple frontend image boundary:
+
+- `GameDetails.ImageUrl?`;
+- `GameSearchItem.ImageUrl?`.
+
+These URLs are resolved from persisted image metadata in the backend rather than stored directly on `Game`.
+
+Potential additional API/detail concepts after persistence completion include:
 
 - product type;
-- produtos relacionados;
-- empresas e papéis;
+- related products;
+- companies and roles;
 - collections;
-- releases contextuais;
-- contexto selecionado de classificações;
-- informações de fonte/atribuição.
+- contextual releases;
+- selected classification context;
+- screenshots/gallery metadata if a validated detail experience requires them;
+- source/attribution information.
 
-O frontend deve organizar esses contratos para o fluxo de decisão do usuário, e não espelhar o schema do banco.
+The frontend should organize these contracts for the user's decision workflow rather than mirror the database schema.
 
-Apresentação provável no produto:
+Likely product presentation:
 
-### Cards de Comparable Games
+### Comparable Games result cards
 
-Manter conciso.
+Keep concise.
 
-Possíveis adições:
+Potential additions:
 
 - product type;
-- apenas contexto selecionado de alto valor.
+- selected high-value context only.
 
-Evitar exibir proveniência completa ou todas as associações persistidas nos cards.
+Avoid displaying complete provenance or every persisted association in cards.
 
-### Detalhes do jogo
+### Game details
 
-Possíveis adições:
+Potential additions:
 
 - product type;
-- produtos relacionados;
-- empresas agrupadas por papel;
+- related products;
+- companies grouped by role;
 - collections;
-- informação de releases contextuais;
-- classificações selecionadas;
-- contexto de fonte e atribuição.
+- contextual release information;
+- selected classifications;
+- source and attribution context.
 
-### Filtros
+### Filters
 
-Possíveis filtros futuros incluem:
+Potential future filters include:
 
 - product type;
 - themes;
 - game modes;
-- empresas;
-- períodos de lançamento.
+- companies;
+- release periods.
 
-Um filtro deve ser introduzido apenas quando responder a uma pergunta validada de produto e houver cobertura de dados suficiente.
+A filter should be introduced only when it answers a validated product question and data coverage is sufficient.
 
-A validação com dados reais deve incluir:
+Validation with real data must include:
 
-- controles de gênero/plataforma populados;
-- cards populados;
-- paginação;
-- detalhes do jogo;
-- apresentação de fonte e proveniência;
-- confiabilidade e limitações;
-- produtos relacionados;
-- tipos de produto;
-- papéis de empresas;
+- populated genre/platform controls;
+- populated result cards;
+- cover URL resolution and fallback behavior;
+- pagination without image-query N+1 behavior;
+- game details;
+- source and provenance presentation;
+- reliability and limitations;
+- related products;
+- product types;
+- company roles;
 - collections;
-- utilidade de keywords;
-- atribuição e links originais quando exigidos e permitidos.
+- keyword usefulness;
+- attribution and original links where required and permitted.
 
-## 2.7 Deployment e operação do Worker
+## 2.7 Worker deployment and operation
 
-Status: **Planejado**
+Status: **Planned**
 
-Definir e validar:
+Define and validate:
 
-- execução agendada one-shot;
-- scheduler gratuito aprovado;
-- secrets de produção;
-- conectividade com Neon;
+- scheduled one-shot execution;
+- approved zero-cost scheduler;
+- production secrets;
+- Neon connectivity;
 - packaging/build;
-- logs e visibilidade de falhas;
-- procedimento de retry/reexecução;
+- logs and failure visibility;
+- retry/rerun procedure;
 - checkpoints;
-- duração de execução;
-- conformidade com rate limits;
-- confirmação de custo operacional.
+- execution duration;
+- rate-limit compliance;
+- operating-cost confirmation.
 
-## Definition of Done do Milestone 2
+## Milestone 2 Definition of Done
 
-O Milestone 2 está concluído quando:
+Milestone 2 is complete when:
 
-- decisões da PoC IGDB estão documentadas e aprovadas;
-- o spike de compatibilidade multi-fonte confirma extensibilidade;
-- o modelo de persistência aprovado está completo;
-- GMI-25 a GMI-30 estão integradas e validadas;
-- o Collector possui responsabilidades claras;
-- a coleta é paginada, incremental e idempotente;
-- os dados da IGDB são mapeados sem tornar a IGDB o modelo interno;
-- registros canônicos mantêm identidade externa e proveniência;
-- dados representativos estão persistidos na Neon;
-- o impacto de armazenamento foi medido e é aceitável;
-- contratos da API expõem os dados selecionados de valor para o produto;
-- o frontend opera com dados reais representativos;
-- contexto de fonte e confiabilidade é visível quando útil;
-- requisitos de atribuição estão atendidos;
-- o Worker está implantado e executado com sucesso;
-- comportamento de falha e reexecução está documentado;
-- testes automatizados passam;
-- documentação está atualizada;
-- o MVP de dados reais funciona ponta a ponta.
+- IGDB PoC decisions are documented and approved;
+- the multi-source compatibility spike confirms extensibility;
+- the approved persistence model is complete;
+- GMI-25 through GMI-30 are integrated and validated;
+- the Collector has clear responsibilities;
+- collection is paginated, incremental, and idempotent;
+- IGDB data is mapped without making IGDB the internal model;
+- canonical records retain external identity and provenance;
+- representative data is persisted in Neon;
+- storage impact is measured and acceptable;
+- API contracts expose the selected product-useful data;
+- frontend operates with representative real data;
+- source and reliability context are visible where useful;
+- attribution requirements are satisfied;
+- the Worker is deployed and successfully executed;
+- failure and rerun behavior are documented;
+- automated tests pass;
+- documentation is updated;
+- the real-data MVP works end to end.
 
-## Milestone 3 — Enriquecimento multi-fonte e reconciliação
+## Milestone 3 — Multi-source enrichment and reconciliation
 
-Status: **Planejado**
+Status: **Planned**
 
-### Objetivo
+### Goal
 
-Adicionar Wikidata e Steam como fontes complementares sem substituir o MVP vertical IGDB nem reescrever suas fundações source-neutral.
+Add Wikidata and Steam as complementary sources without replacing the IGDB vertical MVP or rewriting its source-neutral foundations.
 
-### 3.1 Prova de conceito Wikidata
+### 3.1 Wikidata proof of concept
 
-Avaliar:
+Evaluate:
 
-- acesso estruturado autorizado;
-- QID e identificadores externos;
-- aliases e links canônicos;
-- statements de empresa e relações;
-- variabilidade e ausência em nível de statement;
-- licenciamento e atribuição;
-- limites de consulta e estabilidade operacional;
-- valor para reconciliação.
+- authorized structured access;
+- QID and external identifiers;
+- aliases and canonical links;
+- company and relationship statements;
+- statement-level variability and missing data;
+- licensing and attribution;
+- query limits and operational stability;
+- reconciliation value.
 
-Franchises permanecem adiadas, a menos que um requisito futuro de produto as ative explicitamente.
+Franchises remain deferred unless a later product requirement explicitly activates them.
 
-### 3.2 Prova de conceito Steam
+### 3.2 Steam proof of concept
 
-Avaliar apenas caminhos oficiais e permitidos:
+Evaluate only official and permitted access paths:
 
-- identidade por AppId;
-- nomes e informações específicas de release na Steam;
-- developers e publishers;
-- categorias e features;
-- sistemas e idiomas suportados;
-- sinais específicos da Steam que possam ser usados legalmente;
-- limitações de armazenamento, atribuição, região e endpoint.
+- AppId identity;
+- names and Steam-specific release information;
+- developers and publishers;
+- categories and features;
+- supported systems and languages;
+- Steam-specific signals that are legally usable;
+- storage, attribution, regional, and endpoint limitations.
 
-Um jogo sem identidade Steam continua válido no catálogo canônico.
+A game without a Steam identity remains valid in the canonical catalogue.
 
-Steam não deve se tornar autoridade obrigatória de identidade.
+Steam must not become a required identity authority.
 
-### 3.3 Modelo comum de observação e reconciliação
+### 3.3 Common observation and reconciliation model
 
-Definir uma fronteira independente de fonte para conceitos como:
+Define a source-independent comparison boundary for concepts such as:
 
-- fonte e identidade externa;
-- nome observado e aliases;
-- observações de release com contexto;
-- plataformas;
-- developers e publishers;
+- source and external identity;
+- observed name and aliases;
+- release observations with context;
+- platforms;
+- developers and publishers;
 - collections;
 - product type;
-- relações entre produtos;
-- metadados específicos de fonte.
+- related-product relationships;
+- source-specific metadata.
 
-A reconciliação deve:
+Reconciliation must:
 
-- priorizar identificadores cruzados fortes;
-- usar geração conservadora de candidatos;
-- preservar produtos relacionados distintos;
-- manter classificações e proveniência;
-- evitar votação por maioria sem contexto semântico;
-- bloquear reconciliação automática em conflitos sérios de tipo de produto;
-- preservar aprovações e rejeições manuais quando necessário.
+- prioritize strong crossed identifiers;
+- use conservative candidate generation;
+- preserve distinct related products;
+- keep classifications and provenance;
+- avoid majority voting without semantic context;
+- block automatic reconciliation for serious product-type conflicts;
+- preserve manual approvals and rejections when necessary.
 
-Nomes normalizados podem contribuir para descoberta de candidatos, mas não provam identidade.
+Normalized names may contribute to candidate discovery but do not prove identity.
 
-### 3.4 Experiência multi-fonte no produto
+### 3.4 Multi-source product experience
 
-Possíveis adições:
+Potential additions:
 
-- contexto de convergência/divergência entre fontes;
-- perfis de confiança;
-- apresentação de campos com contexto de fonte;
-- status de reconciliação quando útil;
-- links de fonte e atribuição;
-- distinção clara entre observações, valores canônicos e inferência do GMI.
+- source convergence and divergence context;
+- confidence profiles;
+- source-aware field presentation;
+- reconciliation status where useful;
+- source links and attribution;
+- clear distinction between observations, canonical values, and GMI inference.
 
-## Definition of Done do Milestone 3
+## Milestone 3 Definition of Done
 
-O Milestone 3 está concluído quando:
+Milestone 3 is complete when:
 
-- PoCs de Wikidata e Steam estão documentadas e aprovadas para papéis definidos;
-- ambas as integrações seguem as mesmas fronteiras arquiteturais da IGDB;
-- observações podem ser comparadas sem apagar contexto de fonte;
-- reconciliação é conservadora e testável;
-- proveniência e confiança são visíveis quando úteis;
-- o fluxo multi-fonte funciona ponta a ponta.
+- Wikidata and Steam PoCs are documented and approved for defined roles;
+- both integrations follow the same architectural boundaries as IGDB;
+- observations can be compared without erasing source context;
+- reconciliation is conservative and testable;
+- provenance and confidence are visible where useful;
+- the multi-source product flow works end to end.
 
-## Milestones posteriores
+## Later milestones
 
-### Exploração avançada de Comparable Games
+### Advanced Comparable Games exploration
 
-Escopo potencial:
+Potential scope:
 
-- múltiplos gêneros;
-- múltiplas plataformas;
+- multiple genres;
+- multiple platforms;
 - themes;
 - modes;
 - perspectives;
 - keywords;
-- filtros por product type;
-- filtros por empresa;
-- filtros por período de lançamento;
-- detalhes mais ricos;
-- ordenação;
-- otimização de performance;
-- buscas salvas;
-- resumos analíticos.
+- product-type filters;
+- company filters;
+- release-period filters;
+- richer details;
+- sorting;
+- performance optimization;
+- saved searches;
+- analytical summaries.
 
-Keywords permanecem uma estratégia central de valor porque permitem que producers comecem por uma ideia ou micro-nicho, e não apenas por um título já conhecido.
+Keywords remain a central product-value strategy because they allow producers to begin with an idea or micro-niche rather than only with a known title.
 
-### Fundação de métricas de mercado
+### Market metrics foundation
 
-Métricas prioritárias:
+Priority metrics:
 
-- vendas;
-- receita;
-- owners estimados;
+- sales;
+- revenue;
+- estimated owners;
 - downloads;
-- jogadores ativos;
-- jogadores concorrentes;
+- active players;
+- concurrent players;
 - reviews;
 - wishlists;
-- outras observações de engajamento justificadas.
+- other justified engagement observations.
 
-Todas as métricas devem preservar:
+All metrics must preserve:
 
-- fonte;
-- significado;
-- período;
-- método;
-- confiança.
+- source;
+- meaning;
+- period;
+- method;
+- confidence.
 
-### Análise de mercado e apoio à decisão
+### Market analysis and decision support
 
-Adiado até que dados estáveis e perguntas validadas existam:
+Deferred until stable data and validated questions exist:
 
 - market signals;
-- análise de gêneros;
-- análise de plataformas;
-- contexto de janela de lançamento;
-- relatórios com contexto de fonte;
-- recomendações;
+- genre analysis;
+- platform analysis;
+- launch-window context;
+- source-aware reports;
+- recommendations;
 - forecasting;
-- avaliação de machine learning.
+- machine-learning evaluation.
 
-## Foco atual de entrega
-
-```text
-Milestone 2 — MVP vertical IGDB
-→ integração final da GMI-28
-→ GMI-29 metadados de cover e screenshots
-→ GMI-30 validação do orçamento de armazenamento
-```
-
-Sequência imediata:
-
-1. concluir o fechamento da branch da GMI-28 e fazer merge em `develop`;
-2. implementar GMI-29;
-3. implementar GMI-30;
-4. confirmar o modelo de persistência aprovado para o Milestone 2;
-5. refatorar o Collector para responsabilidades orientadas à produção;
-6. implementar ingestão IGDB idempotente;
-7. popular dados representativos;
-8. validar comportamento de armazenamento;
-9. expor novos conceitos selecionados por meio de contratos da API;
-10. organizar esses contratos no frontend;
-11. implantar e operar o Worker;
-12. validar o MVP de dados reais ponta a ponta.
-
-## Checkpoint arquitetural atual
-
-A direção atual da persistência é:
+## Current delivery focus
 
 ```text
-Fonte externa
-→ observação específica da fonte
-→ External*Record / proveniência
-→ filtragem e seleção pelo Worker
-→ modelo canônico do GMI
-→ contrato de caso de uso da Application/API
-→ apresentação no frontend
+Milestone 2 — IGDB vertical MVP
+→ GMI-28 final integration
+→ GMI-29 cover and screenshot metadata
+→ GMI-30 storage-budget validation
 ```
 
-A camada de persistência é intencionalmente mais rica do que qualquer tela individual do frontend.
+Immediate sequence:
 
-A API seleciona o que cada caso de uso precisa.
+1. finish GMI-28 branch closure and merge into `develop`;
+2. implement GMI-29;
+3. implement GMI-30;
+4. confirm the approved Milestone 2 persistence model;
+5. refactor the Collector into production-oriented responsibilities;
+6. implement idempotent IGDB ingestion;
+7. populate representative data;
+8. validate storage behavior;
+9. expose selected new concepts through API contracts;
+10. organize those contracts in the frontend;
+11. deploy and operate the Worker;
+12. validate the end-to-end real-data MVP.
 
-O frontend organiza essa informação selecionada para o producer e não deve se tornar um espelho direto do banco de dados.
+## Current architectural checkpoint
+
+The current persistence direction is:
+
+```text
+External source
+→ source-specific observation
+→ External*Record / provenance
+→ Worker filtering and selection
+→ canonical GMI model
+→ Application/API use-case contract
+→ frontend presentation
+```
+
+The persistence layer is intentionally richer than any single frontend screen.
+
+The API selects what each use case needs.
+
+The frontend organizes that selected information for the producer and must not become a direct mirror of the database.
