@@ -404,6 +404,92 @@ When historical or auxiliary data is explicitly eligible for pruning, remove the
 
 Capacity decisions must be based on occupied bytes and measured table/index growth rather than a fixed record count.
 
+### 10.5 Catalog coverage versus metadata depth
+
+GMI-30 confirmed that catalog coverage and metadata depth must be managed as separate capacity decisions.
+
+A database budget must not be converted into an arbitrary rule such as:
+
+```text
+source has 20,000 relevant games
+→ store only 10,000 because the validation sample used 10,000
+```
+
+The validation sample size is not a catalog cap.
+
+When games are relevant to the approved MVP scope, the preferred order is:
+
+```text
+preserve relevant catalog coverage
+→ persist metadata required by approved product questions
+→ control or defer non-essential high-cardinality associations
+→ monitor actual table and index growth
+```
+
+This is especially important because GMI-30 showed that multiplicative relationships, not the canonical `Games` table alone, dominate storage growth.
+
+Capacity-driven reduction of metadata depth must never be represented to users or reconciliation logic as proof that the source lacks the omitted data.
+
+### 10.6 GMI-30 representative storage evidence
+
+The first synthetic validation phase preserved a 10,000-game catalog and included:
+
+- 20,000 game-genre associations;
+- 20,000 game-platform associations;
+- 10,000 external game records;
+- 16,666 image metadata rows.
+
+Measured PostgreSQL storage after `ANALYZE` was approximately:
+
+```text
+table data  ~7.4 MB
+indexes     ~11 MB
+total       ~19 MB
+```
+
+A second phase preserved the same 10,000 games and added:
+
+- 30,000 contextual releases;
+- 30,000 theme associations;
+- 20,000 game-mode associations;
+- 20,000 player-perspective associations;
+- 80,000 keyword associations;
+- 20,000 company associations;
+- 5,000 collection associations;
+- 2,500 product relations;
+- required canonical and external provenance records.
+
+Measured storage became approximately:
+
+```text
+table data  ~29 MB
+indexes     ~33 MB
+total       ~63 MB
+```
+
+The pressure phase added approximately 44 MB without increasing the canonical game count.
+
+Largest observed relations were:
+
+| Relation | Rows | Approximate total size | Approximate total bytes per row |
+|---|---:|---:|---:|
+| `game_keywords` | 80,000 | 14 MB | 181 B |
+| `game_releases` | 30,000 | 10.1 MB | 344 B |
+| `game_images` | 16,666 | 5.3 MB | 328 B |
+| `game_themes` | 30,000 | 5.3 MB | 182 B |
+| `game_companies` | 20,000 | 5.3 MB | 271 B |
+| `GameGenres` | 20,000 | 3.5 MB | 181 B |
+| `GamePlatforms` | 20,000 | 3.5 MB | 181 B |
+| `Games` | 10,000 | 3.2 MB | 327 B |
+
+The bytes-per-row figures use `pg_total_relation_size`, so they include associated indexes and are budgeting evidence rather than fixed storage guarantees.
+
+The pressure scenario averaged roughly 6.3 KB of measured database objects per game when all synthetic associations were included.
+
+That ratio must not be treated as a linear production-capacity guarantee because real source cardinalities, PostgreSQL page allocation, index behavior, VACUUM, bloat, future migrations, and source distributions will differ.
+
+The strongest synthetic storage pressure points observed so far are keywords and contextual releases.
+
 ## 11. Incremental updates and cost
 
 The PoC will compare:
@@ -424,9 +510,9 @@ Goals:
 
 Checksum is technical and will not be part of the user experience.
 
-## 12. PoC approval criteria
+## 12. PoC and persistence approval criteria
 
-The PoC must demonstrate:
+The PoC and subsequent persistence work must demonstrate:
 
 ### Coverage
 
@@ -492,17 +578,57 @@ The PoC must demonstrate:
 
 ### Storage
 
-- growth compatible with the Neon free tier;
-- measured growth by table and index;
-- controllable retention for any explicitly historical or auxiliary data;
-- sustainable indexes;
-- no unnecessary raw payload retention;
-- preservation of current canonical state and active provenance under storage pressure.
+GMI-30 has now provided the first representative local persistence evidence:
+
+- migration chain applies from zero;
+- existing local PostgreSQL can be upgraded to the current schema;
+- EF model and migration snapshot are aligned;
+- storage growth is measurable by table and index;
+- baseline 10,000-game synthetic storage was approximately 19 MB;
+- high-cardinality pressure storage was approximately 63 MB for the same catalog size;
+- indexes represented approximately 33 MB of the 63 MB pressure scenario;
+- keywords and contextual releases were the strongest measured multiplicative pressure points;
+- current storage policy can prioritize canonical state and active provenance while avoiding indefinite raw/history retention;
+- relevant catalog coverage should be preserved before non-essential metadata depth;
+- no fixed catalog-record limit is authorized by the validation sample.
+
+Current query-plan evidence also confirms:
+
+- genre filtering uses `IX_GameGenres_GenreId`;
+- platform filtering uses `IX_GamePlatforms_PlatformId`;
+- batch cover lookup uses `IX_game_images_GameId`;
+- current `ILIKE '%term%'` name search uses a sequential scan but completed in approximately 3.7 ms at 10,000 games;
+- current release-year filtering uses a sequential scan but completed in approximately 1.8 ms at 10,000 games;
+- no new index is justified solely to remove these currently inexpensive sequential scans.
 
 ### Final criterion
 
-> IGDB and the pipeline are sufficient for the MVP when they produce useful searches, preserve context and provenance, avoid dangerous merges, operate incrementally and idempotently, and remain compatible with free infrastructure.
+> IGDB and the pipeline are sufficient for the MVP when they produce useful searches, preserve context and provenance, avoid dangerous merges, operate incrementally and idempotently, preserve relevant catalog coverage while controlling metadata depth, and remain compatible with free infrastructure.
 
-## 13. Next step
+## 13. Current persistence checkpoint and next step
 
-The current persistence model through GMI-29 is implemented. The next persistence step is GMI-30, which will validate storage behavior and capacity with representative data before production-oriented Collector ingestion is finalized.
+The persistence model through GMI-29 is implemented.
+
+GMI-30 has now validated:
+
+- migrations from zero;
+- migration over the existing local PostgreSQL database;
+- absence of pending EF model changes;
+- complete build and automated test compatibility;
+- current public-contract compatibility;
+- representative query plans;
+- representative baseline and high-cardinality storage behavior;
+- the operational distinction between catalog coverage and metadata depth.
+
+The current full-solution validation passed:
+
+```text
+Tests: 460
+Passed: 460
+Failed: 0
+Ignored: 0
+```
+
+The remaining GMI-30 work is documentation consolidation, final repository-quality validation, `AGENTS.md` refresh, integration into `develop`, and Jira closure.
+
+After GMI-30 is integrated, the next implementation step is production-oriented Collector ingestion, where these persistence, synchronization, provenance, capacity, and metadata-depth rules must be enforced rather than rediscovered.
