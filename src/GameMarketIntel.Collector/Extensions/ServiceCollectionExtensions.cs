@@ -1,10 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+using GameMarketIntel.Collector.Workers;
 
-namespace GameMarketIntel.Collector.Extensions
+namespace GameMarketIntel.Collector.Extensions;
+
+public static class ServiceCollectionExtensions
+
 {
-    internal class ServiceCollectionExtensions
+    public static IServiceCollection AddCollector(this IServiceCollection services)
     {
+        services.AddHostedService<IgdbImportWorker>();
+        return services;
     }
 }

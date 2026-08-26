@@ -1,6 +1,6 @@
 # Implementation Roadmap
 
-> Updated: August 25, 2026
+> Updated: August 26, 2026
 
 ## Purpose
 
@@ -540,7 +540,7 @@ Remaining GMI-30 closure work:
 
 ## 2.4 Collector implementation
 
-Status: **Pending after the approved persistence model is complete**
+Status: **One-shot execution foundation implemented by GMI-15; client, mapping, and persistent ingestion remain pending**
 
 The Collector should be refactored from PoC structure into production-oriented responsibilities.
 
@@ -578,9 +578,28 @@ Required behavior:
 
 The Collector must not map provider responses directly into EF Core entities.
 
+Foundation implemented by GMI-15:
+
+- the Collector runs once per process and leaves recurring scheduling to external infrastructure;
+- `IgdbImportWorker` remains small and delegates one execution to `IIgdbImportJob`;
+- success, requested cancellation, and unexpected failure have explicit logging and shutdown behavior;
+- the Worker and its DI registration have unit tests without network or database access;
+- empty template, PoC, and future Steam-integration placeholders were removed;
+- the Collector test project was added to the solution and aligned with xUnit, Shouldly, and NSubstitute;
+- `AddCollector()` registers only the Worker that is already implemented;
+- `Program.cs` does not call `AddCollector()` yet because no concrete, resolvable `IIgdbImportJob` implementation exists.
+
+This temporary inactivity is deliberate. GMI-15 does not create an empty job, an implementation that throws `NotImplementedException`, or a Collector that appears to complete an import without processing data.
+
+Boundaries for the next tasks:
+
+- GMI-16 implements authentication, the IGDB client, pagination, pacing, retries, timeout, and operational cancellation;
+- GMI-17 implements response contracts and mapping for the approved first-MVP subset;
+- GMI-18 implements persistent orchestration, idempotency, checkpoints, resumption, and progress observability.
+
 ## 2.5 IGDB persistence and data quality
 
-Status: **Persistence model implemented through GMI-29; operational validation in progress through GMI-30**
+Status: **Persistence model and operational budget validated through GMI-30**
 
 Already implemented at the persistence-model level:
 
@@ -882,26 +901,23 @@ Deferred until stable data and validated questions exist:
 
 ```text
 Milestone 2 — IGDB vertical MVP
-→ GMI-30 persistence and storage-budget validation
-→ persistence-model checkpoint
-→ production-oriented Collector work
+→ GMI-30 persistence model and storage budget complete
+→ GMI-15 one-shot Collector foundation
+→ GMI-16 IGDB client and operational behavior
 ```
 
 Immediate sequence:
 
-1. finish GMI-30 documentation and operational-budget validation;
-2. generate the final GMI-30 `AGENTS.md` revision;
-3. run final build/test and Git quality gates;
-4. integrate GMI-30 into `develop`;
-5. confirm the approved Milestone 2 persistence model;
-6. refactor the Collector into production-oriented responsibilities;
-7. implement idempotent IGDB ingestion;
-8. populate representative real data;
-9. validate production storage behavior against the measured local budget;
-10. expose selected new concepts through API contracts;
-11. organize those contracts in the frontend;
-12. deploy and operate the Worker;
-13. validate the end-to-end real-data MVP.
+1. complete documentation, final gates, and integration of the GMI-15 Collector foundation;
+2. implement authentication, the IGDB client, and operational behavior in GMI-16;
+3. implement first-MVP IGDB contracts and mapping in GMI-17;
+4. implement incremental, idempotent, resumable ingestion in GMI-18;
+5. populate representative real data;
+6. validate production storage behavior against the measured local budget;
+7. expose selected new concepts through API contracts;
+8. organize those contracts in the frontend;
+9. deploy and operate the Worker;
+10. validate the end-to-end real-data MVP.
 
 ## Current architectural checkpoint
 
