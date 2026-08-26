@@ -1,6 +1,6 @@
 # Roadmap de Implementação
 
-> Atualizado em: 25 de agosto de 2026
+> Atualizado em: 26 de agosto de 2026
 
 ## Objetivo
 
@@ -540,7 +540,7 @@ Trabalho restante para fechamento da GMI-30:
 
 ## 2.4 Implementação do Collector
 
-Status: **Pendente após conclusão do modelo de persistência aprovado**
+Status: **Fundação de execução única implementada pela GMI-15; cliente, mapping e ingestão persistente permanecem pendentes**
 
 O Collector deve ser refatorado da estrutura de PoC para responsabilidades orientadas a produção.
 
@@ -578,9 +578,28 @@ Comportamento requerido:
 
 O Collector não deve mapear respostas do provider diretamente para entidades EF Core.
 
+Fundação implementada pela GMI-15:
+
+- o Collector executa uma vez por processo e deixa o agendamento recorrente para infraestrutura externa;
+- `IgdbImportWorker` permanece pequeno e delega uma única execução a `IIgdbImportJob`;
+- sucesso, cancelamento solicitado e falha inesperada possuem logging e encerramento explícitos;
+- o Worker e seu registro de DI possuem testes unitários sem rede ou banco;
+- placeholders vazios do template, da PoC e da integração Steam futura foram removidos;
+- o projeto de testes do Collector foi adicionado à solução e alinhado com xUnit, Shouldly e NSubstitute;
+- `AddCollector()` registra somente o Worker já implementado;
+- o `Program.cs` ainda não chama `AddCollector()`, pois não existe uma implementação concreta e resolvível de `IIgdbImportJob`.
+
+Essa inatividade temporária é deliberada. A GMI-15 não cria um job vazio, uma implementação que lança `NotImplementedException` ou um Collector que aparenta concluir uma importação sem processar dados.
+
+Fronteiras das próximas tarefas:
+
+- GMI-16 implementa autenticação, cliente IGDB, paginação, ritmo, retries, timeout e cancelamento operacional;
+- GMI-17 implementa contratos de resposta e mapping do subconjunto aprovado do primeiro MVP;
+- GMI-18 implementa orquestração persistente, idempotência, checkpoint, retomada e observabilidade de progresso.
+
 ## 2.5 Persistência IGDB e qualidade dos dados
 
-Status: **Modelo de persistência implementado até GMI-29; validação operacional em andamento pela GMI-30**
+Status: **Modelo de persistência e orçamento operacional validados até a GMI-30**
 
 Já implementado no nível de modelo de persistência:
 
@@ -882,26 +901,23 @@ Adiado até haver dados estáveis e perguntas validadas:
 
 ```text
 Milestone 2 — MVP vertical com IGDB
-→ validação de persistência e orçamento da GMI-30
-→ checkpoint do modelo de persistência
-→ trabalho do Collector orientado a produção
+→ modelo de persistência e orçamento da GMI-30 concluídos
+→ fundação de execução única do Collector pela GMI-15
+→ cliente IGDB e comportamento operacional da GMI-16
 ```
 
 Sequência imediata:
 
-1. finalizar documentação e validação do orçamento operacional da GMI-30;
-2. gerar a revisão final de `AGENTS.md` da GMI-30;
-3. rodar build/test final e gates de qualidade do Git;
-4. integrar GMI-30 em `develop`;
-5. confirmar o modelo de persistência aprovado do Milestone 2;
-6. refatorar o Collector para responsabilidades orientadas a produção;
-7. implementar ingestão IGDB idempotente;
-8. popular dados reais representativos;
-9. validar comportamento real de armazenamento em produção contra o orçamento local medido;
-10. expor conceitos selecionados por meio de contratos de API;
-11. organizar esses contratos no frontend;
-12. fazer deploy e operar o Worker;
-13. validar o MVP com dados reais de ponta a ponta.
+1. concluir documentação, gates finais e integração da fundação do Collector da GMI-15;
+2. implementar autenticação, cliente IGDB e comportamento operacional na GMI-16;
+3. implementar contratos e mapping IGDB do primeiro MVP na GMI-17;
+4. implementar ingestão incremental, idempotente e retomável na GMI-18;
+5. popular dados reais representativos;
+6. validar comportamento real de armazenamento em produção contra o orçamento local medido;
+7. expor conceitos selecionados por meio de contratos de API;
+8. organizar esses contratos no frontend;
+9. fazer deploy e operar o Worker;
+10. validar o MVP com dados reais de ponta a ponta.
 
 ## Checkpoint arquitetural atual
 
