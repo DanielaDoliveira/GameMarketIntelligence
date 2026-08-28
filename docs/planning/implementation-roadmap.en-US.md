@@ -1,6 +1,6 @@
 # Implementation Roadmap
 
-> Updated: August 26, 2026
+> Updated: August 28, 2026
 
 ## Purpose
 
@@ -186,7 +186,7 @@ Multi-source reconciliation itself remains deferred to Milestone 3.
 
 ## 2.3 Domain and persistence implementation
 
-Status: **In progress — GMI-25 through GMI-29 completed and integrated; GMI-30 validation in progress**
+Status: **Completed — GMI-14 and subtasks GMI-25 through GMI-30 integrated before the Collector foundation**
 
 The persistence implementation is delivered through child Jira issues under GMI-14.
 
@@ -400,7 +400,7 @@ GMI-29 was merged into `develop`, pushed to the remote branch, and closed with a
 
 ### GMI-30 — Persistence and storage-budget validation
 
-Status: **In progress — migration, query-plan, contract, and representative-volume validation completed**
+Status: **Completed and integrated — historical validation evidence preserved below**
 
 Validated migration and compatibility checks:
 
@@ -525,7 +525,7 @@ Capacity-driven deletion must never be interpreted as a source-domain fact.
 
 Storage retention and source reconciliation remain separate concerns.
 
-Remaining GMI-30 closure work:
+GMI-30 closure checklist, completed before GMI-15:
 
 - consolidate the measured evidence in bilingual project documentation;
 - confirm the final operational budget wording and risk register;
@@ -540,9 +540,9 @@ Remaining GMI-30 closure work:
 
 ## 2.4 Collector implementation
 
-Status: **One-shot execution foundation implemented by GMI-15; client, mapping, and persistent ingestion remain pending**
+Status: **GMI-15 integrated; GMI-16 implemented on the branch and awaiting integration; mapping and persistent ingestion pending**
 
-The Collector should be refactored from PoC structure into production-oriented responsibilities.
+The Collector foundation and transport have been separated into production-oriented responsibilities. The complete flow below still requires mapping and persistent ingestion.
 
 Expected structure:
 
@@ -591,7 +591,76 @@ Foundation implemented by GMI-15:
 
 This temporary inactivity is deliberate. GMI-15 does not create an empty job, an implementation that throws `NotImplementedException`, or a Collector that appears to complete an import without processing data.
 
-Boundaries for the next tasks:
+### GMI-16 — IGDB client and operational behavior
+
+Status: **Implemented and validated on the branch; integration and closure pending**
+
+Local evidence reported by the developer:
+
+- branch: `feature/GMI-16-igdb-client`;
+- code commit: `06528e1` — `feat(collector): implement IGDB client and operational policies`;
+- test summary: **618 tests, 618 passed, 0 failures, 0 ignored**, duration of 24.4 seconds;
+- build confirmed as passing;
+- `git diff --check` corrected and confirmed clear before the commit;
+- documentation kept in a separate commit from code;
+- merge into `develop`, push, and issue closure are not yet confirmed at this checkpoint.
+
+Implemented responsibilities:
+
+| Component | Role |
+|---|---|
+| `IgdbOptions` / `IgdbOptionsValidator` | Configuration, required credentials, HTTPS, trailing slash in the base URL path, and operational limits |
+| `TwitchOAuthClient` | OAuth request, response interpretation, and validation |
+| `IgdbAccessTokenProvider` | In-memory cache, expiry with a one-minute safety window, synchronization, and explicit renewal |
+| `IgdbRequestPacer` | Shared interval between releases, measured with timestamps and elapsed time |
+| `IgdbRetryPolicy` | Retry decision and delay calculation, without performing HTTP |
+| `IgdbQueryTimeout` | Cooperative query deadline and distinction between timeout and caller cancellation |
+| `IgdbRequestFailureFactory` | HTTP failure exception with status and a controlled message |
+| `IgdbClient` | Coordination of POST, authentication, attempts, and single-page JSON reading |
+| `IgdbPageQuery` / `IgdbPaginator` | Query construction and sequential on-demand reading, without accumulating previous pages |
+
+Implemented operational behavior:
+
+- OAuth `client_credentials`, with tokens held only in memory;
+- `Client-ID` and `Authorization: Bearer` headers, with a single renewal after `401` per query;
+- named HTTP clients through `IHttpClientFactory`, without automatic redirects or cookies, and with header values redacted in factory logs;
+- default pacing of 300 ms, configurable minimum of 250 ms, independent of UTC clock adjustments;
+- bounded retries for `408`, `429`, `500`, `502`, `503`, and `504`;
+- preference for interval/date `Retry-After`; exponential fallback of 1, 2, 4 seconds by attempt;
+- up to three retries by default, configurable from zero to five;
+- default maximum delay of 30 seconds; when the indicated delay exceeds the configured limit, the query fails without retrying prematurely;
+- default 30-second timeout for the complete query, including token acquisition/renewal, pacing, retries, and body reading;
+- cancellation propagation without incorrectly converting caller cancellation into timeout;
+- controlled messages for HTTP status failures and malformed/incompatible OAuth JSON, without attaching remote bodies or parsing exceptions;
+- paginated queries with explicit fields, `id asc` ordering, `limit`, and `offset`;
+- pages of 1 to 500 records; termination on a partial or empty page, without yielding the empty page;
+- structural JSON-page validation and rejection of pages larger than requested;
+- tested DI registration, without activation in `Program.cs`.
+
+The review applied SOLID through composition and cohesive responsibilities, without creating interfaces merely to increase the number of abstractions.
+
+Validation coverage:
+
+- unit tests for configuration, OAuth, cache, pacing, retry, timeout, errors, client, query construction, and pagination;
+- component integration tests using real DI and implementations, replacing only HTTP transport and the clock;
+- combined flow with `429`, `Retry-After`, `401`, renewal, headers, pacing, and offset advancement;
+- termination after rejection of the renewed token, and transport cancellation at the query deadline;
+- these flow tests do not access Twitch, IGDB, or a database; they do not constitute live-source validation of the new implementation.
+
+Explicit limits of this increment:
+
+- connection failures without an HTTP response do not receive automatic retries;
+- a timeout terminates the query; it is not an automatically retried transient attempt;
+- standalone OAuth calls require appropriate cancellation because the named HTTP client has no independent timeout;
+- the deadline applies per query/page, not globally to the import;
+- offset pagination does not provide a snapshot of a changing catalog;
+- `IgdbPageQuery` accepts trusted application-defined filters; it is neither a general APICalypse parser nor a sanitizer for free-form input;
+- these components persist no raw payloads; mapping, checkpoints, and idempotency remain outside this task;
+- `Program.cs` still calls neither `AddCollector()` nor `AddIgdbIntegration()`; execution will be activated only with a concrete, resolvable job.
+
+Before closing GMI-16: review and commit these documents, integrate the branch, record merge/push evidence in Jira, and generate the new external `AGENTS.md`. This checkpoint does not declare the issue complete.
+
+Task boundaries:
 
 - GMI-16 implements authentication, the IGDB client, pagination, pacing, retries, timeout, and operational cancellation;
 - GMI-17 implements response contracts and mapping for the approved first-MVP subset;
@@ -908,8 +977,8 @@ Milestone 2 — IGDB vertical MVP
 
 Immediate sequence:
 
-1. complete documentation, final gates, and integration of the GMI-15 Collector foundation;
-2. implement authentication, the IGDB client, and operational behavior in GMI-16;
+1. review and separately commit GMI-16 documentation; code is in commit `06528e1`;
+2. integrate GMI-16 into `develop`, confirm push, record Jira evidence, and generate the new external `AGENTS.md`;
 3. implement first-MVP IGDB contracts and mapping in GMI-17;
 4. implement incremental, idempotent, resumable ingestion in GMI-18;
 5. populate representative real data;
