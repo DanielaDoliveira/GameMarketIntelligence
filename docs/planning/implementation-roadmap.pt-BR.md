@@ -1,6 +1,6 @@
 # Roadmap de Implementação
 
-> Atualizado em: 26 de agosto de 2026
+> Atualizado em: 28 de agosto de 2026
 
 ## Objetivo
 
@@ -186,7 +186,7 @@ A reconciliação multi-source em si permanece adiada para o Milestone 3.
 
 ## 2.3 Implementação de domínio e persistência
 
-Status: **Em andamento — GMI-25 até GMI-29 concluídas e integradas; validação da GMI-30 em andamento**
+Status: **Concluído — GMI-14 e subtarefas GMI-25 até GMI-30 integradas antes da fundação do Collector**
 
 A implementação de persistência é entregue por meio de issues filhas no Jira sob GMI-14.
 
@@ -400,7 +400,7 @@ A GMI-29 foi mergeada em `develop`, enviada ao remoto e encerrada com working tr
 
 ### GMI-30 — Validação de persistência e orçamento de armazenamento
 
-Status: **Em andamento — migrations, planos de consulta, contratos e volume representativo já validados**
+Status: **Concluída e integrada — evidências históricas de validação preservadas abaixo**
 
 Validações de migration e compatibilidade concluídas:
 
@@ -525,7 +525,7 @@ Exclusão motivada por capacidade nunca deve ser interpretada como fato de domí
 
 Retenção de armazenamento e reconciliação da fonte permanecem preocupações separadas.
 
-Trabalho restante para fechamento da GMI-30:
+Checklist de fechamento da GMI-30, concluído antes da GMI-15:
 
 - consolidar a evidência medida na documentação bilíngue do projeto;
 - confirmar a redação final do orçamento operacional e risk register;
@@ -540,9 +540,9 @@ Trabalho restante para fechamento da GMI-30:
 
 ## 2.4 Implementação do Collector
 
-Status: **Fundação de execução única implementada pela GMI-15; cliente, mapping e ingestão persistente permanecem pendentes**
+Status: **GMI-15 integrada; GMI-16 implementada na branch e aguardando integração; mapping e ingestão persistente pendentes**
 
-O Collector deve ser refatorado da estrutura de PoC para responsabilidades orientadas a produção.
+A fundação e o transporte do Collector foram separados em responsabilidades orientadas a produção. O fluxo completo abaixo ainda depende de mapping e ingestão persistente.
 
 Estrutura esperada:
 
@@ -591,7 +591,76 @@ Fundação implementada pela GMI-15:
 
 Essa inatividade temporária é deliberada. A GMI-15 não cria um job vazio, uma implementação que lança `NotImplementedException` ou um Collector que aparenta concluir uma importação sem processar dados.
 
-Fronteiras das próximas tarefas:
+### GMI-16 — Cliente IGDB e comportamento operacional
+
+Status: **Implementado e validado na branch; integração e fechamento pendentes**
+
+Evidência local informada pela desenvolvedora:
+
+- branch: `feature/GMI-16-igdb-client`;
+- commit de código: `06528e1` — `feat(collector): implement IGDB client and operational policies`;
+- resumo de testes: **618 testes, 618 aprovados, 0 falhas, 0 ignorados**, duração de 24,4 segundos;
+- build confirmada como aprovada;
+- `git diff --check` corrigido e confirmado sem pendências antes do commit;
+- documentação mantida em commit separado do código;
+- merge em `develop`, push e encerramento da issue ainda não confirmados neste checkpoint.
+
+Responsabilidades implementadas:
+
+| Componente | Papel |
+|---|---|
+| `IgdbOptions` / `IgdbOptionsValidator` | Configuração, credenciais obrigatórias, HTTPS, barra final no caminho da URL base e limites operacionais |
+| `TwitchOAuthClient` | Requisição OAuth, interpretação e validação da resposta |
+| `IgdbAccessTokenProvider` | Cache em memória, expiração com margem de um minuto, sincronização e renovação explícita |
+| `IgdbRequestPacer` | Intervalo compartilhado entre liberações, medido por timestamps e tempo decorrido |
+| `IgdbRetryPolicy` | Decisão de repetição e cálculo de espera, sem executar HTTP |
+| `IgdbQueryTimeout` | Prazo cooperativo da consulta e distinção entre timeout e cancelamento do chamador |
+| `IgdbRequestFailureFactory` | Exceção de falha HTTP com status e mensagem controlada |
+| `IgdbClient` | Coordenação do POST, autenticação, tentativas e leitura do JSON de uma página |
+| `IgdbPageQuery` / `IgdbPaginator` | Montagem de consultas e leitura sequencial sob demanda, sem acumular páginas anteriores |
+
+Comportamento operacional implementado:
+
+- OAuth `client_credentials`, com token somente em memória;
+- headers `Client-ID` e `Authorization: Bearer`, com uma única renovação após `401` por consulta;
+- clientes HTTP nomeados via `IHttpClientFactory`, sem redirects automáticos nem cookies e com valores de headers ocultados nos logs da factory;
+- pacing padrão de 300 ms, mínimo configurável de 250 ms, independente de ajustes no relógio UTC;
+- retry limitado para `408`, `429`, `500`, `502`, `503` e `504`;
+- preferência por `Retry-After` em intervalo ou data; fallback exponencial de 1, 2, 4 segundos conforme a tentativa;
+- até três retries por padrão, com limite configurável de zero a cinco;
+- espera máxima padrão de 30 segundos; quando a espera indicada excede o limite configurado, a consulta falha sem repetir antes do prazo;
+- timeout padrão de 30 segundos para a consulta completa, incluindo obtenção/renovação do token, pacing, retries e leitura do corpo;
+- propagação de cancelamento, sem convertê-lo indevidamente em timeout;
+- mensagens controladas para falhas de status HTTP e JSON OAuth malformado/incompatível, sem anexar corpo remoto ou exceção de parsing;
+- consultas paginadas com campos explícitos, ordenação `id asc`, `limit` e `offset`;
+- páginas entre 1 e 500 registros; término em página parcial ou vazia, sem entregar a página vazia;
+- validação estrutural de página JSON e rejeição de páginas acima do tamanho solicitado;
+- DI registrado e coberto por testes, sem ativação no `Program.cs`.
+
+A revisão aplicou SOLID com composição e responsabilidades coesas, sem criar interfaces apenas para aumentar o número de abstrações.
+
+Cobertura de validação:
+
+- testes unitários de configuração, OAuth, cache, pacing, retry, timeout, erros, client, consulta e paginação;
+- testes de integração de componentes com DI e implementações reais, substituindo apenas transporte HTTP e relógio;
+- fluxo combinado com `429`, `Retry-After`, `401`, renovação, headers, pacing e avanço de offset;
+- interrupção após rejeição do token renovado e cancelamento do transporte pelo prazo da consulta;
+- estes testes do fluxo não acessam Twitch, IGDB ou banco; não constituem validação real da nova implementação contra a fonte.
+
+Limites explícitos deste incremento:
+
+- falhas de conexão sem resposta HTTP não recebem retry automático;
+- o timeout encerra a consulta; não é uma tentativa transitória automaticamente repetida;
+- chamadas OAuth isoladas precisam receber cancelamento adequado, pois o cliente HTTP nomeado não impõe timeout próprio;
+- o prazo é por consulta/página, não um prazo global da importação;
+- paginação por offset não fornece snapshot de um catálogo em mudança;
+- `IgdbPageQuery` aceita filtros confiáveis definidos pela aplicação, não é parser geral de APICalypse nem sanitizador de entrada livre;
+- nenhum payload bruto é persistido por esses componentes; mapping, checkpoint e idempotência permanecem fora desta task;
+- `Program.cs` continua sem chamar `AddCollector()` ou `AddIgdbIntegration()`; a execução será ativada somente com um job concreto e resolvível.
+
+Antes de encerrar a GMI-16: revisar e commitar estes documentos, integrar a branch, registrar as evidências de merge/push no Jira e gerar o novo `AGENTS.md` externo. Este checkpoint não declara a issue concluída.
+
+Fronteiras das tarefas:
 
 - GMI-16 implementa autenticação, cliente IGDB, paginação, ritmo, retries, timeout e cancelamento operacional;
 - GMI-17 implementa contratos de resposta e mapping do subconjunto aprovado do primeiro MVP;
@@ -908,8 +977,8 @@ Milestone 2 — MVP vertical com IGDB
 
 Sequência imediata:
 
-1. concluir documentação, gates finais e integração da fundação do Collector da GMI-15;
-2. implementar autenticação, cliente IGDB e comportamento operacional na GMI-16;
+1. revisar e commitar separadamente a documentação da GMI-16; o código está no commit `06528e1`;
+2. integrar a GMI-16 em `develop`, confirmar push, registrar evidências no Jira e gerar o novo `AGENTS.md` externo;
 3. implementar contratos e mapping IGDB do primeiro MVP na GMI-17;
 4. implementar ingestão incremental, idempotente e retomável na GMI-18;
 5. popular dados reais representativos;
